@@ -36,6 +36,33 @@ jobs:
           cp /tmp/xtower-assets/sparkle.ogg app/src/main/res/raw/sparkle.ogg
           cp /tmp/xtower-assets/win.ogg app/src/main/res/raw/win.ogg
           ls -lh app/src/main/res/drawable-nodpi app/src/main/res/raw
+      - name: Patch Java compiler issue
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/main/java/com/xtower/game/MainActivity.java')
+          s=p.read_text()
+          start=s.index('        void drawBubble(')
+          end=s.index('\n\n        void drawAttackFx', start)
+          fixed='''        void drawBubble(Canvas c,long now,boolean mad){
+              int w=getWidth();
+              float left=w*0.08f;
+              float right=w*0.92f;
+              float top=getHeight()*0.06f;
+              p.setColor(mad?0xff3a1418:0xfffff6ea);
+              RectF bubbleBox=new RectF(left,top,right,top+92);
+              c.drawRoundRect(bubbleBox,18,18,p);
+              if(mad){
+                  p.setStyle(Paint.Style.STROKE);
+                  p.setStrokeWidth(2);
+                  p.setColor(0xffc45c6a);
+                  c.drawRoundRect(bubbleBox,18,18,p);
+                  p.setStyle(Paint.Style.FILL);
+              }
+              drawWrapped(c,bubbleText,left+16,top+28,right-left-32,15,mad?0xffffd6dc:0xff3a2428);
+          }'''
+          p.write_text(s[:start]+fixed+s[end:])
+          PY
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Rename APK
