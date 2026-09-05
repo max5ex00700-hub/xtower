@@ -18,6 +18,21 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.2'
+      - name: Restore bundled game assets
+        run: |
+          mkdir -p app/src/main/res/drawable-nodpi app/src/main/res/raw /tmp/xtower-assets
+          base64 -d assets_payload.b64 > /tmp/xtower-assets.zip
+          unzip -o /tmp/xtower-assets.zip -d /tmp/xtower-assets
+          cp /tmp/xtower-assets/s0.jpg app/src/main/res/drawable-nodpi/s0.jpg
+          cp /tmp/xtower-assets/s1.jpg app/src/main/res/drawable-nodpi/s1.jpg
+          cp /tmp/xtower-assets/s2.jpg app/src/main/res/drawable-nodpi/s2.jpg
+          cp /tmp/xtower-assets/s3.jpg app/src/main/res/drawable-nodpi/s3.jpg
+          cp /tmp/xtower-assets/s4.jpg app/src/main/res/drawable-nodpi/s4.jpg
+          cp /tmp/xtower-assets/hit.wav app/src/main/res/raw/hit.wav
+          cp /tmp/xtower-assets/hurt.wav app/src/main/res/raw/hurt.wav
+          cp /tmp/xtower-assets/sparkle.wav app/src/main/res/raw/sparkle.wav
+          cp /tmp/xtower-assets/win.wav app/src/main/res/raw/win.wav
+          ls -lh app/src/main/res/drawable-nodpi app/src/main/res/raw
       - name: Build debug APK
         run: gradle :app:assembleDebug --stacktrace
       - name: Rename APK
