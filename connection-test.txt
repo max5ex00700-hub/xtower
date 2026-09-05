@@ -1,2 +1,3 @@
 X탑 ChatGPT GitHub 쓰기 연결 확인
 assets-fix 준비 완료
+빌드 대기
