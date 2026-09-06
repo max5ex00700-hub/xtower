@@ -19,7 +19,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.2.1'
-      - name: Create redesigned XTower project
+      - name: Create XTower v102 project
         shell: bash
         run: |
           cat > settings.gradle <<'EOF'
@@ -28,48 +28,80 @@ jobs:
           rootProject.name='XTower'
           include ':app'
           EOF
-          mkdir -p app/src/main/java/com/xtower/game
+          mkdir -p app/src/main/java/com/xtower/game app/src/main/assets
           cat > build.gradle <<'EOF'
           plugins { id 'com.android.application' version '8.2.2' apply false }
           EOF
           cat > app/build.gradle <<'EOF'
           plugins { id 'com.android.application' }
           android { namespace 'com.xtower.game'; compileSdk 35
-            defaultConfig { applicationId 'com.xtower.game'; minSdk 26; targetSdk 35; versionCode 101; versionName '1.0.1-design' }
+            defaultConfig { applicationId 'com.xtower.game'; minSdk 26; targetSdk 35; versionCode 102; versionName '1.0.2-combat' }
           }
           EOF
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:theme="@android:style/Theme.Material.NoActionBar" android:label="X탑"><activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
           EOF
+          # Keep the v9.28 character asset already stored in the repository.
+          test -f app/src/main/assets/a00.jpg || cp app/src/main/assets/a00.jpg app/src/main/assets/a00.jpg 2>/dev/null || true
           cat > app/src/main/java/com/xtower/game/MainActivity.java <<'EOF'
           package com.xtower.game;
-          import android.app.*;import android.os.*;import android.graphics.*;import android.graphics.drawable.*;import android.view.*;import android.content.*;import java.io.*;import java.util.*;
+          import android.app.*;import android.os.*;import android.graphics.*;import android.view.*;import android.content.*;import android.media.*;import java.io.*;import java.math.*;import java.util.*;
+
           public class MainActivity extends Activity{
-            public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(Color.rgb(8,9,13));getWindow().setNavigationBarColor(Color.rgb(8,9,13));setContentView(new GameView(this));}
+            public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(Color.BLACK);getWindow().setNavigationBarColor(Color.BLACK);setContentView(new GameView(this));}
           }
+
           class GameView extends View{
-            Paint p=new Paint(3); Paint stroke=new Paint(3); Bitmap hero; Random r=new Random();
-            int page=0,floor=1,hp=100,enemy=100; boolean captured=false,chest=false,pach=false,ballRun=false; float bx,by,bvx,bvy;
-            ArrayList<String> ground=new ArrayList<>(),bag=new ArrayList<>(); String msg="1층 수호자가 길을 막고 있다";
-            RectF navBattle=new RectF(),navBag=new RectF(),navJail=new RectF(),navForge=new RectF(),attack=new RectF(),chestB=new RectF();
-            GameView(Context c){super(c);p.setTypeface(Typeface.create("sans",Typeface.NORMAL));stroke.setStyle(Paint.Style.STROKE);stroke.setStrokeWidth(2);try{hero=BitmapFactory.decodeStream(c.getAssets().open("a00.jpg"));}catch(Exception e){}}
-            void txt(Canvas c,String s,float x,float y,float size,int color){p.setStyle(Paint.Style.FILL);p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans",Typeface.BOLD));c.drawText(s,x,y,p);}
-            void panel(Canvas c,RectF q,int color,float radius){p.setStyle(Paint.Style.FILL);p.setColor(color);c.drawRoundRect(q,radius,radius,p);}
-            void btn(Canvas c,RectF q,String s,boolean strong){panel(c,q,strong?Color.rgb(187,52,74):Color.rgb(36,39,49),18);stroke.setColor(strong?Color.rgb(239,128,145):Color.rgb(67,71,84));c.drawRoundRect(q,18,18,stroke);p.setTextAlign(Paint.Align.CENTER);txt(c,s,q.centerX(),q.centerY()+10,25,Color.WHITE);p.setTextAlign(Paint.Align.LEFT);}
-            void drawImageCover(Canvas c,RectF dst){if(hero==null){p.setColor(Color.rgb(37,39,46));c.drawRect(dst,p);return;}float sr=(float)hero.getWidth()/hero.getHeight(),dr=dst.width()/dst.height();Rect src;if(sr>dr){int sw=(int)(hero.getHeight()*dr);int left=(hero.getWidth()-sw)/2;src=new Rect(left,0,left+sw,hero.getHeight());}else{int sh=(int)(hero.getWidth()/dr);int top=(hero.getHeight()-sh)/2;src=new Rect(0,top,hero.getWidth(),top+sh);}c.drawBitmap(hero,src,dst,p);}
-            protected void onDraw(Canvas c){super.onDraw(c);float w=getWidth(),h=getHeight();c.drawColor(Color.rgb(8,9,13));if(pach){drawPach(c,w,h);postInvalidateOnAnimation();return;}drawHeader(c,w);if(page==0||page==1)drawBattle(c,w,h);else if(page==2)drawBag(c,w,h);else if(page==3)drawJail(c,w,h);else drawForge(c,w,h);drawNav(c,w,h);}
-            void drawHeader(Canvas c,float w){RectF top=new RectF(14,14,w-14,82);panel(c,top,Color.rgb(20,22,29),22);txt(c,"X탑",30,54,31,Color.WHITE);txt(c,floor+"층",w-82,50,20,Color.rgb(228,196,145));txt(c,"HP "+hp,30,74,14,Color.rgb(160,220,176));}
-            void drawBattle(Canvas c,float w,float h){RectF image=new RectF(14,96,w-14,h-250);drawImageCover(c,image);p.setColor(Color.argb(145,5,7,10));c.drawRect(image.left,image.bottom-170,image.right,image.bottom,p);txt(c,"1층 수호자",30,image.bottom-115,29,Color.WHITE);txt(c,msg,30,image.bottom-79,18,Color.rgb(225,228,234));txt(c,"적 HP  "+enemy,30,image.bottom-42,18,Color.rgb(244,165,172));if(page==1){attack.set(22,h-224,w-22,h-164);btn(c,attack,"공격",true);if(chest){chestB.set(22,h-154,w-22,h-94);btn(c,chestB,"보상 상자 열기",false);}}}
-            void drawBag(Canvas c,float w,float h){txt(c,"가방",22,120,30,Color.WHITE);txt(c,"그리드 · 소지 · 바닥을 한 화면에서 정리",22,150,16,Color.rgb(171,176,188));float gx=18,gy=175,gw=w-36,cw=gw/5f,ch=cw;for(int rr=0;rr<4;rr++)for(int cc=0;cc<5;cc++){RectF q=new RectF(gx+cc*cw,gy+rr*ch,gx+(cc+1)*cw,gy+(rr+1)*ch);p.setColor(Color.rgb(220,205,187));c.drawRect(q,p);stroke.setColor(Color.rgb(88,72,67));c.drawRect(q,stroke);}float below=gy+4*ch+20;txt(c,"소지 "+bag.size(),22,below,21,Color.WHITE);RectF carry=new RectF(18,below+14,w-18,below+92);panel(c,carry,Color.rgb(20,16,22),12);if(bag.size()==0)txt(c,"(없음)",30,below+62,18,Color.rgb(190,190,197));txt(c,"바닥 "+ground.size(),22,below+125,21,Color.WHITE);RectF grd=new RectF(18,below+139,w-18,Math.min(h-92,below+218));panel(c,grd,Color.rgb(20,16,22),12);if(ground.size()==0)txt(c,"(없음)",30,below+185,18,Color.rgb(190,190,197));else txt(c,ground.get(ground.size()-1),30,below+185,18,Color.rgb(242,205,129));}
-            void drawJail(Canvas c,float w,float h){txt(c,"감옥",22,120,30,Color.WHITE);RectF card=new RectF(18,150,w-18,h-110);panel(c,card,Color.rgb(19,21,28),20);if(captured){RectF img=new RectF(card.left+12,card.top+12,card.right-12,card.bottom-110);drawImageCover(c,img);p.setColor(Color.argb(135,4,5,8));c.drawRect(img.left,img.bottom-90,img.right,img.bottom,p);txt(c,"1층 수호자 · 수감 중",32,img.bottom-40,22,Color.WHITE);}else txt(c,"포획된 캐릭터 없음",34,210,22,Color.rgb(176,180,190));}
-            void drawForge(Canvas c,float w,float h){txt(c,"대장간",22,120,30,Color.WHITE);txt(c,"슬롯머신은 대장간에서만 사용",22,151,16,Color.rgb(171,176,188));RectF slot=new RectF(18,188,w-18,360);panel(c,slot,Color.rgb(18,20,26),20);float sw=(slot.width()-36)/3;String[] v={"힘","방","체"};for(int i=0;i<3;i++){RectF q=new RectF(slot.left+12+i*(sw+6),slot.top+30,slot.left+12+i*(sw+6)+sw,slot.bottom-30);panel(c,q,Color.rgb(234,217,190),12);p.setTextAlign(Paint.Align.CENTER);txt(c,v[i],q.centerX(),q.centerY()+10,27,Color.rgb(45,35,38));p.setTextAlign(Paint.Align.LEFT);}}
-            void drawNav(Canvas c,float w,float h){float y=h-78,g=8,ww=(w-36)/4;navBattle.set(10,y,10+ww,y+62);navBag.set(14+ww,y,14+ww*2,y+62);navJail.set(18+ww*2,y,18+ww*3,y+62);navForge.set(22+ww*3,y,w-10,y+62);btn(c,navBattle,"전투",page<=1);btn(c,navBag,"가방",page==2);btn(c,navJail,"감옥",page==3);btn(c,navForge,"대장간",page==4);}
-            void drawPach(Canvas c,float w,float h){txt(c,"전투 보상 빠칭코",24,48,30,Color.WHITE);txt(c,captured?"포획 완료 · 장비 드롭만":"포획 테스트 100%",24,78,17,Color.rgb(225,197,133));float sy=h-92,sw=w/5;for(int row=0;row<10;row++){float y=115+row*52,dx=w/7,off=row%2==0?0:dx/2;for(float x=dx+off;x<w-dx/2;x+=dx){p.setColor(Color.rgb(220,202,171));c.drawCircle(x,y,6,p);}}String[] labs={"-50%","-25%","0%","+25%","+50%"};for(int i=0;i<5;i++){p.setColor(i%2==0?Color.rgb(41,44,52):Color.rgb(53,56,65));c.drawRect(i*sw,sy,(i+1)*sw,h,p);p.setTextAlign(Paint.Align.CENTER);txt(c,labs[i],i*sw+sw/2,sy+50,18,Color.WHITE);}p.setTextAlign(Paint.Align.LEFT);if(!ballRun){bx=w/2;by=92;bvx=(r.nextFloat()-.5f)*120;bvy=0;ballRun=true;}bvy+=1.55f;bx+=bvx*.016f;by+=bvy*.016f;if(bx<12||bx>w-12)bvx=-bvx;p.setColor(Color.rgb(242,191,71));c.drawCircle(bx,by,11,p);if(by>sy){int slot=Math.max(0,Math.min(4,(int)(bx/sw)));int[] mods={-50,-25,0,25,50};if(!captured){captured=true;msg="1층 수호자 포획 · 감옥으로 이동";}else{ground.add("1층 장비 "+(mods[slot]>0?"+":"")+mods[slot]+"%");msg="장비 드롭 "+mods[slot]+"%";}pach=false;ballRun=false;chest=false;page=0;invalidate();}}
-            public boolean onTouchEvent(MotionEvent e){if(e.getAction()!=MotionEvent.ACTION_UP)return true;float x=e.getX(),y=e.getY();if(pach)return true;if(navBattle.contains(x,y)){page=1;msg="전투 시작";invalidate();return true;}if(navBag.contains(x,y)){page=2;invalidate();return true;}if(navJail.contains(x,y)){page=3;invalidate();return true;}if(navForge.contains(x,y)){page=4;invalidate();return true;}if(page==1&&attack.contains(x,y)){enemy-=35;if(enemy<=0){enemy=100;chest=true;msg="승리! 전투 보상 상자가 나타났다";}invalidate();return true;}if(page==1&&chest&&chestB.contains(x,y)){pach=true;invalidate();return true;}return true;}
+            final Paint p=new Paint(3), stroke=new Paint(3); final Random rnd=new Random(); final Handler ui=new Handler();
+            final Set<Integer> capturedFloors=new HashSet<>(); final ArrayList<String> ground=new ArrayList<>();
+            Bitmap base; ToneGenerator tone=new ToneGenerator(AudioManager.STREAM_MUSIC,80);
+            int mode=0; // 0 hub, 1 battle, 2 wheel, 3 jail
+            int floor=1, stage=1, actionIndex=0; boolean actionDodge=false;
+            BigInteger enemyMax=BigInteger.ONE, enemyHp=BigInteger.ONE;
+            long actionUntil=0, spinStart=0, captureStart=0; boolean spinning=false,captureAnim=false; int wheelResult=0;
+            RectF battleBtn=new RectF(), jailBtn=new RectF(), wheelBtn=new RectF();
+            final int[] mods={-50,-40,-30,-20,-10,999,10,20,30,40,50};
+            GameView(Context c){super(c);stroke.setStyle(Paint.Style.STROKE);stroke.setStrokeWidth(3);try{base=BitmapFactory.decodeStream(c.getAssets().open("a00.jpg"));}catch(Exception ignored){} resetEnemy(); setSystemUiVisibility(SYSTEM_UI_FLAG_FULLSCREEN|SYSTEM_UI_FLAG_IMMERSIVE_STICKY|SYSTEM_UI_FLAG_HIDE_NAVIGATION);}
+
+            BigInteger floorScale(){return BigInteger.valueOf(6).pow(Math.max(0,floor-1));}
+            int stageNum(){return stage==10?20:10+(stage-1);}
+            BigInteger stat(long v){return BigInteger.valueOf(v).multiply(floorScale()).multiply(BigInteger.valueOf(stageNum())).divide(BigInteger.TEN);}
+            void resetEnemy(){enemyMax=stat(6286);enemyHp=enemyMax;}
+            int imageSet(){return ((floor-1)%3)+1;}
+            String level(){return floor+"-"+stage;}
+            void advance(){if(stage<10)stage++;else{floor++;stage=1;}resetEnemy();save();}
+            void save(){getContext().getSharedPreferences("xtower",0).edit().putInt("floor",floor).putInt("stage",stage).putString("captured",joinCaptured()).apply();}
+            String joinCaptured(){StringBuilder s=new StringBuilder();for(Integer f:capturedFloors){if(s.length()>0)s.append(',');s.append(f);}return s.toString();}
+
+            protected void onDraw(Canvas c){super.onDraw(c);c.drawColor(Color.BLACK);if(mode==1)drawBattle(c);else if(mode==2)drawWheel(c);else if(mode==3)drawJail(c);else drawHub(c);}
+            void text(Canvas c,String s,float x,float y,float size,int color){p.setStyle(Paint.Style.FILL);p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans",Typeface.BOLD));c.drawText(s,x,y,p);}
+            void button(Canvas c,RectF r,String s,boolean hot){p.setColor(hot?Color.rgb(117,38,57):Color.rgb(30,29,35));c.drawRoundRect(r,20,20,p);stroke.setColor(hot?Color.rgb(231,121,147):Color.rgb(82,75,88));c.drawRoundRect(r,20,20,stroke);p.setTextAlign(Paint.Align.CENTER);text(c,s,r.centerX(),r.centerY()+10,26,Color.WHITE);p.setTextAlign(Paint.Align.LEFT);}
+            void drawBitmapCover(Canvas c,RectF dst,float scale,float dx,float dy){if(base==null){p.setColor(Color.rgb(34,35,40));c.drawRect(dst,p);return;}float sr=(float)base.getWidth()/base.getHeight(),dr=dst.width()/dst.height();Rect src;if(sr>dr){int sw=(int)(base.getHeight()*dr/scale);int l=(base.getWidth()-sw)/2+(int)dx; l=Math.max(0,Math.min(base.getWidth()-sw,l));src=new Rect(l,0,l+sw,base.getHeight());}else{int sh=(int)(base.getWidth()/dr/scale);int t=(base.getHeight()-sh)/2+(int)dy;t=Math.max(0,Math.min(base.getHeight()-sh,t));src=new Rect(0,t,base.getWidth(),t+sh);}c.drawBitmap(base,src,dst,p);}
+
+            void drawHub(Canvas c){float w=getWidth(),h=getHeight();RectF img=new RectF(0,0,w,h-180);drawBitmapCover(c,img,1,0,0);p.setColor(Color.argb(175,6,6,10));c.drawRect(0,0,w,145,p);text(c,"X탑  "+level(),20,47,31,Color.WHITE);text(c,"세트 "+imageSet()+"  체 "+stat(6286)+"  힘 "+stat(1553)+"  방 "+stat(775),20,86,18,Color.rgb(235,205,213));text(c,"층 진행 무한 · 10단계에서 2배 · 다음 층은 직전 10단계의 3배",20,120,14,Color.LTGRAY);battleBtn.set(18,h-160,w-18,h-98);button(c,battleBtn,"전투 시작",true);jailBtn.set(18,h-88,w-18,h-26);button(c,jailBtn,"감옥  (포획 "+capturedFloors.size()+")",false);}
+
+            void drawBattle(Canvas c){float w=getWidth(),h=getHeight();long now=System.currentTimeMillis();float sc=1f,dx=0,dy=0;if(now<actionUntil){if(actionDodge){sc=1.05f;dx=(actionIndex%5-2)*5;dy=(actionIndex%3-1)*6;}else{sc=1.18f;dx=(actionIndex%7-3)*7;dy=(actionIndex%5-2)*5;}}drawBitmapCover(c,new RectF(0,0,w,h),sc,dx,dy);if(now<actionUntil&&!actionDodge){p.setColor(Color.argb(80,255,255,255));c.drawRect(0,0,w,h,p);}if(enemyHp.signum()<=0){mode=2;spinning=false;spinStart=0;invalidate();return;}if(now<actionUntil){postInvalidateOnAnimation();}}
+
+            void tapAttack(){if(System.currentTimeMillis()<actionUntil)return;boolean dodge=rnd.nextInt(100)<20;actionDodge=dodge;actionIndex=dodge?rnd.nextInt(10):rnd.nextInt(30);actionUntil=System.currentTimeMillis()+380;if(dodge){tone.startTone(ToneGenerator.TONE_PROP_BEEP2,90);}else{tone.startTone(ToneGenerator.TONE_PROP_ACK,90);BigInteger dmg=enemyMax.divide(BigInteger.TEN);if(dmg.signum()==0)dmg=BigInteger.ONE;enemyHp=enemyHp.subtract(dmg);}invalidate();}
+
+            void drawWheel(Canvas c){float w=getWidth(),h=getHeight(),cx=w/2f,cy=h*.43f,r=Math.min(w*.43f,h*.29f);text(c,"전투 보상",22,48,30,Color.WHITE);text(c,level()+"  특수 1% = "+(capturedFloors.contains(floor)?"2배 장비":"포획"),22,78,17,Color.rgb(238,193,122));
+              for(int i=0;i<11;i++){double a0=-Math.PI/2+2*Math.PI*i/11, a1=-Math.PI/2+2*Math.PI*(i+1)/11;Path path=new Path();path.moveTo(cx,cy);path.lineTo(cx+(float)Math.cos(a0)*r,cy+(float)Math.sin(a0)*r);path.arcTo(new RectF(cx-r,cy-r,cx+r,cy+r),(float)Math.toDegrees(a0),(float)Math.toDegrees(a1-a0));path.close();p.setColor(i==5?Color.rgb(112,42,92):(i%2==0?Color.rgb(55,43,58):Color.rgb(31,33,42)));c.drawPath(path,p);float am=(float)((a0+a1)/2);String s=i==5?(capturedFloors.contains(floor)?"x2":"포획"):(mods[i]>0?"+":"")+mods[i]+"%";p.setTextAlign(Paint.Align.CENTER);text(c,s,cx+(float)Math.cos(am)*r*.72f,cy+(float)Math.sin(am)*r*.72f+6,16,Color.WHITE);p.setTextAlign(Paint.Align.LEFT);}p.setColor(Color.rgb(243,194,85));Path ptr=new Path();ptr.moveTo(cx-18,cy-r-22);ptr.lineTo(cx+18,cy-r-22);ptr.lineTo(cx,cy-r+10);ptr.close();c.drawPath(ptr,p);
+              wheelBtn.set(25,h-110,w-25,h-40);button(c,wheelBtn,spinning?"회전 중...":"보상 돌리기",true);
+              if(spinning){long elapsed=System.currentTimeMillis()-spinStart;if(elapsed>1900){spinning=false;resolveWheel();}else postInvalidateOnAnimation();}
+              if(captureAnim)drawCaptureAnimation(c,w,h);
+            }
+
+            void startWheel(){if(spinning||captureAnim)return;int roll=rnd.nextInt(100);if(roll==0)wheelResult=5;else{int n=rnd.nextInt(10);wheelResult=n<5?n:n+1;}spinning=true;spinStart=System.currentTimeMillis();tone.startTone(ToneGenerator.TONE_PROP_PROMPT,180);invalidate();}
+            void resolveWheel(){if(wheelResult==5&&!capturedFloors.contains(floor)){captureAnim=true;captureStart=System.currentTimeMillis();capturedFloors.add(floor);tone.startTone(ToneGenerator.TONE_PROP_ACK,300);invalidate();return;}String reward;if(wheelResult==5)reward="2배 장비";else reward="장비 "+(mods[wheelResult]>0?"+":"")+mods[wheelResult]+"%";ground.add(level()+" "+reward);advance();mode=0;invalidate();}
+            void drawCaptureAnimation(Canvas c,float w,float h){long e=System.currentTimeMillis()-captureStart;float t=Math.min(1f,e/1500f);float s=t<.42f?1f+t*1.5f:2.05f-(t-.42f)*2.6f;if(s<.25f)s=.25f;float targetX=w-70,targetY=h-70,cx=w/2+(targetX-w/2)*Math.max(0,(t-.6f)/.4f),cy=h/2+(targetY-h/2)*Math.max(0,(t-.6f)/.4f);float ww=w*.52f*s,hh=h*.52f*s;drawBitmapCover(c,new RectF(cx-ww/2,cy-hh/2,cx+ww/2,cy+hh/2),1,0,0);if(e>1500){captureAnim=false;advance();mode=0;invalidate();}else postInvalidateOnAnimation();}
+
+            void drawJail(Canvas c){float w=getWidth(),h=getHeight();text(c,"감옥",20,48,30,Color.WHITE);text(c,"포획된 층 "+capturedFloors.size(),20,82,18,Color.LTGRAY);float y=110;for(Integer f:new TreeSet<Integer>(capturedFloors)){if(y>h-80)break;RectF card=new RectF(18,y,w-18,y+74);p.setColor(Color.rgb(24,22,29));c.drawRoundRect(card,15,15,p);text(c,f+"층 수호자  · 이미지 세트 "+(((f-1)%3)+1),34,y+46,20,Color.WHITE);y+=84;}jailBtn.set(18,h-78,w-18,h-20);button(c,jailBtn,"돌아가기",false);}
+
+            public boolean onTouchEvent(MotionEvent e){if(e.getAction()!=MotionEvent.ACTION_UP)return true;float x=e.getX(),y=e.getY();if(mode==1){tapAttack();return true;}if(mode==2){if(wheelBtn.contains(x,y))startWheel();return true;}if(mode==3){if(jailBtn.contains(x,y)){mode=0;invalidate();}return true;}if(battleBtn.contains(x,y)){mode=1;invalidate();return true;}if(jailBtn.contains(x,y)){mode=3;invalidate();return true;}return true;}
           }
           EOF
       - run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: XTower-design-v101-apk
+          name: XTower-v102-combat-apk
           path: app/build/outputs/apk/debug/app-debug.apk
