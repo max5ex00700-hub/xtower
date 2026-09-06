@@ -19,7 +19,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '8.2.1'
-      - name: Create Android project
+      - name: Create playable XTower project
         shell: bash
         run: |
           cat > settings.gradle <<'EOF'
@@ -35,7 +35,7 @@ jobs:
           cat > app/build.gradle <<'EOF'
           plugins { id 'com.android.application' }
           android { namespace 'com.xtower.game'; compileSdk 35
-            defaultConfig { applicationId 'com.xtower.game'; minSdk 26; targetSdk 35; versionCode 1; versionName '0.1.0' }
+            defaultConfig { applicationId 'com.xtower.game'; minSdk 26; targetSdk 35; versionCode 100; versionName '1.0.0-test' }
           }
           EOF
           cat > app/src/main/AndroidManifest.xml <<'EOF'
@@ -43,15 +43,31 @@ jobs:
           EOF
           cat > app/src/main/java/com/xtower/game/MainActivity.java <<'EOF'
           package com.xtower.game;
-          import android.app.*;import android.os.*;import android.graphics.*;import android.view.*;
+          import android.app.*;import android.os.*;import android.graphics.*;import android.view.*;import android.content.*;import java.util.*;
           public class MainActivity extends Activity{
-            public void onCreate(Bundle b){super.onCreate(b);setContentView(new V());}
-            class V extends View{Paint p=new Paint(1);V(){super(MainActivity.this);p.setTextSize(48);}
-              protected void onDraw(Canvas c){c.drawColor(Color.rgb(15,15,18));p.setColor(Color.WHITE);c.drawText("X탑 빌드 파이프라인 성공",40,100,p);p.setTextSize(32);c.drawText("다음: 전체 엔진 + 빠칭코 연결",40,160,p);}}
+            GameView game; public void onCreate(Bundle b){super.onCreate(b);game=new GameView(this);setContentView(game);}
+          }
+          class GameView extends View{
+            Paint p=new Paint(1); Random r=new Random(); int screen=0,floor=1,hp=100,enemy=100; boolean captured=false,chest=false,pach=false,ballRun=false; float bx,by,bvx,bvy; ArrayList<String> ground=new ArrayList<>(),bag=new ArrayList<>(); String msg="1층 전투 준비";
+            RectF battle=new RectF(),bagB=new RectF(),jail=new RectF(),forge=new RectF(),attack=new RectF(),chestB=new RectF();
+            GameView(Context c){super(c);p.setTypeface(Typeface.DEFAULT);setBackgroundColor(Color.rgb(18,20,25));}
+            void text(Canvas c,String s,float x,float y,float size){p.setTextSize(size);p.setColor(Color.WHITE);p.setStyle(Paint.Style.FILL);c.drawText(s,x,y,p);}
+            void button(Canvas c,RectF q,String s){p.setColor(Color.rgb(50,55,65));c.drawRoundRect(q,12,12,p);text(c,s,q.left+18,q.centerY()+10,28);}
+            protected void onDraw(Canvas c){super.onDraw(c);float w=getWidth(),h=getHeight();c.drawColor(Color.rgb(18,20,25));text(c,"X탑",24,48,38);text(c,floor+"층",w-90,48,24);
+              if(pach){drawPach(c,w,h);postInvalidateOnAnimation();return;}
+              battle.set(20,75,w-20,135);bagB.set(20,145,w/2-8,205);jail.set(w/2+8,145,w-20,205);forge.set(20,215,w-20,275);button(c,battle,"전투");button(c,bagB,"가방");button(c,jail,"감옥");button(c,forge,"대장간 슬롯머신");
+              text(c,msg,24,325,24);text(c,"내 HP "+hp+"   적 HP "+enemy,24,365,22);
+              if(screen==1){attack.set(20,400,w-20,470);button(c,attack,"공격");if(chest){chestB.set(20,490,w-20,560);button(c,chestB,"전투 보상 상자 열기");}}
+              if(screen==2){text(c,"소지품 "+bag.size()+"개",24,420,26);text(c,"바닥 "+ground.size()+"개",24,460,26);for(int i=0;i<20;i++){float cw=(w-40)/5f,x=20+(i%5)*cw,y=500+(i/5)*70;p.setStyle(Paint.Style.STROKE);p.setColor(Color.GRAY);c.drawRect(x,y,x+cw,y+70,p);}p.setStyle(Paint.Style.FILL);}
+              if(screen==3)text(c,captured?floor+"층 캐릭터 수감 중":"포획된 캐릭터 없음",24,420,26);
+              if(screen==4){text(c,"대장간 전용 슬롯머신",24,420,26);text(c,"[ 힘 ]   [ 방 ]   [ 체 ]",24,470,28);}
+            }
+            void drawPach(Canvas c,float w,float h){text(c,"전투 보상 빠칭코",24,48,32);text(c,captured?"포획 완료 층 · 장비만":"포획 테스트 100%",24,80,20);float sy=h-90,sw=w/5;String[] labs={"-50%","-25%","0%","+25%","+50%"};for(int row=0;row<9;row++){float y=120+row*55,dx=w/7,off=row%2==0?0:dx/2;for(float x=dx+off;x<w-dx/2;x+=dx){p.setColor(Color.LTGRAY);c.drawCircle(x,y,6,p);}}for(int i=0;i<5;i++){p.setColor(i%2==0?Color.DKGRAY:Color.GRAY);c.drawRect(i*sw,sy,(i+1)*sw,h,p);text(c,labs[i],i*sw+8,sy+45,20);}if(!ballRun){bx=w/2;by=95;bvx=(r.nextFloat()-.5f)*120;bvy=0;ballRun=true;}bvy+=1.5f;bx+=bvx*.016f;by+=bvy*.016f;if(bx<10||bx>w-10)bvx=-bvx;p.setColor(Color.YELLOW);c.drawCircle(bx,by,10,p);if(by>sy){int slot=Math.max(0,Math.min(4,(int)(bx/sw)));int[] mods={-50,-25,0,25,50};if(!captured){captured=true;msg=floor+"층 캐릭터 포획 → 감옥";}else{ground.add("장비 "+(mods[slot]>0?"+":"")+mods[slot]+"%");msg="장비 드롭 "+mods[slot]+"%";}pach=false;ballRun=false;chest=false;screen=0;invalidate();}}
+            public boolean onTouchEvent(android.view.MotionEvent e){if(e.getAction()!=MotionEvent.ACTION_UP)return true;float x=e.getX(),y=e.getY();if(pach)return true;if(battle.contains(x,y)){screen=1;msg="전투 시작";invalidate();return true;}if(bagB.contains(x,y)){screen=2;invalidate();return true;}if(jail.contains(x,y)){screen=3;invalidate();return true;}if(forge.contains(x,y)){screen=4;invalidate();return true;}if(screen==1&&attack.contains(x,y)){enemy-=35;if(enemy<=0){enemy=100;chest=true;msg="승리! 보상 상자가 나타났다";}invalidate();return true;}if(screen==1&&chest&&chestB.contains(x,y)){pach=true;invalidate();return true;}return true;}
           }
           EOF
       - run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
         with:
-          name: xtower-apk
+          name: XTower-integrated-test-apk
           path: app/build/outputs/apk/debug/app-debug.apk
