@@ -1,10 +1,10 @@
 name: Build XTower APK
-
 on:
   push:
-    branches: [ main ]
+    branches: [ build-pipeline2 ]
   workflow_dispatch:
-
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -15,79 +15,43 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: android-actions/setup-android@v3
+      - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.2'
-      - name: Restore bundled game assets
+          gradle-version: '8.2.1'
+      - name: Create Android project
+        shell: bash
         run: |
-          set -euxo pipefail
-          mkdir -p app/src/main/res/drawable-nodpi app/src/main/res/raw /tmp/xtower-assets
-          cat assets_parts/p* > /tmp/xtower-assets.b64
-          base64 -d /tmp/xtower-assets.b64 > /tmp/xtower-assets.zip
-          unzip -t /tmp/xtower-assets.zip
-          unzip -o /tmp/xtower-assets.zip -d /tmp/xtower-assets
-          cp /tmp/xtower-assets/s0.jpg app/src/main/res/drawable-nodpi/s0.jpg
-          cp /tmp/xtower-assets/s1.jpg app/src/main/res/drawable-nodpi/s1.jpg
-          cp /tmp/xtower-assets/s2.jpg app/src/main/res/drawable-nodpi/s2.jpg
-          cp /tmp/xtower-assets/s3.jpg app/src/main/res/drawable-nodpi/s3.jpg
-          cp /tmp/xtower-assets/s4.jpg app/src/main/res/drawable-nodpi/s4.jpg
-          cp /tmp/xtower-assets/hit.ogg app/src/main/res/raw/hit.ogg
-          cp /tmp/xtower-assets/hurt.ogg app/src/main/res/raw/hurt.ogg
-          cp /tmp/xtower-assets/sparkle.ogg app/src/main/res/raw/sparkle.ogg
-          cp /tmp/xtower-assets/win.ogg app/src/main/res/raw/win.ogg
-      - name: Patch Java compiler issue
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path('app/src/main/java/com/xtower/game/MainActivity.java')
-          s=p.read_text()
-          start=s.index('        void drawBubble(')
-          end=s.index('\n\n        void drawAttackFx', start)
-          fixed='''        void drawBubble(Canvas c,long now,boolean mad){
-              int w=getWidth();
-              float left=w*0.08f;
-              float right=w*0.92f;
-              float top=getHeight()*0.06f;
-              p.setColor(mad?0xff3a1418:0xfffff6ea);
-              RectF bubbleBox=new RectF(left,top,right,top+92);
-              c.drawRoundRect(bubbleBox,18,18,p);
-              if(mad){
-                  p.setStyle(Paint.Style.STROKE);
-                  p.setStrokeWidth(2);
-                  p.setColor(0xffc45c6a);
-                  c.drawRoundRect(bubbleBox,18,18,p);
-                  p.setStyle(Paint.Style.FILL);
-              }
-              drawWrapped(c,bubbleText,left+16,top+28,right-left-32,15,mad?0xffffd6dc:0xff3a2428);
-          }'''
-          p.write_text(s[:start]+fixed+s[end:])
-          PY
-      - name: Build debug APK and capture diagnostics
-        id: build
-        continue-on-error: true
-        run: |
-          set +e
-          gradle :app:assembleDebug --stacktrace > build.log 2>&1
-          code=$?
-          grep -n -E 'error:|FAILURE:|What went wrong|MainActivity.java' build.log > build-errors.txt || true
-          tail -n 250 build.log >> build-errors.txt
-          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
-          exit 0
-      - name: Upload build diagnostics
-        if: steps.build.outputs.exit_code != '0'
-        uses: actions/upload-artifact@v4
-        with:
-          name: XTower-Build-Diagnostics
-          path: build-errors.txt
-      - name: Fail when build failed
-        if: steps.build.outputs.exit_code != '0'
-        run: exit 1
-      - name: Rename APK
-        if: steps.build.outputs.exit_code == '0'
-        run: cp app/build/outputs/apk/debug/app-debug.apk XTower.apk
+          cat > settings.gradle <<'EOF'
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+          dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
+          rootProject.name='XTower'
+          include ':app'
+          EOF
+          mkdir -p app/src/main/java/com/xtower/game
+          cat > build.gradle <<'EOF'
+          plugins { id 'com.android.application' version '8.2.2' apply false }
+          EOF
+          cat > app/build.gradle <<'EOF'
+          plugins { id 'com.android.application' }
+          android { namespace 'com.xtower.game'; compileSdk 35
+            defaultConfig { applicationId 'com.xtower.game'; minSdk 26; targetSdk 35; versionCode 1; versionName '0.1.0' }
+          }
+          EOF
+          cat > app/src/main/AndroidManifest.xml <<'EOF'
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android"><application android:theme="@android:style/Theme.Material.NoActionBar" android:label="X탑"><activity android:name=".MainActivity" android:screenOrientation="portrait" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity></application></manifest>
+          EOF
+          cat > app/src/main/java/com/xtower/game/MainActivity.java <<'EOF'
+          package com.xtower.game;
+          import android.app.*;import android.os.*;import android.graphics.*;import android.view.*;
+          public class MainActivity extends Activity{
+            public void onCreate(Bundle b){super.onCreate(b);setContentView(new V());}
+            class V extends View{Paint p=new Paint(1);V(){super(MainActivity.this);p.setTextSize(48);}
+              protected void onDraw(Canvas c){c.drawColor(Color.rgb(15,15,18));p.setColor(Color.WHITE);c.drawText("X탑 빌드 파이프라인 성공",40,100,p);p.setTextSize(32);c.drawText("다음: 전체 엔진 + 빠칭코 연결",40,160,p);}}
+          }
+          EOF
+      - run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
-        if: steps.build.outputs.exit_code == '0'
         with:
-          name: XTower-APK
-          path: XTower.apk
-          if-no-files-found: error
+          name: xtower-apk
+          path: app/build/outputs/apk/debug/app-debug.apk
