@@ -1,4 +1,4 @@
-name: Build XTower Main UI v104
+name: Build XTower Main UI v105
 on:
   push:
     branches: [ main-ui-v103 ]
@@ -11,33 +11,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
+        with: { distribution: temurin, java-version: '17' }
       - uses: android-actions/setup-android@v3
       - run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
       - uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.2.1'
-      - name: Create XTower v104 premium main page
+        with: { gradle-version: '8.2.1' }
+      - name: Create XTower v105
         shell: bash
         run: |
           cat > settings.gradle <<'EOF'
           pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement { repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS); repositories { google(); mavenCentral() } }
-          rootProject.name='XTower'
-          include ':app'
+          rootProject.name='XTower'; include ':app'
           EOF
           mkdir -p app/src/main/java/com/xtower/game app/src/main/assets
           base64 -d assets/f1_base.b64 > app/src/main/assets/f1_base.webp
-          test -s app/src/main/assets/f1_base.webp
           cat > build.gradle <<'EOF'
           plugins { id 'com.android.application' version '8.2.2' apply false }
           EOF
           cat > app/build.gradle <<'EOF'
           plugins { id 'com.android.application' }
           android { namespace 'com.xtower.game'; compileSdk 35
-            defaultConfig { applicationId 'com.xtower.game'; minSdk 26; targetSdk 35; versionCode 104; versionName '9.31-premium-main-ui' }
+            defaultConfig { applicationId 'com.xtower.game'; minSdk 26; targetSdk 35; versionCode 105; versionName '9.32' }
           }
           EOF
           cat > app/src/main/AndroidManifest.xml <<'EOF'
@@ -45,45 +40,20 @@ jobs:
           EOF
           cat > app/src/main/java/com/xtower/game/MainActivity.java <<'EOF'
           package com.xtower.game;
-          import android.app.*;import android.os.*;import android.graphics.*;import android.view.*;import android.content.*;import java.io.*;
-          public class MainActivity extends Activity{
-            public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(Color.rgb(13,10,14));getWindow().setNavigationBarColor(Color.BLACK);setContentView(new GameView(this));}
-          }
+          import android.app.*;import android.os.*;import android.graphics.*;import android.view.*;import android.content.*;
+          public class MainActivity extends Activity{public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(Color.rgb(13,10,14));setContentView(new GameView(this));}}
           class GameView extends View{
-            Paint p=new Paint(3),stroke=new Paint(3); Bitmap hero; RectF[] btn=new RectF[8]; int mode=0; long flashUntil=0; int safeTop=0,safeBottom=0;
-            String[] names={"공격","다시","아래","위","배낭","대장간","감옥","도감"};
-            GameView(Context c){super(c);stroke.setStyle(Paint.Style.STROKE);stroke.setStrokeWidth(2.6f);for(int i=0;i<8;i++)btn[i]=new RectF();try{hero=BitmapFactory.decodeStream(c.getAssets().open("f1_base.webp"));}catch(Exception e){}setOnApplyWindowInsetsListener((v,in)->{if(Build.VERSION.SDK_INT>=30){android.graphics.Insets st=in.getInsets(WindowInsets.Type.statusBars());android.graphics.Insets nb=in.getInsets(WindowInsets.Type.navigationBars());safeTop=st.top;safeBottom=nb.bottom;}else{safeTop=in.getSystemWindowInsetTop();safeBottom=in.getSystemWindowInsetBottom();}invalidate();return in;});}
-            void txt(Canvas c,String s,float x,float y,float size,int color,boolean bold){p.setStyle(Paint.Style.FILL);p.setColor(color);p.setTextSize(size);p.setTypeface(Typeface.create("sans",bold?Typeface.BOLD:Typeface.NORMAL));c.drawText(s,x,y,p);}
-            void centerTxt(Canvas c,String s,float x,float y,float size,int color){p.setTextAlign(Paint.Align.CENTER);txt(c,s,x,y,size,color,true);p.setTextAlign(Paint.Align.LEFT);}
-            void round(Canvas c,RectF r,int color,float rad){p.setColor(color);p.setStyle(Paint.Style.FILL);c.drawRoundRect(r,rad,rad,p);}
-            void line(Canvas c,float x1,float y1,float x2,float y2,int color,float sw){p.setColor(color);p.setStrokeWidth(sw);c.drawLine(x1,y1,x2,y2,p);}
-            void button(Canvas c,RectF r,String s,boolean hot){
-              p.setShadowLayer(16,0,6,Color.argb(110,0,0,0));setLayerType(LAYER_TYPE_SOFTWARE,p);round(c,r,hot?Color.rgb(111,37,60):Color.rgb(34,25,31),24);p.clearShadowLayer();
-              stroke.setColor(hot?Color.rgb(242,136,167):Color.rgb(109,76,89));stroke.setStrokeWidth(hot?3.2f:2.2f);c.drawRoundRect(r,24,24,stroke);
-              if(hot){RectF glow=new RectF(r.left+5,r.top+5,r.right-5,r.bottom-5);stroke.setColor(Color.argb(90,255,184,204));stroke.setStrokeWidth(1.4f);c.drawRoundRect(glow,20,20,stroke);}
-              centerTxt(c,s,r.centerX(),r.centerY()+11,29,Color.rgb(250,235,240));
-            }
-            void cover(Canvas c,RectF dst){if(hero==null){p.setColor(Color.rgb(37,38,44));c.drawRect(dst,p);txt(c,"IMAGE LOAD ERROR",24,dst.top+44,24,Color.RED,true);return;}float sr=(float)hero.getWidth()/hero.getHeight(),dr=dst.width()/dst.height();Rect src;if(sr>dr){int sw=(int)(hero.getHeight()*dr);int l=(hero.getWidth()-sw)/2;src=new Rect(l,0,l+sw,hero.getHeight());}else{int sh=(int)(hero.getWidth()/dr);int t=(hero.getHeight()-sh)/2;src=new Rect(0,t,hero.getWidth(),t+sh);}c.drawBitmap(hero,src,dst,p);}
-            protected void onDraw(Canvas c){super.onDraw(c);float w=getWidth(),h=getHeight();c.drawColor(Color.rgb(15,12,16));if(mode==1){cover(c,new RectF(0,0,w,h));if(System.currentTimeMillis()<flashUntil){p.setColor(Color.argb(90,255,255,255));c.drawRect(0,0,w,h,p);postInvalidateOnAnimation();}return;}
-              float sy=safeTop+18;
-              RectF infoCard=new RectF(12,sy,w-12,sy+242);round(c,infoCard,Color.rgb(22,15,21),22);stroke.setColor(Color.rgb(90,54,70));stroke.setStrokeWidth(2);c.drawRoundRect(infoCard,22,22,stroke);
-              txt(c,"아이린",26,sy+48,43,Color.rgb(248,207,223),true);txt(c,"희미한 탑",27,sy+84,22,Color.rgb(194,155,171),false);
-              txt(c,"체력",27,sy+124,19,Color.rgb(214,182,195),true);txt(c,"100%",w-88,sy+124,19,Color.rgb(246,201,219),true);
-              RectF hpbg=new RectF(26,sy+140,w-26,sy+162);round(c,hpbg,Color.rgb(65,36,48),12);RectF hp=new RectF(26,sy+140,w-26,sy+162);round(c,hp,Color.rgb(237,148,181),12);
-              txt(c,"1-1",27,sy+204,27,Color.WHITE,true);txt(c,"체력 6286 / 6286",92,sy+204,23,Color.rgb(226,198,209),true);txt(c,"힘 1553",300,sy+204,23,Color.rgb(226,198,209),true);txt(c,"방어 775",430,sy+204,23,Color.rgb(226,198,209),true);
-              float imgTop=sy+258;float controlsH=238+safeBottom;RectF img=new RectF(0,imgTop,w,h-controlsH);cover(c,img);
-              p.setShader(new LinearGradient(0,img.bottom-120,0,img.bottom,Color.TRANSPARENT,Color.argb(190,15,10,15),Shader.TileMode.CLAMP));c.drawRect(img.left,img.bottom-120,img.right,img.bottom,p);p.setShader(null);
-              float y=h-controlsH+14,g=12,margin=14,bw=(w-margin*2-g*3)/4f,bh=84;for(int r=0;r<2;r++)for(int col=0;col<4;col++){int i=r*4+col;float x=margin+col*(bw+g),yy=y+r*(bh+12);btn[i].set(x,yy,x+bw,yy+bh);button(c,btn[i],names[i],i==0);}txt(c,"1-1   배율 x1.0   체력 40   힘 8   방 2",20,h-safeBottom-18,20,Color.rgb(186,145,161),true);
-            }
-            public boolean onTouchEvent(MotionEvent e){if(e.getAction()!=MotionEvent.ACTION_UP)return true;float x=e.getX(),y=e.getY();if(mode==1){flashUntil=System.currentTimeMillis()+130;invalidate();return true;}for(int i=0;i<8;i++)if(btn[i].contains(x,y)){if(i==0){mode=1;invalidate();}return true;}return true;}
+            Paint p=new Paint(3),s=new Paint(3);Bitmap hero;RectF[] b=new RectF[8];String[] n={"공격","다시","아래","위","배낭","대장간","감옥","도감"};int mode=0;
+            GameView(Context c){super(c);s.setStyle(Paint.Style.STROKE);for(int i=0;i<8;i++)b[i]=new RectF();try{hero=BitmapFactory.decodeStream(c.getAssets().open("f1_base.webp"));}catch(Exception e){}}
+            void t(Canvas c,String x,float a,float y,float z,int col){p.setColor(col);p.setTextSize(z);p.setTypeface(Typeface.create("sans",Typeface.BOLD));c.drawText(x,a,y,p);}void box(Canvas c,RectF r,int col,float rad){p.setColor(col);c.drawRoundRect(r,rad,rad,p);}
+            void bt(Canvas c,RectF r,String x,boolean hot){p.setShadowLayer(15,0,5,Color.BLACK);setLayerType(LAYER_TYPE_SOFTWARE,p);box(c,r,hot?Color.rgb(118,35,61):Color.rgb(35,25,31),24);p.clearShadowLayer();s.setColor(hot?Color.rgb(246,137,170):Color.rgb(111,76,91));s.setStrokeWidth(hot?3.5f:2.4f);c.drawRoundRect(r,24,24,s);p.setTextAlign(Paint.Align.CENTER);t(c,x,r.centerX(),r.centerY()+11,29,Color.WHITE);p.setTextAlign(Paint.Align.LEFT);}
+            void pic(Canvas c,RectF d){if(hero==null){p.setColor(Color.DKGRAY);c.drawRect(d,p);return;}float sr=(float)hero.getWidth()/hero.getHeight(),dr=d.width()/d.height();Rect q;if(sr>dr){int w=(int)(hero.getHeight()*dr),l=(hero.getWidth()-w)/2;q=new Rect(l,0,l+w,hero.getHeight());}else{int h=(int)(hero.getWidth()/dr),u=(hero.getHeight()-h)/2;q=new Rect(0,u,hero.getWidth(),u+h);}c.drawBitmap(hero,q,d,p);}
+            protected void onDraw(Canvas c){float w=getWidth(),h=getHeight();c.drawColor(Color.rgb(14,10,15));if(mode==1){pic(c,new RectF(0,0,w,h));return;}float y=28;RectF card=new RectF(12,y,w-12,y+244);box(c,card,Color.rgb(23,15,22),22);s.setColor(Color.rgb(94,55,73));s.setStrokeWidth(2);c.drawRoundRect(card,22,22,s);t(c,"아이린",27,y+51,44,Color.rgb(250,207,224));t(c,"희미한 탑",28,y+88,23,Color.rgb(199,158,175));t(c,"적 체력",28,y+129,21,Color.rgb(225,190,205));t(c,"100 / 100",w-155,y+129,21,Color.rgb(249,209,225));box(c,new RectF(28,y+145,w-28,y+170),Color.rgb(69,37,50),13);box(c,new RectF(28,y+145,w-28,y+170),Color.rgb(238,147,181),13);t(c,"1-1",28,y+215,29,Color.WHITE);t(c,"체력 100",104,y+215,25,Color.rgb(232,204,215));t(c,"공격 3",260,y+215,25,Color.rgb(232,204,215));t(c,"방어 1",390,y+215,25,Color.rgb(232,204,215));RectF im=new RectF(0,y+260,w,h-264);pic(c,im);float yy=h-250,g=11,m=14,bw=(w-m*2-g*3)/4f,bh=91;for(int r=0;r<2;r++)for(int j=0;j<4;j++){int i=r*4+j;float x=m+j*(bw+g),cy=yy+r*(bh+11);b[i].set(x,cy,x+bw,cy+bh);bt(c,b[i],n[i],i==0);}t(c,"1-1 장비 기본 총합 1",20,h-27,21,Color.rgb(202,158,177));}
+            public boolean onTouchEvent(MotionEvent e){if(e.getAction()!=1)return true;float x=e.getX(),y=e.getY();if(mode==1)return true;for(int i=0;i<8;i++)if(b[i].contains(x,y)){if(i==0){mode=1;invalidate();}return true;}return true;}
           }
           EOF
-      - name: Verify packaged image
-        run: |
-          file app/src/main/assets/f1_base.webp
-          test "$(stat -c%s app/src/main/assets/f1_base.webp)" -gt 10000
+      - name: Verify image
+        run: test "$(stat -c%s app/src/main/assets/f1_base.webp)" -gt 10000
       - run: gradle :app:assembleDebug --stacktrace
       - uses: actions/upload-artifact@v4
-        with:
-          name: XTower-v104-premium-main-ui-apk
-          path: app/build/outputs/apk/debug/app-debug.apk
+        with: { name: XTower-v932-apk, path: app/build/outputs/apk/debug/app-debug.apk }
