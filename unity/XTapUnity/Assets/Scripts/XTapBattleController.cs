@@ -2,495 +2,601 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public sealed class XTapBattleController : MonoBehaviour
 {
-    enum Page { Battle, Bag, Smith, Prison }
-    enum BattleState { Ready, Busy, Victory, Defeat }
+    const int TestFloor = 1;
+    const int EnemyMaxHp = 60;
 
-    const int MaxFloor=10;
-    const int PlayerMaxHp=100;
-    const int PlayerAtk=5;
-    const int PlayerDef=1;
-
-    int floor=1, playerHp=100, enemyHp=100, enemyMaxHp=100;
-    int enemyAtk=3, enemyDef=1;
-    int prisonCount=0;
-    int selectedAttack=0;
-    int frameIndex=0;
-    BattleState state=BattleState.Ready;
-    Page page=Page.Battle;
-
-    readonly List<string> inventory=new List<string>();
-    readonly List<int> capturedFloors=new List<int>();
-    readonly string[] attackPrefixes={"p","k","b"};
-    readonly string[] attackNames={"주먹","차기","몸통"};
-    readonly int[] rouletteValues={-50,-40,-30,-20,-10,0,10,20,30,40,50};
+    XTapOriginalApkAssets assets;
+    AudioSource audioSource;
 
     Canvas canvas;
     RectTransform root;
-    Image battleImage, enemyHpFill, playerHpFill, flash;
-    Text title, enemyText, playerText, status, subText;
-    Button[] attackButtons=new Button[3];
-    Button evadeButton, captureButton, floorDownButton, floorUpButton;
-    AudioSource audioSource;
-    XTapOriginalApkAssets assets;
+    Image battleImage;
+    AspectRatioFitter battleFitter;
+    Image bubblePanel;
+    Text bubbleText;
+    CanvasGroup bubbleGroup;
+    Image weakPoint;
+
+    Font koreanFont;
+    Sprite ringSprite;
+
+    int enemyHp = EnemyMaxHp;
+    int hitCount;
+    int fightCount;
+    bool busy;
+    bool won;
+
+    Vector2 pointerStart;
+    float pointerStartTime;
+    bool pointerTracking;
+
+    bool weakActive;
+    float weakUntil;
+    Vector2 weakNorm;
+    Vector2 weakVelocity;
+
+    readonly string[][] zoneTalk =
+    {
+        new []{"머리… 만지지 마.","흩트리지 마.","전투 중이잖아."},
+        new []{"얼굴을 노리는 거야?","가까이 오지 마.","…시선이 거슬려."},
+        new []{"윽… 거긴.","정면으로 오는군.","숨이 막혀."},
+        new []{"거긴 안 돼!","손 치워!","잠깐…!"},
+        new []{"다리를 노리는군.","균형이…","무릎이 풀려."},
+        new []{"발끝까지 노려?","거긴 빗나갔어.","아래를 보는군."},
+        new []{"허공이야.","나는 이쪽이야.","빗나갔어."}
+    };
+
+    readonly string[] dodgeTalk = {"느려.","피했어.","거긴 아니야.","다 보여."};
+    readonly string[] criticalTalk = {"윽… 거긴!","잠깐…!","그걸 찾았어?","균형이… 깨졌어."};
 
     IEnumerator Start()
     {
-        Application.targetFrameRate=60;
-        Screen.orientation=ScreenOrientation.Portrait;
+        Application.targetFrameRate = 60;
+        Screen.orientation = ScreenOrientation.Portrait;
+        Screen.fullScreen = true;
 
-        var assetGo=new GameObject("OriginalApkAssets");
-        assets=assetGo.AddComponent<XTapOriginalApkAssets>();
+        koreanFont = CreateKoreanFont();
+        ringSprite = CreateRingSprite(128, 9);
+
+        BuildBattleOnlyUi();
+
+        var assetGo = new GameObject("OriginalApkAssets");
+        assets = assetGo.AddComponent<XTapOriginalApkAssets>();
         yield return assets.Load();
 
-        audioSource=gameObject.AddComponent<AudioSource>();
-        BuildUi();
+        audioSource = gameObject.AddComponent<AudioSource>();
 
         if (!assets.Ready)
         {
-            ShowMissingSource();
+            ShowBubble("전투 이미지 데이터를 불러오지 못했습니다.", 10f);
             yield break;
         }
 
-        Restore();
-        SetupFloor(floor);
-        ShowBattle();
+        yield return PreloadCurrentImages();
+        ResetFight();
     }
 
-    void ShowMissingSource()
+    void Update()
     {
-        ClearRoot();
-        MakePanel(root,new Color(0.025f,0.025f,0.035f,1));
-        var t=MakeText(root,"원본 X탑 데이터가 없습니다.\n\nGitHub의\nunity/XTapUnity/Assets/StreamingAssets/xtop_source.apk\n위치에 X탑_v1024.apk를 올려야 합니다.",34,TextAnchor.MiddleCenter,true);
-        Anchor(t.rectTransform,.08f,.25f,.92f,.75f);
-    }
+        if (assets == null || !assets.Ready) return;
 
-    void BuildUi()
-    {
-        if (FindObjectOfType<EventSystem>()==null)
+        UpdateWeakPoint();
+
+        if (busy) return;
+
+        if (Input.touchCount > 0)
         {
-            var es=new GameObject("EventSystem",typeof(EventSystem),typeof(StandaloneInputModule));
-            DontDestroyOnLoad(es);
+            Touch t = Input.GetTouch(0);
+            if (t.phase == TouchPhase.Began)
+            {
+                pointerStart = t.position;
+                pointerStartTime = Time.unscaledTime;
+                pointerTracking = true;
+            }
+            else if (pointerTracking && (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled))
+            {
+                pointerTracking = false;
+                ProcessGesture(pointerStart, t.position, Time.unscaledTime - pointerStartTime);
+            }
+            return;
         }
 
-        var go=new GameObject("Canvas",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster));
-        go.transform.SetParent(transform,false);
-        canvas=go.GetComponent<Canvas>();
-        canvas.renderMode=RenderMode.ScreenSpaceOverlay;
-        var sc=go.GetComponent<CanvasScaler>();
-        sc.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        sc.referenceResolution=new Vector2(1080,1920);
-        sc.matchWidthOrHeight=.5f;
-
-        root=new GameObject("Root",typeof(RectTransform)).GetComponent<RectTransform>();
-        root.SetParent(canvas.transform,false);
-        Anchor(root,0,0,1,1);
+#if UNITY_EDITOR
+        if (Input.GetMouseButtonDown(0))
+        {
+            pointerStart = Input.mousePosition;
+            pointerStartTime = Time.unscaledTime;
+            pointerTracking = true;
+        }
+        else if (pointerTracking && Input.GetMouseButtonUp(0))
+        {
+            pointerTracking = false;
+            ProcessGesture(pointerStart, Input.mousePosition, Time.unscaledTime - pointerStartTime);
+        }
+#endif
     }
 
-    void ShowBattle()
+    void BuildBattleOnlyUi()
     {
-        page=Page.Battle;
-        ClearRoot();
-        MakePanel(root,new Color(.015f,.017f,.025f,1));
+        var canvasGo = new GameObject("BattleCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
+        canvasGo.transform.SetParent(transform, false);
+        canvas = canvasGo.GetComponent<Canvas>();
+        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
 
-        title=MakeText(root,"X탑",46,TextAnchor.MiddleLeft,true);
-        Anchor(title.rectTransform,.045f,.935f,.45f,.99f);
-        subText=MakeText(root,"",25,TextAnchor.MiddleRight,true);
-        Anchor(subText.rectTransform,.50f,.94f,.955f,.985f);
+        var scaler = canvasGo.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080, 1920);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = .5f;
 
-        enemyText=MakeText(root,"",27,TextAnchor.MiddleLeft,true);
-        Anchor(enemyText.rectTransform,.045f,.885f,.955f,.925f);
-        enemyHpFill=MakeBar(root,.045f,.858f,.955f,.884f,new Color(.95f,.08f,.22f,1));
+        root = new GameObject("FullScreen", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D))
+            .GetComponent<RectTransform>();
+        root.SetParent(canvas.transform, false);
+        Anchor(root, 0, 0, 1, 1);
+        root.GetComponent<Image>().color = Color.black;
 
-        battleImage=MakeImage(root,Color.black);
-        battleImage.preserveAspect=true;
-        Anchor(battleImage.rectTransform,.035f,.245f,.965f,.845f);
+        battleImage = new GameObject("Character", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(AspectRatioFitter))
+            .GetComponent<Image>();
+        battleImage.transform.SetParent(root, false);
+        battleImage.color = Color.white;
+        battleImage.raycastTarget = false;
+        battleImage.preserveAspect = false;
+        battleFitter = battleImage.GetComponent<AspectRatioFitter>();
+        battleFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
+        Anchor(battleImage.rectTransform, 0, 0, 1, 1);
 
-        flash=MakeImage(root,new Color(1,1,1,0));
-        flash.raycastTarget=false;
-        Anchor(flash.rectTransform,.035f,.245f,.965f,.845f);
+        weakPoint = new GameObject("WeakPoint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        weakPoint.transform.SetParent(root, false);
+        weakPoint.sprite = ringSprite;
+        weakPoint.color = new Color(1f, .78f, .16f, .95f);
+        weakPoint.raycastTarget = false;
+        weakPoint.gameObject.SetActive(false);
+        SetSize(weakPoint.rectTransform, 94, 94);
 
-        status=MakeText(root,"",34,TextAnchor.MiddleCenter,true);
-        Anchor(status.rectTransform,.05f,.205f,.95f,.245f);
+        bubblePanel = new GameObject("SpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup)).GetComponent<Image>();
+        bubblePanel.transform.SetParent(root, false);
+        bubblePanel.color = new Color(1f, .97f, .92f, .96f);
+        bubblePanel.raycastTarget = false;
+        Anchor(bubblePanel.rectTransform, .07f, .805f, .93f, .935f);
 
-        playerText=MakeText(root,"",26,TextAnchor.MiddleLeft,true);
-        Anchor(playerText.rectTransform,.045f,.165f,.955f,.202f);
-        playerHpFill=MakeBar(root,.045f,.139f,.955f,.165f,new Color(.10f,.80f,.50f,1));
+        bubbleGroup = bubblePanel.GetComponent<CanvasGroup>();
+        bubbleGroup.alpha = 0;
 
-        for(int i=0;i<3;i++)
+        bubbleText = MakeText(bubblePanel.transform, "", 44, TextAnchor.MiddleCenter, true);
+        bubbleText.color = new Color(.12f, .08f, .09f, 1);
+        Anchor(bubbleText.rectTransform, .055f, .10f, .945f, .90f);
+    }
+
+    IEnumerator PreloadCurrentImages()
+    {
+        string[] prefixes = {"p","k","b","d"};
+        int c = 0;
+        foreach (string prefix in prefixes)
         {
-            int idx=i;
-            attackButtons[i]=MakeButton(root,attackNames[i],new Color(.46f,.04f,.12f,1));
-            Anchor(attackButtons[i].GetComponent<RectTransform>(),.04f+i*.205f,.07f,.23f+i*.205f,.125f);
-            attackButtons[i].onClick.AddListener(()=>Attack(idx));
+            for (int i = 0; i < 10; i++)
+            {
+                assets.GetSprite("assets/f" + TestFloor + "_" + prefix + i.ToString("00") + ".jpg");
+                if (++c % 5 == 0) yield return null;
+            }
+        }
+        assets.GetSprite("assets/f" + TestFloor + "_cap.jpg");
+    }
+
+    void ResetFight()
+    {
+        enemyHp = EnemyMaxHp;
+        hitCount = 0;
+        won = false;
+        busy = false;
+        weakActive = false;
+        weakPoint.gameObject.SetActive(false);
+        HideBubble();
+        SetStageOrFallback(0);
+    }
+
+    void ProcessGesture(Vector2 start, Vector2 end, float duration)
+    {
+        if (won)
+        {
+            ResetFight();
+            return;
         }
 
-        evadeButton=MakeButton(root,"회피",new Color(.06f,.25f,.55f,1));
-        Anchor(evadeButton.GetComponent<RectTransform>(),.665f,.07f,.79f,.125f);
-        evadeButton.onClick.AddListener(Evade);
+        Vector2 delta = end - start;
+        float swipeThreshold = Mathf.Max(85f, Screen.width * .085f);
+        bool swipe = delta.magnitude >= swipeThreshold && duration <= .65f;
+        Vector2 impact = swipe ? Vector2.Lerp(start, end, .55f) : end;
 
-        captureButton=MakeButton(root,"포획",new Color(.35f,.10f,.58f,1));
-        Anchor(captureButton.GetComponent<RectTransform>(),.80f,.07f,.955f,.125f);
-        captureButton.onClick.AddListener(TryCapture);
-
-        floorDownButton=MakeButton(root,"◀",new Color(.12f,.12f,.16f,1));
-        Anchor(floorDownButton.GetComponent<RectTransform>(),.04f,.012f,.15f,.055f);
-        floorDownButton.onClick.AddListener(()=>ChangeFloor(-1));
-
-        var bag=MakeButton(root,"가방",new Color(.12f,.12f,.16f,1));
-        Anchor(bag.GetComponent<RectTransform>(),.17f,.012f,.34f,.055f);
-        bag.onClick.AddListener(ShowBag);
-
-        var smith=MakeButton(root,"대장간",new Color(.12f,.12f,.16f,1));
-        Anchor(smith.GetComponent<RectTransform>(),.36f,.012f,.57f,.055f);
-        smith.onClick.AddListener(ShowSmith);
-
-        var prison=MakeButton(root,"감옥",new Color(.12f,.12f,.16f,1));
-        Anchor(prison.GetComponent<RectTransform>(),.59f,.012f,.77f,.055f);
-        prison.onClick.AddListener(ShowPrison);
-
-        floorUpButton=MakeButton(root,"▶",new Color(.12f,.12f,.16f,1));
-        Anchor(floorUpButton.GetComponent<RectTransform>(),.79f,.012f,.955f,.055f);
-        floorUpButton.onClick.AddListener(()=>ChangeFloor(1));
-
-        RefreshBattle();
-    }
-
-    void RefreshBattle()
-    {
-        if (page!=Page.Battle) return;
-        title.text="X탑  "+floor+"층";
-        subText.text="감옥 "+prisonCount;
-        enemyText.text=floor+"층 보스   HP "+enemyHp+" / "+enemyMaxHp+"   ATK "+enemyAtk+"   DEF "+enemyDef;
-        playerText.text="조훈   HP "+playerHp+" / "+PlayerMaxHp+"   ATK "+PlayerAtk+"   DEF "+PlayerDef;
-        enemyHpFill.fillAmount=enemyHp/(float)Math.Max(1,enemyMaxHp);
-        playerHpFill.fillAmount=playerHp/(float)PlayerMaxHp;
-        captureButton.gameObject.SetActive(state==BattleState.Victory);
-        floorDownButton.interactable=floor>1;
-        floorUpButton.interactable=floor<MaxFloor && state==BattleState.Victory;
-        SetBattleSprite(state==BattleState.Victory ? "cap" : attackPrefixes[selectedAttack], frameIndex);
-    }
-
-    void Attack(int kind)
-    {
-        if (state!=BattleState.Ready) return;
-        selectedAttack=kind;
-        StartCoroutine(AttackRoutine(kind));
-    }
-
-    IEnumerator AttackRoutine(int kind)
-    {
-        state=BattleState.Busy;
-        SetInteractable(false);
-        status.text=attackNames[kind]+"!";
-        for(int i=0;i<3;i++)
+        int zone = ZoneOf(impact);
+        if (zone == 6)
         {
-            frameIndex=UnityEngine.Random.Range(0,10);
-            SetBattleSprite(attackPrefixes[kind],frameIndex);
-            yield return new WaitForSeconds(.085f);
+            ShowBubble(RandomLine(zoneTalk[zone]), 1.0f);
+            StartCoroutine(TouchPulse(impact, false, false));
+            return;
         }
 
-        bool dodged=UnityEngine.Random.value<.20f;
+        StartCoroutine(ResolveAttack(impact, zone, swipe, delta));
+    }
+
+    IEnumerator ResolveAttack(Vector2 impact, int zone, bool swipe, Vector2 swipeDelta)
+    {
+        busy = true;
+
+        bool weakHit = weakActive && Vector2.Distance(
+            new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height), impact
+        ) <= Mathf.Max(58f, Screen.width * .06f);
+
+        bool dodged = !weakHit && UnityEngine.Random.value < .17f;
+
         if (dodged)
         {
-            status.text="보스 회피!";
-            frameIndex=UnityEngine.Random.Range(0,10);
-            SetBattleSprite("d",frameIndex);
+            HideWeakPoint();
+            SetActionSprite("d");
+            ShowBubble(RandomLine(dodgeTalk), 1.0f);
             Play("res/raw/dodge.wav");
-            yield return new WaitForSeconds(.30f);
+            yield return TouchPulse(impact, false, swipe);
+            yield return CharacterRecoil(impact, false, true);
+            yield return new WaitForSecondsRealtime(.10f);
+            SetStageOrFallback(Stage());
+            busy = false;
+            yield break;
+        }
+
+        string prefix = PrefixFor(zone, swipe, swipeDelta);
+        SetActionSprite(prefix);
+
+        int damage = weakHit ? 18 : (swipe ? 8 : 5);
+        enemyHp = Mathf.Max(0, enemyHp - damage);
+        hitCount++;
+
+        if (weakHit)
+        {
+            HideWeakPoint();
+            ShowBubble(RandomLine(criticalTalk), 1.25f);
+            Play("assets/hit.wav");
+            yield return TouchPulse(impact, true, swipe);
+            yield return CharacterRecoil(impact, true, false);
         }
         else
         {
-            int damage=Math.Max(1,PlayerAtk-enemyDef)+UnityEngine.Random.Range(3,8);
-            enemyHp=Math.Max(0,enemyHp-damage);
-            status.text=damage+" 데미지";
+            ShowBubble(RandomLine(zoneTalk[zone]), 1.05f);
             Play("assets/hit.wav");
-            yield return HitFx();
-
-            if (enemyHp<=0)
-            {
-                state=BattleState.Victory;
-                status.text="승리! 보상을 확인하십시오.";
-                SetBattleSprite("cap",0);
-                Play("assets/win.wav");
-                GiveRouletteReward();
-                Save();
-                RefreshBattle();
-                yield break;
-            }
+            yield return TouchPulse(impact, false, swipe);
+            yield return CharacterRecoil(impact, false, false);
         }
 
-        int taken=Math.Max(1,enemyAtk-PlayerDef);
-        playerHp=Math.Max(0,playerHp-taken);
-        if(playerHp<=0)
+        if (enemyHp <= 0)
         {
-            state=BattleState.Defeat;
-            status.text="패배";
-            Play("assets/hurt.wav");
-            yield return RedFx();
-            yield return new WaitForSeconds(.5f);
-            playerHp=PlayerMaxHp;
-            SetupFloor(floor);
+            won = true;
+            fightCount++;
+            HideWeakPoint();
+            var cap = assets.GetSprite("assets/f" + TestFloor + "_cap.jpg");
+            if (cap != null) SetSprite(cap);
+            ShowBubble("…끝났어.", 30f);
+            Play("assets/win.wav");
+            busy = false;
+            yield break;
         }
-        else state=BattleState.Ready;
 
-        SetInteractable(true);
-        Save();
-        RefreshBattle();
-    }
+        SetStageOrFallback(Stage());
 
-    void Evade()
-    {
-        if(state!=BattleState.Ready)return;
-        StartCoroutine(EvadeRoutine());
-    }
-
-    IEnumerator EvadeRoutine()
-    {
-        state=BattleState.Busy;
-        SetInteractable(false);
-        status.text="회피!";
-        for(int i=0;i<4;i++)
+        if (!weakActive && hitCount >= 4)
         {
-            frameIndex=UnityEngine.Random.Range(0,10);
-            SetBattleSprite("d",frameIndex);
-            yield return new WaitForSeconds(.08f);
+            hitCount = 0;
+            StartWeakPoint();
         }
-        Play("res/raw/dodge.wav");
-        status.text="회피 성공";
-        yield return new WaitForSeconds(.25f);
-        state=BattleState.Ready;
-        SetInteractable(true);
-        RefreshBattle();
+
+        busy = false;
     }
 
-    void TryCapture()
+    int ZoneOf(Vector2 screen)
     {
-        if(state!=BattleState.Victory)return;
-        if(!capturedFloors.Contains(floor))
+        float nx = screen.x / Mathf.Max(1f, Screen.width);
+        float nyTop = 1f - screen.y / Mathf.Max(1f, Screen.height);
+
+        if (nx < .16f || nx > .84f) return 6;
+        if (nyTop < .16f) return 0;
+        if (nyTop < .30f) return 1;
+        if (nyTop < .48f) return 2;
+        if (nyTop < .59f && nx > .37f && nx < .63f) return 3;
+        if (nyTop < .79f) return 4;
+        return 5;
+    }
+
+    string PrefixFor(int zone, bool swipe, Vector2 delta)
+    {
+        if (swipe)
         {
-            capturedFloors.Add(floor);
-            prisonCount=capturedFloors.Count;
-            status.text=floor+"층 보스 포획 완료";
-            inventory.Add(floor+"층 포획 증표");
-            Play("assets/sparkle.wav");
-            Save();
-            RefreshBattle();
+            if (Mathf.Abs(delta.y) > Mathf.Abs(delta.x)) return "b";
+            return delta.y > 0 ? "p" : "k";
         }
-        else status.text="이미 감옥에 있습니다.";
+
+        if (zone <= 1) return "p";
+        if (zone <= 3) return "b";
+        return "k";
     }
 
-    void GiveRouletteReward()
+    int Stage()
     {
-        int result=rouletteValues[UnityEngine.Random.Range(0,rouletteValues.Length)];
-        if(result==0)
+        float q = enemyHp / (float)EnemyMaxHp;
+        if (q <= 0f) return 4;
+        if (q <= .25f) return 3;
+        if (q <= .50f) return 2;
+        if (q <= .75f) return 1;
+        return 0;
+    }
+
+    void SetStageOrFallback(int stage)
+    {
+        Sprite s = TryStageSprite(stage);
+        if (s == null)
+            s = assets.GetSprite("assets/f" + TestFloor + "_p00.jpg");
+        if (s != null) SetSprite(s);
+    }
+
+    Sprite TryStageSprite(int stage)
+    {
+        string n = "s" + stage;
+        string[] candidates =
         {
-            status.text="룰렛: 포획 기회!";
+            "res/drawable/" + n + ".jpg",
+            "res/drawable/" + n + ".png",
+            "res/drawable-nodpi/" + n + ".jpg",
+            "res/drawable-nodpi/" + n + ".png",
+            "assets/" + n + ".jpg",
+            "assets/" + n + ".png"
+        };
+
+        for (int i = 0; i < candidates.Length; i++)
+        {
+            Sprite s = assets.GetSprite(candidates[i]);
+            if (s != null) return s;
+        }
+        return null;
+    }
+
+    void SetActionSprite(string prefix)
+    {
+        int i = UnityEngine.Random.Range(0, 10);
+        Sprite s = assets.GetSprite("assets/f" + TestFloor + "_" + prefix + i.ToString("00") + ".jpg");
+        if (s != null) SetSprite(s);
+    }
+
+    void SetSprite(Sprite s)
+    {
+        battleImage.sprite = s;
+        if (s.rect.height > 0)
+            battleFitter.aspectRatio = s.rect.width / s.rect.height;
+    }
+
+    void StartWeakPoint()
+    {
+        weakActive = true;
+        weakUntil = Time.unscaledTime + 1.05f;
+        weakNorm = new Vector2(UnityEngine.Random.Range(.34f, .66f), UnityEngine.Random.Range(.34f, .68f));
+        weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
+        weakPoint.gameObject.SetActive(true);
+        PositionWeakPoint();
+    }
+
+    void UpdateWeakPoint()
+    {
+        if (!weakActive) return;
+
+        if (Time.unscaledTime >= weakUntil)
+        {
+            HideWeakPoint();
             return;
         }
-        string gear=(result>0?"+":"")+result+"% 장비";
-        inventory.Add(gear);
-        status.text="룰렛 "+gear+" 획득";
+
+        weakNorm += weakVelocity * Time.unscaledDeltaTime;
+
+        if (weakNorm.x < .25f || weakNorm.x > .75f)
+        {
+            weakVelocity.x *= -1f;
+            weakNorm.x = Mathf.Clamp(weakNorm.x, .25f, .75f);
+        }
+        if (weakNorm.y < .27f || weakNorm.y > .73f)
+        {
+            weakVelocity.y *= -1f;
+            weakNorm.y = Mathf.Clamp(weakNorm.y, .27f, .73f);
+        }
+
+        float pulse = 1f + Mathf.Sin(Time.unscaledTime * 16f) * .13f;
+        weakPoint.rectTransform.localScale = Vector3.one * pulse;
+        PositionWeakPoint();
     }
 
-    void ShowBag()
+    void PositionWeakPoint()
     {
-        page=Page.Bag;
-        BuildSimplePage("가방","보유 장비 "+inventory.Count+"개",()=>{
-            float top=.78f;
-            int max=Math.Min(12,inventory.Count);
-            for(int i=0;i<max;i++)
-            {
-                var p=MakePanel(root,new Color(.08f,.085f,.11f,1));
-                float row=i/3, col=i%3;
-                Anchor(p.rectTransform,.055f+col*.305f,top-row*.12f,.335f+col*.305f,top+.09f-row*.12f);
-                var t=MakeText(p.transform,inventory[i],22,TextAnchor.MiddleCenter,true);
-                Anchor(t.rectTransform,.05f,.05f,.95f,.95f);
-            }
-            if(inventory.Count==0)
-            {
-                var t=MakeText(root,"아직 장비가 없습니다.\n전투 승리 후 룰렛에서 획득합니다.",30,TextAnchor.MiddleCenter,false);
-                Anchor(t.rectTransform,.1f,.35f,.9f,.65f);
-            }
-        });
+        Vector2 screen = new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height);
+        Vector2 local;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screen, null, out local);
+        weakPoint.rectTransform.anchoredPosition = local;
     }
 
-    void ShowSmith()
+    void HideWeakPoint()
     {
-        page=Page.Smith;
-        BuildSimplePage("대장간","슬롯 강화",()=>{
-            var card=MakePanel(root,new Color(.07f,.075f,.10f,1));
-            Anchor(card.rectTransform,.08f,.38f,.92f,.75f);
-            var t=MakeText(card.transform,"장비를 투입하면\n슬롯 결과에 따라 보정치가 변합니다.",31,TextAnchor.MiddleCenter,true);
-            Anchor(t.rectTransform,.08f,.50f,.92f,.92f);
-            var b=MakeButton(card.transform,"슬롯 돌리기",new Color(.45f,.16f,.05f,1));
-            Anchor(b.GetComponent<RectTransform>(),.18f,.10f,.82f,.35f);
-            b.onClick.AddListener(()=>{
-                int v=rouletteValues[UnityEngine.Random.Range(0,rouletteValues.Length)];
-                if(v==0)v=10;
-                t.text="대장간 결과\n"+(v>0?"+":"")+v+"%";
-                Play("res/raw/tick.wav");
-            });
-        });
+        weakActive = false;
+        if (weakPoint != null) weakPoint.gameObject.SetActive(false);
     }
 
-    void ShowPrison()
+    IEnumerator TouchPulse(Vector2 screenPos, bool heavy, bool swipe)
     {
-        page=Page.Prison;
-        BuildSimplePage("감옥","포획 "+capturedFloors.Count+"명",()=>{
-            if(capturedFloors.Count==0)
-            {
-                var t=MakeText(root,"포획된 보스가 없습니다.",31,TextAnchor.MiddleCenter,false);
-                Anchor(t.rectTransform,.1f,.40f,.9f,.65f);
-                return;
-            }
+        var go = new GameObject("TouchFx", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        var img = go.GetComponent<Image>();
+        go.transform.SetParent(root, false);
+        img.sprite = ringSprite;
+        img.raycastTarget = false;
+        img.color = heavy ? new Color(1f, .65f, .12f, .98f) : new Color(1f, .93f, .78f, .9f);
 
-            int f=capturedFloors[capturedFloors.Count-1];
-            var img=MakeImage(root,Color.black);
-            img.preserveAspect=true;
-            Anchor(img.rectTransform,.10f,.25f,.90f,.78f);
-            var sp=assets.GetSprite("assets/f"+f+"_cap.jpg");
-            if(sp!=null)img.sprite=sp;
-            var t2=MakeText(root,f+"층 보스",32,TextAnchor.MiddleCenter,true);
-            Anchor(t2.rectTransform,.1f,.17f,.9f,.23f);
-        });
+        RectTransform r = img.rectTransform;
+        SetSize(r, heavy ? 125 : 92, heavy ? 125 : 92);
+
+        Vector2 local;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screenPos, null, out local);
+        r.anchoredPosition = local;
+
+        float total = heavy ? .26f : .20f;
+        float t = 0;
+        while (t < total)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / total);
+            float scale = Mathf.Lerp(.55f, heavy ? 2.4f : 1.85f, p);
+            r.localScale = new Vector3(scale, swipe ? .62f * scale : scale, 1f);
+            Color c = img.color;
+            c.a = 1f - p;
+            img.color = c;
+            yield return null;
+        }
+
+        Destroy(go);
     }
 
-    void BuildSimplePage(string heading,string small,Action body)
+    IEnumerator CharacterRecoil(Vector2 impact, bool heavy, bool dodge)
     {
-        ClearRoot();
-        MakePanel(root,new Color(.015f,.017f,.025f,1));
-        var h=MakeText(root,heading,48,TextAnchor.MiddleLeft,true);
-        Anchor(h.rectTransform,.055f,.91f,.60f,.98f);
-        var s=MakeText(root,small,26,TextAnchor.MiddleRight,false);
-        Anchor(s.rectTransform,.55f,.915f,.945f,.975f);
-        var back=MakeButton(root,"전투로",new Color(.18f,.18f,.23f,1));
-        Anchor(back.GetComponent<RectTransform>(),.055f,.035f,.30f,.095f);
-        back.onClick.AddListener(ShowBattle);
-        body();
+        RectTransform r = battleImage.rectTransform;
+        Vector2 basePos = r.anchoredPosition;
+        Vector3 baseScale = r.localScale;
+
+        Vector2 center = new Vector2(Screen.width * .5f, Screen.height * .5f);
+        Vector2 dir = (center - impact).normalized;
+        float power = dodge ? 24f : (heavy ? 34f : 17f);
+
+        float total = dodge ? .17f : .13f;
+        float t = 0;
+        while (t < total)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / total);
+            float wave = Mathf.Sin(p * Mathf.PI);
+            r.anchoredPosition = basePos + dir * power * wave;
+            float s = 1f + (heavy ? .022f : .010f) * wave;
+            r.localScale = baseScale * s;
+            yield return null;
+        }
+
+        r.anchoredPosition = basePos;
+        r.localScale = baseScale;
     }
 
-    void ChangeFloor(int d)
+    void ShowBubble(string text, float seconds)
     {
-        int nf=floor+d;
-        if(nf<1||nf>MaxFloor)return;
-        if(d>0 && state!=BattleState.Victory)return;
-        floor=nf;
-        playerHp=PlayerMaxHp;
-        SetupFloor(floor);
-        Save();
-        RefreshBattle();
+        StopCoroutine("HideBubbleLater");
+        bubbleText.text = text;
+        bubbleGroup.alpha = 1;
+        if (seconds < 20f) StartCoroutine(HideBubbleLater(seconds));
     }
 
-    void SetupFloor(int f)
+    IEnumerator HideBubbleLater(float seconds)
     {
-        float mul=Mathf.Pow(1.35f,f-1);
-        enemyMaxHp=Mathf.RoundToInt(100*mul);
-        enemyHp=enemyMaxHp;
-        enemyAtk=Mathf.Max(3,Mathf.RoundToInt(3*mul));
-        enemyDef=Mathf.Max(1,Mathf.RoundToInt(1*mul));
-        state=BattleState.Ready;
-        frameIndex=0;
-        selectedAttack=0;
-        statusTextSafe("전투 준비");
+        yield return new WaitForSecondsRealtime(seconds);
+        HideBubble();
     }
 
-    void SetBattleSprite(string prefix,int index)
+    void HideBubble()
     {
-        if(battleImage==null || assets==null || !assets.Ready)return;
-        string entry;
-        if(prefix=="cap") entry="assets/f"+floor+"_cap.jpg";
-        else entry="assets/f"+floor+"_"+prefix+index.ToString("00")+".jpg";
-        var sp=assets.GetSprite(entry);
-        if(sp!=null){battleImage.sprite=sp;battleImage.color=Color.white;}
-    }
-
-    IEnumerator HitFx()
-    {
-        flash.color=new Color(1,.85f,.55f,.65f);
-        yield return new WaitForSeconds(.06f);
-        flash.color=new Color(1,1,1,0);
-    }
-
-    IEnumerator RedFx()
-    {
-        flash.color=new Color(1,.02f,.05f,.55f);
-        yield return new WaitForSeconds(.10f);
-        flash.color=new Color(1,1,1,0);
-    }
-
-    void SetInteractable(bool v)
-    {
-        foreach(var b in attackButtons) if(b!=null)b.interactable=v;
-        if(evadeButton!=null)evadeButton.interactable=v;
+        if (bubbleGroup != null) bubbleGroup.alpha = 0;
     }
 
     void Play(string entry)
     {
-        var clip=assets.GetWav(entry);
-        if(clip!=null)audioSource.PlayOneShot(clip);
+        if (assets == null || audioSource == null) return;
+        AudioClip clip = assets.GetWav(entry);
+        if (clip != null) audioSource.PlayOneShot(clip);
     }
 
-    void Save()
+    string RandomLine(string[] lines)
     {
-        PlayerPrefs.SetInt("floor",floor);
-        PlayerPrefs.SetInt("prison",prisonCount);
-        PlayerPrefs.SetString("captured",string.Join(",",capturedFloors));
-        PlayerPrefs.SetString("inventory",string.Join("|",inventory));
-        PlayerPrefs.Save();
+        return lines[UnityEngine.Random.Range(0, lines.Length)];
     }
 
-    void Restore()
+    Font CreateKoreanFont()
     {
-        floor=Mathf.Clamp(PlayerPrefs.GetInt("floor",1),1,MaxFloor);
-        var cap=PlayerPrefs.GetString("captured","");
-        if(!string.IsNullOrEmpty(cap))
-            foreach(var s in cap.Split(',')){int v;if(int.TryParse(s,out v)&&!capturedFloors.Contains(v))capturedFloors.Add(v);}
-        prisonCount=capturedFloors.Count;
-        var inv=PlayerPrefs.GetString("inventory","");
-        if(!string.IsNullOrEmpty(inv))inventory.AddRange(inv.Split('|'));
+        try
+        {
+            string[] installed = Font.GetOSInstalledFontNames();
+            if (installed != null && installed.Length > 0)
+            {
+                var preferred = new List<string>();
+                string[] keys = {"Noto","Samsung","Malgun","Nanum","Droid","Arial"};
+                for (int k = 0; k < keys.Length; k++)
+                    for (int i = 0; i < installed.Length; i++)
+                        if (installed[i].IndexOf(keys[k], StringComparison.OrdinalIgnoreCase) >= 0 && !preferred.Contains(installed[i]))
+                            preferred.Add(installed[i]);
+
+                for (int i = 0; i < installed.Length; i++)
+                    if (!preferred.Contains(installed[i])) preferred.Add(installed[i]);
+
+                Font f = Font.CreateDynamicFontFromOSFont(preferred.ToArray(), 64);
+                if (f != null) return f;
+            }
+        }
+        catch { }
+
+        return Resources.GetBuiltinResource<Font>("Arial.ttf");
     }
 
-    void statusTextSafe(string s){if(status!=null)status.text=s;}
-
-    void ClearRoot()
+    Text MakeText(Transform parent, string value, int size, TextAnchor anchor, bool bold)
     {
-        for(int i=root.childCount-1;i>=0;i--)Destroy(root.GetChild(i).gameObject);
+        var go = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
+        go.transform.SetParent(parent, false);
+        Text t = go.GetComponent<Text>();
+        t.text = value;
+        t.font = koreanFont;
+        t.fontSize = size;
+        t.resizeTextForBestFit = false;
+        t.alignment = anchor;
+        t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+        t.horizontalOverflow = HorizontalWrapMode.Wrap;
+        t.verticalOverflow = VerticalWrapMode.Truncate;
+        t.raycastTarget = false;
+        return t;
     }
 
-    Image MakeImage(Transform parent,Color c)
+    Sprite CreateRingSprite(int size, int thickness)
     {
-        var go=new GameObject("Image",typeof(RectTransform),typeof(CanvasRenderer),typeof(Image));
-        go.transform.SetParent(parent,false);var i=go.GetComponent<Image>();i.color=c;return i;
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color clear = new Color(1, 1, 1, 0);
+        Color solid = Color.white;
+        Vector2 c = new Vector2((size - 1) * .5f, (size - 1) * .5f);
+        float outer = size * .47f;
+        float inner = outer - thickness;
+
+        Color[] pixels = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float d = Vector2.Distance(new Vector2(x, y), c);
+                pixels[y * size + x] = d <= outer && d >= inner ? solid : clear;
+            }
+        }
+        tex.SetPixels(pixels);
+        tex.Apply(false, false);
+
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(.5f, .5f), 100f);
     }
 
-    Image MakeBar(Transform parent,float x1,float y1,float x2,float y2,Color c)
+    static void SetSize(RectTransform r, float w, float h)
     {
-        var back=MakeImage(parent,new Color(.12f,.12f,.15f,1));Anchor(back.rectTransform,x1,y1,x2,y2);
-        var fill=MakeImage(back.transform,c);Anchor(fill.rectTransform,0,0,1,1);fill.type=Image.Type.Filled;fill.fillMethod=Image.FillMethod.Horizontal;return fill;
+        r.anchorMin = r.anchorMax = new Vector2(.5f, .5f);
+        r.sizeDelta = new Vector2(w, h);
     }
 
-    Image MakePanel(Transform parent,Color c){return MakeImage(parent,c);}
-
-    Text MakeText(Transform parent,string s,int size,TextAnchor a,bool bold)
+    static void Anchor(RectTransform r, float x1, float y1, float x2, float y2)
     {
-        var go=new GameObject("Text",typeof(RectTransform),typeof(CanvasRenderer),typeof(Text));go.transform.SetParent(parent,false);
-        var t=go.GetComponent<Text>();t.text=s;t.font=Resources.GetBuiltinResource<Font>("Arial.ttf");t.fontSize=size;t.alignment=a;t.color=Color.white;t.fontStyle=bold?FontStyle.Bold:FontStyle.Normal;t.horizontalOverflow=HorizontalWrapMode.Wrap;t.verticalOverflow=VerticalWrapMode.Truncate;return t;
-    }
-
-    Button MakeButton(Transform parent,string label,Color c)
-    {
-        var go=new GameObject("Button",typeof(RectTransform),typeof(CanvasRenderer),typeof(Image),typeof(Button));go.transform.SetParent(parent,false);
-        go.GetComponent<Image>().color=c;var b=go.GetComponent<Button>();
-        var t=MakeText(go.transform,label,27,TextAnchor.MiddleCenter,true);Anchor(t.rectTransform,0,0,1,1);return b;
-    }
-
-    static void Anchor(RectTransform r,float x1,float y1,float x2,float y2)
-    {
-        r.anchorMin=new Vector2(x1,y1);r.anchorMax=new Vector2(x2,y2);r.offsetMin=Vector2.zero;r.offsetMax=Vector2.zero;
+        r.anchorMin = new Vector2(x1, y1);
+        r.anchorMax = new Vector2(x2, y2);
+        r.offsetMin = Vector2.zero;
+        r.offsetMax = Vector2.zero;
     }
 }
