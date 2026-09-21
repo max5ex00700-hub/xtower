@@ -60,6 +60,12 @@ public sealed class XTapBattleController : MonoBehaviour
     readonly string[] dodgeTalk = {"느려.","피했어.","거긴 아니야.","다 보여."};
     readonly string[] criticalTalk = {"윽… 거긴!","잠깐…!","그걸 찾았어?","균형이… 깨졌어."};
 
+    readonly Dictionary<string, AudioClip> voiceClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
+    readonly string[] normalHitVoices = {"female_grunt1", "female_grunt2", "female_gasp1"};
+    readonly string[] swipeHitVoices = {"female_grunt2", "female_gasp1", "female_gasp2"};
+    readonly string[] criticalHitVoices = {"female_agony1", "female_scream1"};
+    readonly string[] lowHpVoices = {"female_whimper1", "female_grunt1"};
+
     IEnumerator Start()
     {
         Application.targetFrameRate = 60;
@@ -81,6 +87,10 @@ public sealed class XTapBattleController : MonoBehaviour
         yield return assets.Load();
 
         audioSource = gameObject.AddComponent<AudioSource>();
+        audioSource.playOnAwake = false;
+        audioSource.spatialBlend = 0f;
+        audioSource.volume = 1f;
+        PreloadCombatVoices();
 
         if (!assets.Ready)
         {
@@ -231,7 +241,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .88f), .785f, .935f, .965f, .982f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1035", 25, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1037", 25, TextAnchor.MiddleCenter, false);
         codeText.color = new Color(.90f, .87f, .82f, 1f);
         Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
 
@@ -476,6 +486,7 @@ public sealed class XTapBattleController : MonoBehaviour
             SetActionSprite("d");
             ShowBubble(RandomLine(dodgeTalk), 1.0f);
             Play("res/raw/dodge.wav");
+            if (UnityEngine.Random.value < .45f) PlayVoice("female_gasp1", .72f);
             yield return TouchPulse(impact, false, swipe);
             yield return CharacterRecoil(impact, false, true);
             yield return new WaitForSecondsRealtime(.10f);
@@ -497,6 +508,7 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble(RandomLine(criticalTalk), 1.25f);
             VibrateTouch(true);
             Play("assets/hit.wav");
+            PlayRandomVoice(criticalHitVoices, 1f);
             yield return WeakPointHitBurst();
             HideWeakPoint();
             yield return TouchPulse(impact, true, swipe);
@@ -507,6 +519,10 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble(RandomLine(zoneTalk[zone]), 1.05f);
             VibrateTouch(false);
             Play("assets/hit.wav");
+            if (enemyHp <= Mathf.RoundToInt(EnemyMaxHp * .25f) && UnityEngine.Random.value < .45f)
+                PlayRandomVoice(lowHpVoices, .88f);
+            else
+                PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .88f : .78f);
             yield return TouchPulse(impact, false, swipe);
             yield return CharacterRecoil(impact, false, false);
         }
@@ -778,6 +794,102 @@ public sealed class XTapBattleController : MonoBehaviour
         if (assets == null || audioSource == null) return;
         AudioClip clip = assets.GetWav(entry);
         if (clip != null) audioSource.PlayOneShot(clip);
+    }
+
+    void PreloadCombatVoices()
+    {
+        string[] ids =
+        {
+            "female_grunt1", "female_grunt2",
+            "female_gasp1", "female_gasp2",
+            "female_agony1", "female_scream1",
+            "female_whimper1"
+        };
+
+        for (int i = 0; i < ids.Length; i++)
+            LoadVoice(ids[i]);
+    }
+
+    void PlayRandomVoice(string[] ids, float volume)
+    {
+        if (ids == null || ids.Length == 0) return;
+        PlayVoice(ids[UnityEngine.Random.Range(0, ids.Length)], volume);
+    }
+
+    void PlayVoice(string id, float volume)
+    {
+        if (audioSource == null) return;
+        AudioClip clip = LoadVoice(id);
+        if (clip != null) audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+
+    AudioClip LoadVoice(string id)
+    {
+        AudioClip cached;
+        if (voiceClips.TryGetValue(id, out cached)) return cached;
+
+        try
+        {
+            TextAsset encoded = Resources.Load<TextAsset>("XTapVoices/" + id);
+            if (encoded == null || string.IsNullOrWhiteSpace(encoded.text)) return null;
+
+            byte[] wav = Convert.FromBase64String(encoded.text.Trim());
+            AudioClip clip = DecodePcm16Wav(wav, id);
+            if (clip != null) voiceClips[id] = clip;
+            return clip;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 전투 음성 로드 실패: " + id + " / " + e.Message);
+            return null;
+        }
+    }
+
+    AudioClip DecodePcm16Wav(byte[] wav, string clipName)
+    {
+        if (wav == null || wav.Length < 44) return null;
+        if (wav[0] != 'R' || wav[1] != 'I' || wav[2] != 'F' || wav[3] != 'F') return null;
+
+        int fmt = FindWavChunk(wav, "fmt ");
+        int data = FindWavChunk(wav, "data");
+        if (fmt < 0 || data < 0 || fmt + 24 > wav.Length || data + 8 > wav.Length) return null;
+
+        int format = BitConverter.ToInt16(wav, fmt + 8);
+        int channels = BitConverter.ToInt16(wav, fmt + 10);
+        int sampleRate = BitConverter.ToInt32(wav, fmt + 12);
+        int bits = BitConverter.ToInt16(wav, fmt + 22);
+
+        if (format != 1 || channels < 1 || channels > 2 || sampleRate <= 0 || bits != 16) return null;
+
+        int declaredBytes = BitConverter.ToInt32(wav, data + 4);
+        int start = data + 8;
+        int byteCount = Mathf.Min(declaredBytes, wav.Length - start);
+        int sampleCount = byteCount / 2;
+        if (sampleCount <= 0) return null;
+
+        float[] samples = new float[sampleCount];
+        for (int i = 0; i < sampleCount; i++)
+            samples[i] = BitConverter.ToInt16(wav, start + i * 2) / 32768f;
+
+        int frames = sampleCount / channels;
+        AudioClip clip = AudioClip.Create(clipName, frames, channels, sampleRate, false);
+        clip.SetData(samples, 0);
+        return clip;
+    }
+
+    int FindWavChunk(byte[] wav, string fourCC)
+    {
+        for (int i = 12; i + 8 <= wav.Length;)
+        {
+            if (wav[i] == fourCC[0] && wav[i + 1] == fourCC[1] &&
+                wav[i + 2] == fourCC[2] && wav[i + 3] == fourCC[3])
+                return i;
+
+            int size = BitConverter.ToInt32(wav, i + 4);
+            if (size < 0) return -1;
+            i += 8 + size + (size & 1);
+        }
+        return -1;
     }
 
     string RandomLine(string[] lines)
