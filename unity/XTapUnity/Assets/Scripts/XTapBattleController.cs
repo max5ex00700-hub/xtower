@@ -263,44 +263,55 @@ public sealed class XTapBattleController : MonoBehaviour
 
         // The combat art remains the live background so the main screen can later
         // follow each floor/character instead of becoming one flattened screenshot.
-        MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .48f), 0f, .66f, 1f, 1f);
-        MakePanel(mainOverlay.transform, "BottomShade", new Color(.015f, .012f, .014f, .82f), 0f, 0f, 1f, .37f);
-        MakePanel(mainOverlay.transform, "LeftMist", new Color(.02f, .012f, .018f, .34f), 0f, .53f, .48f, .88f);
+        MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .20f), 0f, .72f, 1f, 1f);
+        MakePanel(mainOverlay.transform, "BottomShade", new Color(.015f, .012f, .014f, .42f), 0f, 0f, 1f, .29f);
 
         // X탑 logo: large blood-red X with pale stone-white 탑.
         Text logoX = MakeOutlinedText(mainOverlay.transform, "X", 132, TextAnchor.MiddleCenter, true);
         logoX.color = new Color(.62f, .015f, .02f, 1f);
-        Anchor(logoX.rectTransform, .025f, .815f, .185f, .985f);
+        Anchor(logoX.rectTransform, .020f, .842f, .165f, .995f);
 
         Text logoTower = MakeOutlinedText(mainOverlay.transform, "탑", 116, TextAnchor.MiddleCenter, true);
         logoTower.color = new Color(.93f, .91f, .87f, 1f);
-        Anchor(logoTower.rectTransform, .155f, .82f, .355f, .98f);
+        Anchor(logoTower.rectTransform, .135f, .848f, .315f, .992f);
 
         string displayVersion = Application.version;
         int dash = displayVersion.IndexOf('-');
         if (dash > 0) displayVersion = displayVersion.Substring(0, dash);
         Text version = MakeOutlinedText(mainOverlay.transform, "v " + displayVersion, 29, TextAnchor.MiddleCenter, false);
         version.color = new Color(.82f, .78f, .74f, 1f);
-        Anchor(version.rectTransform, .205f, .785f, .365f, .83f);
+        Anchor(version.rectTransform, .170f, .808f, .360f, .848f);
+        version.resizeTextForBestFit = true;
+        version.resizeTextMinSize = 15;
+        version.resizeTextMaxSize = 29;
 
-        Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .88f), .785f, .935f, .965f, .982f);
+        Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1040", 25, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1041", 27, TextAnchor.MiddleCenter, false);
+        codeText.resizeTextForBestFit = true;
+        codeText.resizeTextMinSize = 16;
+        codeText.resizeTextMaxSize = 27;
         codeText.color = new Color(.90f, .87f, .82f, 1f);
         Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
 
         // Floor information sits on the left, matching the supplied gothic concept.
         Text floorWord = MakeOutlinedText(mainOverlay.transform, "FLOOR", 48, TextAnchor.MiddleLeft, true);
         floorWord.color = new Color(.92f, .91f, .88f, 1f);
-        Anchor(floorWord.rectTransform, .045f, .675f, .245f, .745f);
+        Anchor(floorWord.rectTransform, .045f, .748f, .255f, .805f);
 
         mainFloorText = MakeOutlinedText(mainOverlay.transform, TestFloor.ToString(), 84, TextAnchor.MiddleLeft, true);
         mainFloorText.color = new Color(.73f, .015f, .02f, 1f);
-        Anchor(mainFloorText.rectTransform, .245f, .66f, .36f, .755f);
+        Anchor(mainFloorText.rectTransform, .235f, .735f, .405f, .820f);
+        mainFloorText.resizeTextForBestFit = true;
+        mainFloorText.resizeTextMinSize = 36;
+        mainFloorText.resizeTextMaxSize = 84;
 
         mainStatusText = MakeOutlinedText(mainOverlay.transform, "그녀가 기다리고 있다...", 30, TextAnchor.MiddleLeft, false);
         mainStatusText.color = new Color(.94f, .91f, .86f, 1f);
-        Anchor(mainStatusText.rectTransform, .045f, .625f, .53f, .675f);
+        Anchor(mainStatusText.rectTransform, .045f, .700f, .580f, .748f);
+        mainStatusText.resizeTextForBestFit = true;
+        mainStatusText.resizeTextMinSize = 18;
+        mainStatusText.resizeTextMaxSize = 30;
 
         // Main-screen speech bubble. This is separate from the combat reaction bubble.
         Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
@@ -308,21 +319,24 @@ public sealed class XTapBattleController : MonoBehaviour
         mainBubble.sprite = speechBubbleSprite;
         mainBubble.color = new Color(.96f, .95f, .92f, .97f);
         mainBubble.raycastTarget = false;
-        Anchor(mainBubble.rectTransform, .665f, .705f, .965f, .795f);
+        Anchor(mainBubble.rectTransform, .690f, .790f, .980f, .885f);
         Text mainBubbleText = MakeText(mainBubble.transform, "...또 오는 거야?", 27, TextAnchor.MiddleCenter, false);
         mainBubbleText.color = new Color(.08f, .065f, .06f, 1f);
-        Anchor(mainBubbleText.rectTransform, .07f, .18f, .94f, .92f);
+        Anchor(mainBubbleText.rectTransform, .06f, .18f, .95f, .92f);
+        mainBubbleText.resizeTextForBestFit = true;
+        mainBubbleText.resizeTextMinSize = 17;
+        mainBubbleText.resizeTextMaxSize = 27;
 
         // Large central action button.
         Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 52);
         RectTransform fr = fight.GetComponent<RectTransform>();
-        fr.anchorMin = new Vector2(.205f, .185f);
+        fr.anchorMin = new Vector2(.205f, .190f);
         fr.anchorMax = new Vector2(.795f, .305f);
         fr.offsetMin = fr.offsetMax = Vector2.zero;
         fight.onClick.AddListener(BeginBattle);
 
         // Bottom navigation bar. Only systems already present are interactive.
-        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.018f, .016f, .018f, .96f), 0f, 0f, 1f, .155f);
+        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.012f, .011f, .012f, .985f), 0f, 0f, 1f, .165f);
         AddFrame(navRail.rectTransform, new Color(.36f, .31f, .25f, 1f), 2f);
 
         string[] icons = {"↻", "↓", "↑", "▣", "⚒", "▥"};
@@ -393,11 +407,13 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image outer = go.GetComponent<Image>();
-        outer.color = new Color(.22f, .018f, .025f, .98f);
-        AddFrame(outer.rectTransform, new Color(.72f, .13f, .10f, 1f), 6f);
+        outer.sprite = CreateBloodButtonSprite(512, 160);
+        outer.type = Image.Type.Sliced;
+        outer.color = Color.white;
+        AddFrame(outer.rectTransform, new Color(.76f, .08f, .055f, 1f), 5f);
 
-        Image inner = MakePanel(go.transform, "Inset", new Color(.31f, .025f, .028f, .96f), .025f, .08f, .975f, .92f);
-        AddFrame(inner.rectTransform, new Color(.46f, .18f, .14f, .95f), 2f);
+        Image inner = MakePanel(go.transform, "Inset", new Color(.16f, .012f, .016f, .18f), .025f, .07f, .975f, .93f);
+        AddFrame(inner.rectTransform, new Color(.58f, .12f, .09f, .92f), 2f);
 
         Text text = MakeOutlinedText(inner.transform, label, fontSize, TextAnchor.MiddleCenter, true);
         text.color = new Color(.96f, .92f, .84f, 1f);
@@ -1180,6 +1196,59 @@ public sealed class XTapBattleController : MonoBehaviour
         t.verticalOverflow = VerticalWrapMode.Truncate;
         t.raycastTarget = false;
         return t;
+    }
+
+    Sprite CreateBloodButtonSprite(int width, int height)
+    {
+        Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color[] pixels = new Color[width * height];
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                float nx = x / Mathf.Max(1f, width - 1f);
+                float ny = y / Mathf.Max(1f, height - 1f);
+
+                float grain = Mathf.PerlinNoise(nx * 12.7f + 1.3f, ny * 7.9f + 3.1f);
+                float vein = Mathf.Abs(Mathf.Sin(nx * 25f + grain * 4f) * Mathf.Sin(ny * 17f - grain * 3f));
+                float edge = Mathf.Min(Mathf.Min(nx, 1f - nx), Mathf.Min(ny, 1f - ny));
+                float vignette = Mathf.SmoothStep(0f, .18f, edge);
+
+                float r = Mathf.Lerp(.10f, .28f, grain) + vein * .045f;
+                float g = Mathf.Lerp(.005f, .025f, grain);
+                float b = Mathf.Lerp(.008f, .018f, grain);
+
+                r *= Mathf.Lerp(.72f, 1f, vignette);
+                g *= Mathf.Lerp(.72f, 1f, vignette);
+                b *= Mathf.Lerp(.72f, 1f, vignette);
+
+                // Inner metallic-red rim.
+                bool rim = x < 7 || x >= width - 7 || y < 7 || y >= height - 7;
+                if (rim)
+                {
+                    r = .48f;
+                    g = .035f;
+                    b = .028f;
+                }
+
+                pixels[y * width + x] = new Color(r, g, b, 1f);
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply(false, false);
+        return Sprite.Create(
+            tex,
+            new Rect(0, 0, width, height),
+            new Vector2(.5f, .5f),
+            100f,
+            0,
+            SpriteMeshType.FullRect,
+            new Vector4(10f, 10f, 10f, 10f)
+        );
     }
 
     Sprite CreateSpeechBubbleSprite(int width, int height)
