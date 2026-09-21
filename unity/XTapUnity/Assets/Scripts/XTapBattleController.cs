@@ -23,6 +23,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     Font koreanFont;
     Sprite ringSprite;
+    Sprite speechBubbleSprite;
 
     int enemyHp = EnemyMaxHp;
     int hitCount;
@@ -61,6 +62,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
+        speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
 
         BuildBattleOnlyUi();
 
@@ -159,16 +161,21 @@ public sealed class XTapBattleController : MonoBehaviour
 
         bubblePanel = new GameObject("SpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup)).GetComponent<Image>();
         bubblePanel.transform.SetParent(root, false);
-        bubblePanel.color = new Color(1f, .97f, .92f, .96f);
+        bubblePanel.sprite = speechBubbleSprite;
+        bubblePanel.color = new Color(1f, .98f, .94f, .97f);
         bubblePanel.raycastTarget = false;
-        Anchor(bubblePanel.rectTransform, .56f, .845f, .96f, .925f);
+        RectTransform bubbleRect = bubblePanel.rectTransform;
+        bubbleRect.anchorMin = bubbleRect.anchorMax = new Vector2(0f, 1f);
+        bubbleRect.pivot = new Vector2(0f, 1f);
+        bubbleRect.sizeDelta = new Vector2(430f, 132f);
+        bubbleRect.anchoredPosition = new Vector2(26f, -34f);
 
         bubbleGroup = bubblePanel.GetComponent<CanvasGroup>();
         bubbleGroup.alpha = 0;
 
-        bubbleText = MakeText(bubblePanel.transform, "", 30, TextAnchor.MiddleCenter, true);
+        bubbleText = MakeText(bubblePanel.transform, "", 28, TextAnchor.MiddleCenter, true);
         bubbleText.color = new Color(.12f, .08f, .09f, 1);
-        Anchor(bubbleText.rectTransform, .07f, .10f, .93f, .90f);
+        Anchor(bubbleText.rectTransform, .08f, .20f, .92f, .92f);
     }
 
     IEnumerator PreloadCurrentImages()
@@ -211,11 +218,11 @@ public sealed class XTapBattleController : MonoBehaviour
         bool swipe = delta.magnitude >= swipeThreshold && duration <= .65f;
         Vector2 impact = swipe ? Vector2.Lerp(start, end, .55f) : end;
 
-        PlaceBubbleOpposite(impact);
         int zone = ZoneOf(impact);
         if (zone == 6)
         {
             ShowBubble(RandomLine(zoneTalk[zone]), 1.0f);
+            VibrateTouch(false);
             StartCoroutine(TouchPulse(impact, false, false));
             return;
         }
@@ -256,15 +263,19 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (weakHit)
         {
-            HideWeakPoint();
+            weakActive = false;
             ShowBubble(RandomLine(criticalTalk), 1.25f);
+            VibrateTouch(true);
             Play("assets/hit.wav");
+            yield return WeakPointHitBurst();
+            HideWeakPoint();
             yield return TouchPulse(impact, true, swipe);
             yield return CharacterRecoil(impact, true, false);
         }
         else
         {
             ShowBubble(RandomLine(zoneTalk[zone]), 1.05f);
+            VibrateTouch(false);
             Play("assets/hit.wav");
             yield return TouchPulse(impact, false, swipe);
             yield return CharacterRecoil(impact, false, false);
@@ -407,7 +418,9 @@ public sealed class XTapBattleController : MonoBehaviour
             weakNorm.y = Mathf.Clamp(weakNorm.y, .27f, .73f);
         }
 
-        float pulse = 1f + Mathf.Sin(Time.unscaledTime * 16f) * .13f;
+        // Obvious breathing target: roughly 55% -> 130% size, not a subtle wobble.
+        float phase = (Mathf.Sin(Time.unscaledTime * 8.5f) + 1f) * .5f;
+        float pulse = Mathf.Lerp(.55f, 1.30f, phase);
         weakPoint.rectTransform.localScale = Vector3.one * pulse;
         PositionWeakPoint();
     }
@@ -486,26 +499,37 @@ public sealed class XTapBattleController : MonoBehaviour
         r.localScale = baseScale;
     }
 
-    void PlaceBubbleOpposite(Vector2 screenPos)
+    IEnumerator WeakPointHitBurst()
     {
-        if (bubblePanel == null) return;
+        if (weakPoint == null || !weakPoint.gameObject.activeSelf) yield break;
 
-        float nx = screenPos.x / Mathf.Max(1f, Screen.width);
-        RectTransform r = bubblePanel.rectTransform;
+        RectTransform r = weakPoint.rectTransform;
+        Vector3 start = r.localScale;
+        Color startColor = weakPoint.color;
+        float total = .10f;
+        float t = 0f;
 
-        // Keep the speech bubble small and parked at the screen edge opposite the touch.
-        if (nx < .5f)
+        while (t < total)
         {
-            r.anchorMin = new Vector2(.56f, .845f);
-            r.anchorMax = new Vector2(.96f, .925f);
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / total);
+            r.localScale = Vector3.Lerp(start * 1.12f, Vector3.one * .18f, p);
+            weakPoint.color = Color.Lerp(new Color(1f, .82f, .16f, 1f), Color.white, p);
+            yield return null;
         }
-        else
+
+        weakPoint.color = startColor;
+    }
+
+    void VibrateTouch(bool strong)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
         {
-            r.anchorMin = new Vector2(.04f, .845f);
-            r.anchorMax = new Vector2(.44f, .925f);
+            Handheld.Vibrate();
         }
-        r.offsetMin = Vector2.zero;
-        r.offsetMax = Vector2.zero;
+        catch { }
+#endif
     }
 
     void ShowBubble(string text, float seconds)
@@ -580,6 +604,61 @@ public sealed class XTapBattleController : MonoBehaviour
         t.verticalOverflow = VerticalWrapMode.Truncate;
         t.raycastTarget = false;
         return t;
+    }
+
+    Sprite CreateSpeechBubbleSprite(int width, int height)
+    {
+        Texture2D tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        Color solid = Color.white;
+        Color[] pixels = new Color[width * height];
+
+        float left = 5f;
+        float right = width - 5f;
+        float bottom = 22f;
+        float top = height - 5f;
+        float radius = 24f;
+
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                bool inside = false;
+
+                if (x >= left + radius && x <= right - radius && y >= bottom && y <= top) inside = true;
+                else if (x >= left && x <= right && y >= bottom + radius && y <= top - radius) inside = true;
+                else
+                {
+                    Vector2[] centers =
+                    {
+                        new Vector2(left + radius, bottom + radius),
+                        new Vector2(right - radius, bottom + radius),
+                        new Vector2(left + radius, top - radius),
+                        new Vector2(right - radius, top - radius)
+                    };
+                    for (int i = 0; i < centers.Length; i++)
+                        if (Vector2.Distance(new Vector2(x, y), centers[i]) <= radius) { inside = true; break; }
+                }
+
+                // Small comic-style tail at the lower-left.
+                if (!inside && y >= 3f && y < bottom + 3f)
+                {
+                    float yy = (y - 3f) / Mathf.Max(1f, bottom);
+                    float minX = Mathf.Lerp(40f, 66f, yy);
+                    float maxX = Mathf.Lerp(40f, 98f, yy);
+                    if (x >= minX && x <= maxX) inside = true;
+                }
+
+                pixels[y * width + x] = inside ? solid : clear;
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply(false, false);
+        return Sprite.Create(tex, new Rect(0, 0, width, height), new Vector2(.5f, .5f), 100f);
     }
 
     Sprite CreateRingSprite(int size, int thickness)
