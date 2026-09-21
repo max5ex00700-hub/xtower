@@ -99,10 +99,9 @@ jobs:
           fi
 
           # Decode the same female reactions and combat impacts currently used in Unity.
-          decode_audio_dir() {
-            local dir="$1"
-            [ -d "$dir" ] || return 0
-            for src in "$dir"/*.txt; do
+          decode_audio_glob() {
+            local pattern="$1"
+            for src in $pattern; do
               [ -f "$src" ] || continue
               local name
               name="$(basename "$src" .txt)"
@@ -110,8 +109,8 @@ jobs:
             done
           }
 
-          decode_audio_dir "unity/XTapUnity/Assets/Resources/XTapVoices"
-          decode_audio_dir "unity/XTapUnity/Assets/Resources/XTapCombatSfx"
+          decode_audio_glob "unity/XTapUnity/Assets/Resources/XTapVoices/female_*.txt"
+          decode_audio_glob "unity/XTapUnity/Assets/Resources/XTapCombatSfx/fight_*.txt"
 
           echo "Drawable assets:"
           ls -lh app/src/main/res/drawable-nodpi | head -60
