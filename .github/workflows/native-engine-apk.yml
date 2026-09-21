@@ -91,7 +91,8 @@ jobs:
             }
 
             for prefix in p k b d; do
-              for i in $(seq -w 0 9); do
+              for n in $(seq 0 9); do
+                i=$(printf "%02d" "$n")
                 extract_jpg "assets/f1_${prefix}${i}.jpg" "app/src/main/res/drawable-nodpi/f1_${prefix}${i}.jpg"
               done
             done
