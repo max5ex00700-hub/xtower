@@ -773,7 +773,7 @@ public sealed class XTapBattleController : MonoBehaviour
             yield return null;
         }
 
-        ResetJelly();
+        ClearJellyMaterial();
         jellyRoutine = null;
     }
 
@@ -785,6 +785,11 @@ public sealed class XTapBattleController : MonoBehaviour
             jellyRoutine = null;
         }
 
+        ClearJellyMaterial();
+    }
+
+    void ClearJellyMaterial()
+    {
         if (jellyMaterial == null) return;
         jellyMaterial.SetFloat(JellyStrengthId, 0f);
         jellyMaterial.SetFloat(JellySwipeId, 0f);
