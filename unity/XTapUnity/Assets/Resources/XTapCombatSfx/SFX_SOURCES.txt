@@ -1,0 +1,27 @@
+X탑 격투 효과음 소스
+
+Imported from:
+Wh1teDuke/WilhelmSFX
+https://github.com/Wh1teDuke/WilhelmSFX
+Repository license: CC0-1.0
+
+Samples used:
+fight_punch_light
+- 799658__katzuyitsu__light-punch
+- https://freesound.org/people/katzuyitsu/sounds/799658/
+
+fight_punch_medium
+- 507131__daleonfire__punch2
+- https://freesound.org/people/Daleonfire/sounds/507131/
+
+fight_smash_heavy
+- 100466__hoot_avi__smash
+- https://freesound.org/people/hoot_avi/sounds/100466/
+
+fight_swing_light
+- 420668__sypherzent__basic-melee-swing-miss-whoosh
+- https://freesound.org/people/SypherZent/sounds/420668/
+
+fight_swing_heavy
+- 420670__sypherzent__strong-melee-swing
+- https://freesound.org/people/SypherZent/sounds/420670/
