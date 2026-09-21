@@ -235,7 +235,7 @@ public sealed class XTapInventory : MonoBehaviour
             maxY = Mathf.Max(maxY, cells[i].y);
         }
 
-        GameObject go = new GameObject("Block_" + item.id, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(BagItemTouch));
+        GameObject go = new GameObject("Block_" + item.id, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(XTapBagItemTouch));
         go.transform.SetParent(gridRoot, false);
         Image hit = go.GetComponent<Image>();
         hit.color = new Color(1f, 1f, 1f, .001f);
@@ -247,7 +247,7 @@ public sealed class XTapInventory : MonoBehaviour
         root.sizeDelta = new Vector2((maxX + 1) * CellSize, (maxY + 1) * CellSize);
         root.anchoredPosition = new Vector2(item.gridX * CellSize, item.gridY * CellSize);
 
-        BagItemTouch touch = go.GetComponent<BagItemTouch>();
+        XTapBagItemTouch touch = go.GetComponent<XTapBagItemTouch>();
         touch.owner = this;
         touch.itemId = item.id;
 
@@ -679,29 +679,30 @@ public sealed class XTapInventory : MonoBehaviour
         r.offsetMax = Vector2.zero;
     }
 
-    public sealed class BagItemTouch : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+}
+
+public sealed class XTapBagItemTouch : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+{
+    public XTapInventory owner;
+    public string itemId;
+
+    public void OnPointerClick(PointerEventData eventData)
     {
-        public XTapInventory owner;
-        public string itemId;
+        if (owner != null) owner.Select(itemId);
+    }
 
-        public void OnPointerClick(PointerEventData eventData)
-        {
-            if (owner != null) owner.Select(itemId);
-        }
+    public void OnBeginDrag(PointerEventData eventData)
+    {
+        if (owner != null) owner.BeginDrag(itemId, eventData.position);
+    }
 
-        public void OnBeginDrag(PointerEventData eventData)
-        {
-            if (owner != null) owner.BeginDrag(itemId, eventData.position);
-        }
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (owner != null) owner.Drag(itemId, eventData.position);
+    }
 
-        public void OnDrag(PointerEventData eventData)
-        {
-            if (owner != null) owner.Drag(itemId, eventData.position);
-        }
-
-        public void OnEndDrag(PointerEventData eventData)
-        {
-            if (owner != null) owner.EndDrag(itemId, eventData.position);
-        }
+    public void OnEndDrag(PointerEventData eventData)
+    {
+        if (owner != null) owner.EndDrag(itemId, eventData.position);
     }
 }
