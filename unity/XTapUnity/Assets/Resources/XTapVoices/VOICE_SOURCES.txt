@@ -1,0 +1,35 @@
+X탑 전투 여성 반응음 소스
+
+Imported from:
+Wh1teDuke/WilhelmSFX
+https://github.com/Wh1teDuke/WilhelmSFX
+Repository license: CC0-1.0
+
+Samples used:
+female_grunt1
+- 344004__reitanna__heavy-grunt
+- https://freesound.org/people/Reitanna/sounds/344004/
+
+female_grunt2
+- 218908__martian__female-grunts-breaths_a
+- https://freesound.org/people/martian/sounds/218908/
+
+female_gasp1
+- 509883__slamaxu__female_gasp
+- https://freesound.org/people/slamaxu/sounds/509883/
+
+female_gasp2
+- 343878__reitanna__big-gasp
+- https://freesound.org/people/Reitanna/sounds/343878/
+
+female_agony1
+- 219656__annatabernero__young-girl-scream
+- https://freesound.org/people/annatabernero/sounds/219656/
+
+female_scream1
+- 235592__tcrocker68__girl_scream
+- https://freesound.org/people/tcrocker68/sounds/235592/
+
+female_whimper1
+- 318078__drkvixn91__whimper_gasp_1_female
+- https://freesound.org/people/Drkvixn91/sounds/318078/
