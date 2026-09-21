@@ -13,6 +13,18 @@ on:
       - 'settings.gradle'
       - 'gradle.properties'
       - '.github/workflows/native-engine-apk.yml'
+  pull_request:
+    branches: [ unity-prototype ]
+    paths:
+      - 'app/**'
+      - 'assets_parts/**'
+      - 'unity/XTapUnity/Assets/StreamingAssets/**'
+      - 'unity/XTapUnity/Assets/Resources/XTapVoices/**'
+      - 'unity/XTapUnity/Assets/Resources/XTapCombatSfx/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/native-engine-apk.yml'
   workflow_dispatch:
 
 jobs:
