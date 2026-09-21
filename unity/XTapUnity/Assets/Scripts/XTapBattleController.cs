@@ -927,17 +927,40 @@ public sealed class XTapBattleController : MonoBehaviour
         int sampleRate = BitConverter.ToInt32(wav, fmt + 12);
         int bits = BitConverter.ToInt16(wav, fmt + 22);
 
-        if (format != 1 || channels < 1 || channels > 2 || sampleRate <= 0 || bits != 16) return null;
+        if (format != 1 || channels < 1 || channels > 2 || sampleRate <= 0) return null;
+        if (bits != 8 && bits != 16 && bits != 24 && bits != 32) return null;
 
         int declaredBytes = BitConverter.ToInt32(wav, data + 4);
         int start = data + 8;
         int byteCount = Mathf.Min(declaredBytes, wav.Length - start);
-        int sampleCount = byteCount / 2;
+        int bytesPerSample = bits / 8;
+        int sampleCount = byteCount / bytesPerSample;
         if (sampleCount <= 0) return null;
 
         float[] samples = new float[sampleCount];
         for (int i = 0; i < sampleCount; i++)
-            samples[i] = BitConverter.ToInt16(wav, start + i * 2) / 32768f;
+        {
+            int p = start + i * bytesPerSample;
+
+            if (bits == 8)
+            {
+                samples[i] = (wav[p] - 128f) / 128f;
+            }
+            else if (bits == 16)
+            {
+                samples[i] = BitConverter.ToInt16(wav, p) / 32768f;
+            }
+            else if (bits == 24)
+            {
+                int v = wav[p] | (wav[p + 1] << 8) | (wav[p + 2] << 16);
+                if ((v & 0x800000) != 0) v |= unchecked((int)0xFF000000);
+                samples[i] = v / 8388608f;
+            }
+            else
+            {
+                samples[i] = BitConverter.ToInt32(wav, p) / 2147483648f;
+            }
+        }
 
         int frames = sampleCount / channels;
         AudioClip clip = AudioClip.Create(clipName, frames, channels, sampleRate, false);
