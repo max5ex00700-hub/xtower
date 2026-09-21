@@ -30,6 +30,15 @@ public sealed class XTapBattleController : MonoBehaviour
     Font koreanFont;
     Sprite ringSprite;
     Sprite speechBubbleSprite;
+    Material jellyMaterial;
+    Coroutine jellyRoutine;
+
+    static readonly int JellyTouchUvId = Shader.PropertyToID("_TouchUV");
+    static readonly int JellyStrengthId = Shader.PropertyToID("_TouchStrength");
+    static readonly int JellyRadiusId = Shader.PropertyToID("_TouchRadius");
+    static readonly int JellyDirectionId = Shader.PropertyToID("_TouchDirection");
+    static readonly int JellySwipeId = Shader.PropertyToID("_SwipeStrength");
+    static readonly int JellyAspectId = Shader.PropertyToID("_Aspect");
 
     int enemyHp = EnemyMaxHp;
     int hitCount;
@@ -183,6 +192,7 @@ public sealed class XTapBattleController : MonoBehaviour
         battleFitter = battleImage.GetComponent<AspectRatioFitter>();
         battleFitter.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
         Anchor(battleImage.rectTransform, 0, 0, 1, 1);
+        SetupJellyMaterial();
 
         weakPoint = new GameObject("WeakPoint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
         weakPoint.transform.SetParent(root, false);
@@ -243,7 +253,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .88f), .785f, .935f, .965f, .982f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1038", 25, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1039", 25, TextAnchor.MiddleCenter, false);
         codeText.color = new Color(.90f, .87f, .82f, 1f);
         Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
 
@@ -444,6 +454,7 @@ public sealed class XTapBattleController : MonoBehaviour
         busy = false;
         weakActive = false;
         weakPoint.gameObject.SetActive(false);
+        ResetJelly();
         HideBubble();
         SetStageOrFallback(0);
     }
@@ -503,6 +514,8 @@ public sealed class XTapBattleController : MonoBehaviour
         int damage = weakHit ? 18 : (swipe ? 8 : 5);
         enemyHp = Mathf.Max(0, enemyHp - damage);
         hitCount++;
+
+        StartJellyImpact(impact, weakHit, swipe, swipeDelta);
 
         if (weakHit)
         {
@@ -677,6 +690,105 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         weakActive = false;
         if (weakPoint != null) weakPoint.gameObject.SetActive(false);
+    }
+
+    void SetupJellyMaterial()
+    {
+        Shader shader = Resources.Load<Shader>("XTapJellyTouch");
+        if (shader == null)
+        {
+            Debug.LogWarning("X탑 탱글 터치 셰이더를 찾지 못했습니다.");
+            return;
+        }
+
+        jellyMaterial = new Material(shader);
+        jellyMaterial.name = "XTapJellyTouchRuntime";
+        jellyMaterial.hideFlags = HideFlags.DontSave;
+        jellyMaterial.SetFloat(JellyStrengthId, 0f);
+        jellyMaterial.SetFloat(JellySwipeId, 0f);
+        jellyMaterial.SetFloat(JellyRadiusId, .18f);
+        jellyMaterial.SetVector(JellyTouchUvId, new Vector4(.5f, .5f, 0f, 0f));
+        jellyMaterial.SetVector(JellyDirectionId, Vector4.zero);
+        battleImage.material = jellyMaterial;
+    }
+
+    void StartJellyImpact(Vector2 screenPos, bool heavy, bool swipe, Vector2 swipeDelta)
+    {
+        if (jellyMaterial == null || battleImage == null) return;
+
+        if (jellyRoutine != null)
+            StopCoroutine(jellyRoutine);
+
+        jellyRoutine = StartCoroutine(JellyImpactRoutine(screenPos, heavy, swipe, swipeDelta));
+    }
+
+    IEnumerator JellyImpactRoutine(Vector2 screenPos, bool heavy, bool swipe, Vector2 swipeDelta)
+    {
+        RectTransform r = battleImage.rectTransform;
+        Vector2 local;
+        if (!RectTransformUtility.ScreenPointToLocalPointInRectangle(r, screenPos, null, out local))
+            yield break;
+
+        Rect rect = r.rect;
+        if (Mathf.Abs(rect.width) < .001f || Mathf.Abs(rect.height) < .001f)
+            yield break;
+
+        float u = Mathf.InverseLerp(rect.xMin, rect.xMax, local.x);
+        float v = Mathf.InverseLerp(rect.yMin, rect.yMax, local.y);
+        Vector2 uv = new Vector2(Mathf.Clamp01(u), Mathf.Clamp01(v));
+
+        Vector2 dir = Vector2.zero;
+        if (swipe && swipeDelta.sqrMagnitude > 1f)
+        {
+            dir = new Vector2(
+                swipeDelta.x / Mathf.Max(1f, Mathf.Abs(rect.width)),
+                swipeDelta.y / Mathf.Max(1f, Mathf.Abs(rect.height))
+            ).normalized;
+        }
+
+        float radius = heavy ? .24f : (swipe ? .21f : .17f);
+        float amplitude = heavy ? .30f : (swipe ? .24f : .20f);
+        float total = heavy ? .42f : (swipe ? .34f : .28f);
+        float swipeAmplitude = swipe ? (heavy ? .042f : .030f) : 0f;
+
+        jellyMaterial.SetVector(JellyTouchUvId, new Vector4(uv.x, uv.y, 0f, 0f));
+        jellyMaterial.SetFloat(JellyRadiusId, radius);
+        jellyMaterial.SetVector(JellyDirectionId, new Vector4(dir.x, dir.y, 0f, 0f));
+        jellyMaterial.SetFloat(JellyAspectId, Mathf.Abs(rect.width / rect.height));
+
+        float t = 0f;
+        while (t < total)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / total);
+
+            // Starts compressed, overshoots outward, then settles through
+            // two to three smaller rebounds: the local "탱글탱글" feel.
+            float envelope = Mathf.Exp(-3.35f * p);
+            float spring = Mathf.Cos(p * Mathf.PI * 5.6f) * envelope;
+            float dragSpring = Mathf.Cos(p * Mathf.PI * 4.4f) * envelope;
+
+            jellyMaterial.SetFloat(JellyStrengthId, amplitude * spring);
+            jellyMaterial.SetFloat(JellySwipeId, swipeAmplitude * dragSpring);
+            yield return null;
+        }
+
+        ResetJelly();
+        jellyRoutine = null;
+    }
+
+    void ResetJelly()
+    {
+        if (jellyRoutine != null)
+        {
+            StopCoroutine(jellyRoutine);
+            jellyRoutine = null;
+        }
+
+        if (jellyMaterial == null) return;
+        jellyMaterial.SetFloat(JellyStrengthId, 0f);
+        jellyMaterial.SetFloat(JellySwipeId, 0f);
+        jellyMaterial.SetVector(JellyDirectionId, Vector4.zero);
     }
 
     IEnumerator TouchPulse(Vector2 screenPos, bool heavy, bool swipe)
