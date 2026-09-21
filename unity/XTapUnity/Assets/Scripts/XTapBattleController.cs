@@ -287,7 +287,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1041", 27, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1042", 27, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
         codeText.resizeTextMinSize = 16;
         codeText.resizeTextMaxSize = 27;
@@ -546,8 +546,10 @@ public sealed class XTapBattleController : MonoBehaviour
             HideWeakPoint();
             SetActionSprite("d");
             ShowBubble(RandomLine(dodgeTalk), 1.0f);
-            Play("res/raw/dodge.wav");
-            if (UnityEngine.Random.value < .45f) PlayVoice("female_gasp1", .72f);
+            // Dodge should read as fast body movement, not a UI/game "boing".
+            // Reuse the clean light whoosh already bundled for combat movement.
+            PlayCombatSfx("fight_swing_light", .62f);
+            if (UnityEngine.Random.value < .45f) PlayVoice("female_gasp1", .68f);
             yield return TouchPulse(impact, false, swipe);
             yield return CharacterRecoil(impact, false, true);
             yield return new WaitForSecondsRealtime(.10f);
