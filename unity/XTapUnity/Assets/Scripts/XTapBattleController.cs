@@ -20,6 +20,7 @@ public sealed class XTapBattleController : MonoBehaviour
     Text bubbleText;
     CanvasGroup bubbleGroup;
     Image weakPoint;
+    XTapGachaMachine gachaMachine;
 
     Font koreanFont;
     Sprite ringSprite;
@@ -66,6 +67,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
         BuildBattleOnlyUi();
 
+        gachaMachine = gameObject.AddComponent<XTapGachaMachine>();
+        gachaMachine.Initialize(root, koreanFont, ResetFight);
+
         var assetGo = new GameObject("OriginalApkAssets");
         assets = assetGo.AddComponent<XTapOriginalApkAssets>();
         yield return assets.Load();
@@ -88,6 +92,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         UpdateWeakPoint();
 
+        if (gachaMachine != null && gachaMachine.IsOpen) return;
         if (busy) return;
 
         if (Input.touchCount > 0)
@@ -209,7 +214,6 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         if (won)
         {
-            ResetFight();
             return;
         }
 
@@ -290,6 +294,8 @@ public sealed class XTapBattleController : MonoBehaviour
             if (cap != null) SetSprite(cap);
             ShowBubble("…끝났어.", 30f);
             Play("assets/win.wav");
+            yield return new WaitForSecondsRealtime(.45f);
+            if (gachaMachine != null) gachaMachine.PlayReward();
             busy = false;
             yield break;
         }
