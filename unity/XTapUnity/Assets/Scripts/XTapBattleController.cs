@@ -22,6 +22,10 @@ public sealed class XTapBattleController : MonoBehaviour
     Image weakPoint;
     XTapGachaMachine gachaMachine;
 
+    GameObject mainOverlay;
+    Text mainFloorText;
+    Text mainStatusText;
+
     Font koreanFont;
     Sprite ringSprite;
     Sprite speechBubbleSprite;
@@ -66,9 +70,10 @@ public sealed class XTapBattleController : MonoBehaviour
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
 
         BuildBattleOnlyUi();
+        BuildMainUi();
 
         gachaMachine = gameObject.AddComponent<XTapGachaMachine>();
-        gachaMachine.Initialize(root, koreanFont, ResetFight);
+        gachaMachine.Initialize(root, koreanFont, ReturnToMain);
 
         var assetGo = new GameObject("OriginalApkAssets");
         assets = assetGo.AddComponent<XTapOriginalApkAssets>();
@@ -83,7 +88,7 @@ public sealed class XTapBattleController : MonoBehaviour
         }
 
         yield return PreloadCurrentImages();
-        ResetFight();
+        ReturnToMain();
     }
 
     void Update()
@@ -92,6 +97,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         UpdateWeakPoint();
 
+        if (mainOverlay != null && mainOverlay.activeSelf) return;
         if (gachaMachine != null && gachaMachine.IsOpen) return;
         if (busy) return;
 
@@ -181,6 +187,98 @@ public sealed class XTapBattleController : MonoBehaviour
         bubbleText = MakeText(bubblePanel.transform, "", 28, TextAnchor.MiddleCenter, true);
         bubbleText.color = new Color(.12f, .08f, .09f, 1);
         Anchor(bubbleText.rectTransform, .08f, .20f, .92f, .92f);
+    }
+
+
+    void BuildMainUi()
+    {
+        mainOverlay = new GameObject("MainScreen", typeof(RectTransform));
+        mainOverlay.transform.SetParent(root, false);
+        Anchor(mainOverlay.GetComponent<RectTransform>(), 0, 0, 1, 1);
+
+        var top = new GameObject("MainTop", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        top.transform.SetParent(mainOverlay.transform, false);
+        top.color = new Color(.055f, .035f, .045f, .92f);
+        Anchor(top.rectTransform, 0, .865f, 1, 1);
+
+        mainFloorText = MakeText(top.transform, "FLOOR 1", 36, TextAnchor.MiddleLeft, true);
+        mainFloorText.color = new Color(1f, .90f, .93f, 1f);
+        Anchor(mainFloorText.rectTransform, .05f, .48f, .95f, .92f);
+
+        mainStatusText = MakeText(top.transform, "캐릭터 1", 25, TextAnchor.MiddleLeft, false);
+        mainStatusText.color = new Color(.78f, .66f, .70f, 1f);
+        Anchor(mainStatusText.rectTransform, .05f, .08f, .95f, .50f);
+
+        var bottom = new GameObject("MainBottom", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        bottom.transform.SetParent(mainOverlay.transform, false);
+        bottom.color = new Color(.055f, .035f, .045f, .95f);
+        Anchor(bottom.rectTransform, 0, 0, 1, .205f);
+
+        Button fight = MakeButton(bottom.transform, "그녀를 베다", 34, new Color(.43f, .20f, .26f, 1f));
+        RectTransform fr = fight.GetComponent<RectTransform>();
+        fr.anchorMin = new Vector2(.04f, .48f);
+        fr.anchorMax = new Vector2(.96f, .92f);
+        fr.offsetMin = fr.offsetMax = Vector2.zero;
+        fight.onClick.AddListener(BeginBattle);
+
+        string[] labels = {"다시", "↓", "↑", "배낭", "대장간", "감옥"};
+        for (int i = 0; i < labels.Length; i++)
+        {
+            Button b = MakeButton(bottom.transform, labels[i], 22, new Color(.15f, .11f, .13f, 1f));
+            RectTransform br = b.GetComponent<RectTransform>();
+            float x1 = .04f + i * .155f;
+            float x2 = x1 + .14f;
+            br.anchorMin = new Vector2(x1, .10f);
+            br.anchorMax = new Vector2(x2, .39f);
+            br.offsetMin = br.offsetMax = Vector2.zero;
+
+            // These systems are not ported to Unity yet. Keep the original main layout
+            // visible without pretending the missing menus already work.
+            b.interactable = false;
+        }
+
+        mainOverlay.SetActive(false);
+    }
+
+    Button MakeButton(Transform parent, string label, int fontSize, Color bg)
+    {
+        var go = new GameObject(label + "Button", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+
+        Image image = go.GetComponent<Image>();
+        image.color = bg;
+
+        Button button = go.GetComponent<Button>();
+        var colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, .92f, .92f, 1f);
+        colors.pressedColor = new Color(.78f, .72f, .72f, 1f);
+        colors.disabledColor = new Color(.42f, .39f, .40f, .75f);
+        button.colors = colors;
+
+        Text text = MakeText(go.transform, label, fontSize, TextAnchor.MiddleCenter, true);
+        text.color = Color.white;
+        Anchor(text.rectTransform, .02f, .02f, .98f, .98f);
+        return button;
+    }
+
+    void BeginBattle()
+    {
+        if (mainOverlay != null) mainOverlay.SetActive(false);
+        ResetFight();
+    }
+
+    void ReturnToMain()
+    {
+        ResetFight();
+        SetStageOrFallback(0);
+        if (mainFloorText != null) mainFloorText.text = "FLOOR " + TestFloor;
+        if (mainStatusText != null) mainStatusText.text = "캐릭터 " + TestFloor;
+        if (mainOverlay != null)
+        {
+            mainOverlay.SetActive(true);
+            mainOverlay.transform.SetAsLastSibling();
+        }
     }
 
     IEnumerator PreloadCurrentImages()
