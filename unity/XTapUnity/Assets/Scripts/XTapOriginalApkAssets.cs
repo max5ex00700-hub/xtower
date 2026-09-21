@@ -14,7 +14,7 @@ public sealed class XTapOriginalApkAssets : MonoBehaviour
 
     private byte[] apkBytes;
     private readonly Dictionary<string, Sprite> sprites = new Dictionary<string, Sprite>(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, AudioClip> audio = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, AudioClip> audioClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
 
     private void Awake()
     {
@@ -95,7 +95,7 @@ public sealed class XTapOriginalApkAssets : MonoBehaviour
     public AudioClip GetWav(string entry)
     {
         AudioClip cached;
-        if (audio.TryGetValue(entry, out cached)) return cached;
+        if (audioClips.TryGetValue(entry, out cached)) return cached;
         byte[] bytes = Read(entry);
         if (bytes == null || bytes.Length < 44) return null;
 
@@ -113,7 +113,7 @@ public sealed class XTapOriginalApkAssets : MonoBehaviour
             for (int i=0;i<samples;i++) data[i] = BitConverter.ToInt16(bytes, start+i*2) / 32768f;
             var clip = AudioClip.Create(Path.GetFileNameWithoutExtension(entry), samples / Math.Max(1,channels), channels, sampleRate, false);
             clip.SetData(data, 0);
-            audio[entry] = clip;
+            audioClips[entry] = clip;
             return clip;
         }
         catch { return null; }
