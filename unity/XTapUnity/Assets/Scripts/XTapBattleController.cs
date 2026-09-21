@@ -161,14 +161,14 @@ public sealed class XTapBattleController : MonoBehaviour
         bubblePanel.transform.SetParent(root, false);
         bubblePanel.color = new Color(1f, .97f, .92f, .96f);
         bubblePanel.raycastTarget = false;
-        Anchor(bubblePanel.rectTransform, .07f, .805f, .93f, .935f);
+        Anchor(bubblePanel.rectTransform, .56f, .845f, .96f, .925f);
 
         bubbleGroup = bubblePanel.GetComponent<CanvasGroup>();
         bubbleGroup.alpha = 0;
 
-        bubbleText = MakeText(bubblePanel.transform, "", 44, TextAnchor.MiddleCenter, true);
+        bubbleText = MakeText(bubblePanel.transform, "", 30, TextAnchor.MiddleCenter, true);
         bubbleText.color = new Color(.12f, .08f, .09f, 1);
-        Anchor(bubbleText.rectTransform, .055f, .10f, .945f, .90f);
+        Anchor(bubbleText.rectTransform, .07f, .10f, .93f, .90f);
     }
 
     IEnumerator PreloadCurrentImages()
@@ -211,6 +211,7 @@ public sealed class XTapBattleController : MonoBehaviour
         bool swipe = delta.magnitude >= swipeThreshold && duration <= .65f;
         Vector2 impact = swipe ? Vector2.Lerp(start, end, .55f) : end;
 
+        PlaceBubbleOpposite(impact);
         int zone = ZoneOf(impact);
         if (zone == 6)
         {
@@ -483,6 +484,28 @@ public sealed class XTapBattleController : MonoBehaviour
 
         r.anchoredPosition = basePos;
         r.localScale = baseScale;
+    }
+
+    void PlaceBubbleOpposite(Vector2 screenPos)
+    {
+        if (bubblePanel == null) return;
+
+        float nx = screenPos.x / Mathf.Max(1f, Screen.width);
+        RectTransform r = bubblePanel.rectTransform;
+
+        // Keep the speech bubble small and parked at the screen edge opposite the touch.
+        if (nx < .5f)
+        {
+            r.anchorMin = new Vector2(.56f, .845f);
+            r.anchorMax = new Vector2(.96f, .925f);
+        }
+        else
+        {
+            r.anchorMin = new Vector2(.04f, .845f);
+            r.anchorMax = new Vector2(.44f, .925f);
+        }
+        r.offsetMin = Vector2.zero;
+        r.offsetMax = Vector2.zero;
     }
 
     void ShowBubble(string text, float seconds)
