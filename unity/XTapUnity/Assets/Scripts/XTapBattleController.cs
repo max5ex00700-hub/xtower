@@ -22,6 +22,7 @@ public sealed class XTapBattleController : MonoBehaviour
     CanvasGroup bubbleGroup;
     Image weakPoint;
     XTapGachaMachine gachaMachine;
+    XTapInventory inventory;
     Coroutine bubbleAnimRoutine;
 
     GameObject mainOverlay;
@@ -121,8 +122,11 @@ public sealed class XTapBattleController : MonoBehaviour
         BuildBattleOnlyUi();
         BuildMainUi();
 
+        inventory = gameObject.AddComponent<XTapInventory>();
+        inventory.Initialize(root, koreanFont, null);
+
         gachaMachine = gameObject.AddComponent<XTapGachaMachine>();
-        gachaMachine.Initialize(root, koreanFont, ReturnToMain);
+        gachaMachine.Initialize(root, koreanFont, ReturnToMain, inventory);
 
         var assetGo = new GameObject("OriginalApkAssets");
         assets = assetGo.AddComponent<XTapOriginalApkAssets>();
@@ -292,7 +296,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1045", 27, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1046", 27, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
         codeText.resizeTextMinSize = 16;
         codeText.resizeTextMaxSize = 27;
@@ -358,12 +362,16 @@ public sealed class XTapBattleController : MonoBehaviour
             br.offsetMin = br.offsetMax = Vector2.zero;
 
             if (i == 0)
+            {
                 b.onClick.AddListener(ReturnToMain);
+            }
+            else if (i == 3)
+            {
+                b.onClick.AddListener(OpenInventory);
+            }
             else
             {
-                // Floor navigation / bag / forge / jail are intentionally not
-                // faked here. Their visuals are present, but functionality will
-                // be connected in their own implementation steps.
+                // Floor navigation / forge / jail remain disabled until their systems exist.
                 b.interactable = false;
                 ColorBlock cb = b.colors;
                 cb.disabledColor = Color.white;
@@ -469,6 +477,11 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         if (mainOverlay != null) mainOverlay.SetActive(false);
         ResetFight();
+    }
+
+    void OpenInventory()
+    {
+        if (inventory != null) inventory.Open();
     }
 
     void ReturnToMain()
@@ -607,7 +620,7 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble("…끝났어.", 30f);
             Play("assets/win.wav");
             yield return new WaitForSecondsRealtime(.45f);
-            if (gachaMachine != null) gachaMachine.PlayReward();
+            if (gachaMachine != null) gachaMachine.PlayReward(TestFloor);
             busy = false;
             yield break;
         }
