@@ -71,10 +71,42 @@ public sealed class XTapBattleController : MonoBehaviour
 
     readonly Dictionary<string, AudioClip> voiceClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
     readonly Dictionary<string, AudioClip> combatSfxClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
-    readonly string[] normalHitVoices = {"female_grunt1", "female_grunt2", "female_gasp1"};
-    readonly string[] swipeHitVoices = {"female_grunt2", "female_gasp1", "female_gasp2"};
-    readonly string[] criticalHitVoices = {"female_agony1", "female_scream1"};
-    readonly string[] lowHpVoices = {"female_whimper1", "female_grunt1"};
+    // Weighted by duplication to keep combat reactions soft most of the time:
+    // normal hit = ~70% moan, ~20% gasp, ~10% grunt.
+    readonly string[] normalHitVoices =
+    {
+        "female_moan1", "female_moan1", "female_moan1",
+        "female_moan2", "female_moan2",
+        "female_moan3", "female_moan3",
+        "female_gasp1", "female_gasp2",
+        "female_grunt1"
+    };
+
+    // Stronger motion, but still avoids turning every swipe into a scream.
+    readonly string[] swipeHitVoices =
+    {
+        "female_moan2", "female_moan2",
+        "female_moan3", "female_moan3",
+        "female_moan4", "female_moan4",
+        "female_gasp1", "female_gasp2",
+        "female_gasp2", "female_grunt2"
+    };
+
+    // Critical hit keeps screams rare: ~60% strong moan, ~30% agony, ~10% scream.
+    readonly string[] criticalHitVoices =
+    {
+        "female_moan3", "female_moan3", "female_moan3",
+        "female_moan4", "female_moan4", "female_moan4",
+        "female_agony1", "female_agony1", "female_agony1",
+        "female_scream1"
+    };
+
+    readonly string[] lowHpVoices =
+    {
+        "female_whimper1", "female_whimper1",
+        "female_moan4", "female_moan4",
+        "female_moan2"
+    };
 
     IEnumerator Start()
     {
@@ -253,7 +285,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .88f), .785f, .935f, .965f, .982f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1039", 25, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1040", 25, TextAnchor.MiddleCenter, false);
         codeText.color = new Color(.90f, .87f, .82f, 1f);
         Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
 
@@ -523,7 +555,7 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble(RandomLine(criticalTalk), 1.25f);
             VibrateTouch(true);
             PlayCombatImpact(prefix, swipe, true);
-            PlayRandomVoice(criticalHitVoices, 1f);
+            PlayRandomVoice(criticalHitVoices, .90f);
             yield return WeakPointHitBurst();
             HideWeakPoint();
             yield return TouchPulse(impact, true, swipe);
@@ -535,9 +567,9 @@ public sealed class XTapBattleController : MonoBehaviour
             VibrateTouch(false);
             PlayCombatImpact(prefix, swipe, false);
             if (enemyHp <= Mathf.RoundToInt(EnemyMaxHp * .25f) && UnityEngine.Random.value < .45f)
-                PlayRandomVoice(lowHpVoices, .88f);
+                PlayRandomVoice(lowHpVoices, .76f);
             else
-                PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .88f : .78f);
+                PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .80f : .68f);
             yield return TouchPulse(impact, false, swipe);
             yield return CharacterRecoil(impact, false, false);
         }
@@ -922,7 +954,9 @@ public sealed class XTapBattleController : MonoBehaviour
             "female_grunt1", "female_grunt2",
             "female_gasp1", "female_gasp2",
             "female_agony1", "female_scream1",
-            "female_whimper1"
+            "female_whimper1",
+            "female_moan1", "female_moan2",
+            "female_moan3", "female_moan4"
         };
 
         for (int i = 0; i < ids.Length; i++)
