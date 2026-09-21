@@ -194,71 +194,189 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         mainOverlay = new GameObject("MainScreen", typeof(RectTransform));
         mainOverlay.transform.SetParent(root, false);
-        Anchor(mainOverlay.GetComponent<RectTransform>(), 0, 0, 1, 1);
+        RectTransform mainRoot = mainOverlay.GetComponent<RectTransform>();
+        Anchor(mainRoot, 0, 0, 1, 1);
 
-        var top = new GameObject("MainTop", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
-        top.transform.SetParent(mainOverlay.transform, false);
-        top.color = new Color(.055f, .035f, .045f, .92f);
-        Anchor(top.rectTransform, 0, .865f, 1, 1);
+        // The combat art remains the live background so the main screen can later
+        // follow each floor/character instead of becoming one flattened screenshot.
+        MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .48f), 0f, .66f, 1f, 1f);
+        MakePanel(mainOverlay.transform, "BottomShade", new Color(.015f, .012f, .014f, .82f), 0f, 0f, 1f, .37f);
+        MakePanel(mainOverlay.transform, "LeftMist", new Color(.02f, .012f, .018f, .34f), 0f, .53f, .48f, .88f);
 
-        mainFloorText = MakeText(top.transform, "FLOOR 1", 36, TextAnchor.MiddleLeft, true);
-        mainFloorText.color = new Color(1f, .90f, .93f, 1f);
-        Anchor(mainFloorText.rectTransform, .05f, .48f, .95f, .92f);
+        // X탑 logo: large blood-red X with pale stone-white 탑.
+        Text logoX = MakeOutlinedText(mainOverlay.transform, "X", 132, TextAnchor.MiddleCenter, true);
+        logoX.color = new Color(.62f, .015f, .02f, 1f);
+        Anchor(logoX.rectTransform, .025f, .815f, .185f, .985f);
 
-        mainStatusText = MakeText(top.transform, "캐릭터 1", 25, TextAnchor.MiddleLeft, false);
-        mainStatusText.color = new Color(.78f, .66f, .70f, 1f);
-        Anchor(mainStatusText.rectTransform, .05f, .08f, .95f, .50f);
+        Text logoTower = MakeOutlinedText(mainOverlay.transform, "탑", 116, TextAnchor.MiddleCenter, true);
+        logoTower.color = new Color(.93f, .91f, .87f, 1f);
+        Anchor(logoTower.rectTransform, .155f, .82f, .355f, .98f);
 
-        var bottom = new GameObject("MainBottom", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
-        bottom.transform.SetParent(mainOverlay.transform, false);
-        bottom.color = new Color(.055f, .035f, .045f, .95f);
-        Anchor(bottom.rectTransform, 0, 0, 1, .205f);
+        string displayVersion = Application.version;
+        int dash = displayVersion.IndexOf('-');
+        if (dash > 0) displayVersion = displayVersion.Substring(0, dash);
+        Text version = MakeOutlinedText(mainOverlay.transform, "v " + displayVersion, 29, TextAnchor.MiddleCenter, false);
+        version.color = new Color(.82f, .78f, .74f, 1f);
+        Anchor(version.rectTransform, .205f, .785f, .365f, .83f);
 
-        Button fight = MakeButton(bottom.transform, "그녀를 베다", 34, new Color(.43f, .20f, .26f, 1f));
+        Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .88f), .785f, .935f, .965f, .982f);
+        AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1035", 25, TextAnchor.MiddleCenter, false);
+        codeText.color = new Color(.90f, .87f, .82f, 1f);
+        Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
+
+        // Floor information sits on the left, matching the supplied gothic concept.
+        Text floorWord = MakeOutlinedText(mainOverlay.transform, "FLOOR", 48, TextAnchor.MiddleLeft, true);
+        floorWord.color = new Color(.92f, .91f, .88f, 1f);
+        Anchor(floorWord.rectTransform, .045f, .675f, .245f, .745f);
+
+        mainFloorText = MakeOutlinedText(mainOverlay.transform, TestFloor.ToString(), 84, TextAnchor.MiddleLeft, true);
+        mainFloorText.color = new Color(.73f, .015f, .02f, 1f);
+        Anchor(mainFloorText.rectTransform, .245f, .66f, .36f, .755f);
+
+        mainStatusText = MakeOutlinedText(mainOverlay.transform, "그녀가 기다리고 있다...", 30, TextAnchor.MiddleLeft, false);
+        mainStatusText.color = new Color(.94f, .91f, .86f, 1f);
+        Anchor(mainStatusText.rectTransform, .045f, .625f, .53f, .675f);
+
+        // Main-screen speech bubble. This is separate from the combat reaction bubble.
+        Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        mainBubble.transform.SetParent(mainOverlay.transform, false);
+        mainBubble.sprite = speechBubbleSprite;
+        mainBubble.color = new Color(.96f, .95f, .92f, .97f);
+        mainBubble.raycastTarget = false;
+        Anchor(mainBubble.rectTransform, .665f, .705f, .965f, .795f);
+        Text mainBubbleText = MakeText(mainBubble.transform, "...또 오는 거야?", 27, TextAnchor.MiddleCenter, false);
+        mainBubbleText.color = new Color(.08f, .065f, .06f, 1f);
+        Anchor(mainBubbleText.rectTransform, .07f, .18f, .94f, .92f);
+
+        // Large central action button.
+        Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 52);
         RectTransform fr = fight.GetComponent<RectTransform>();
-        fr.anchorMin = new Vector2(.04f, .48f);
-        fr.anchorMax = new Vector2(.96f, .92f);
+        fr.anchorMin = new Vector2(.205f, .185f);
+        fr.anchorMax = new Vector2(.795f, .305f);
         fr.offsetMin = fr.offsetMax = Vector2.zero;
         fight.onClick.AddListener(BeginBattle);
 
+        // Bottom navigation bar. Only systems already present are interactive.
+        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.018f, .016f, .018f, .96f), 0f, 0f, 1f, .155f);
+        AddFrame(navRail.rectTransform, new Color(.36f, .31f, .25f, 1f), 2f);
+
+        string[] icons = {"↻", "↓", "↑", "▣", "⚒", "▥"};
         string[] labels = {"다시", "↓", "↑", "배낭", "대장간", "감옥"};
+
         for (int i = 0; i < labels.Length; i++)
         {
-            Button b = MakeButton(bottom.transform, labels[i], 22, new Color(.15f, .11f, .13f, 1f));
+            Button b = MakeNavButton(navRail.transform, icons[i], labels[i]);
             RectTransform br = b.GetComponent<RectTransform>();
-            float x1 = .04f + i * .155f;
-            float x2 = x1 + .14f;
+            float x1 = .018f + i * .1635f;
+            float x2 = x1 + .145f;
             br.anchorMin = new Vector2(x1, .10f);
-            br.anchorMax = new Vector2(x2, .39f);
+            br.anchorMax = new Vector2(x2, .88f);
             br.offsetMin = br.offsetMax = Vector2.zero;
 
-            // These systems are not ported to Unity yet. Keep the original main layout
-            // visible without pretending the missing menus already work.
-            b.interactable = false;
+            if (i == 0)
+                b.onClick.AddListener(ReturnToMain);
+            else
+            {
+                // Floor navigation / bag / forge / jail are intentionally not
+                // faked here. Their visuals are present, but functionality will
+                // be connected in their own implementation steps.
+                b.interactable = false;
+                ColorBlock cb = b.colors;
+                cb.disabledColor = Color.white;
+                b.colors = cb;
+            }
         }
 
         mainOverlay.SetActive(false);
     }
 
-    Button MakeButton(Transform parent, string label, int fontSize, Color bg)
+    Image MakePanel(Transform parent, string name, Color color, float x1, float y1, float x2, float y2)
     {
-        var go = new GameObject(label + "Button", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        Image panel = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        panel.transform.SetParent(parent, false);
+        panel.color = color;
+        panel.raycastTarget = false;
+        Anchor(panel.rectTransform, x1, y1, x2, y2);
+        return panel;
+    }
+
+    Text MakeOutlinedText(Transform parent, string value, int size, TextAnchor alignment, bool bold)
+    {
+        Text t = MakeText(parent, value, size, alignment, bold);
+        Outline outline = t.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, .88f);
+        outline.effectDistance = new Vector2(2.5f, -2.5f);
+        outline.useGraphicAlpha = true;
+        return t;
+    }
+
+    void AddFrame(RectTransform parent, Color color, float thickness)
+    {
+        Image top = MakePanel(parent, "FrameTop", color, 0f, 1f, 1f, 1f);
+        top.rectTransform.sizeDelta = new Vector2(0f, thickness);
+        Image bottom = MakePanel(parent, "FrameBottom", color, 0f, 0f, 1f, 0f);
+        bottom.rectTransform.sizeDelta = new Vector2(0f, thickness);
+        Image left = MakePanel(parent, "FrameLeft", color, 0f, 0f, 0f, 1f);
+        left.rectTransform.sizeDelta = new Vector2(thickness, 0f);
+        Image right = MakePanel(parent, "FrameRight", color, 1f, 0f, 1f, 1f);
+        right.rectTransform.sizeDelta = new Vector2(thickness, 0f);
+    }
+
+    Button MakeGothicButton(Transform parent, string label, int fontSize)
+    {
+        GameObject go = new GameObject("MainFightButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         go.transform.SetParent(parent, false);
 
-        Image image = go.GetComponent<Image>();
-        image.color = bg;
+        Image outer = go.GetComponent<Image>();
+        outer.color = new Color(.22f, .018f, .025f, .98f);
+        AddFrame(outer.rectTransform, new Color(.72f, .13f, .10f, 1f), 6f);
+
+        Image inner = MakePanel(go.transform, "Inset", new Color(.31f, .025f, .028f, .96f), .025f, .08f, .975f, .92f);
+        AddFrame(inner.rectTransform, new Color(.46f, .18f, .14f, .95f), 2f);
+
+        Text text = MakeOutlinedText(inner.transform, label, fontSize, TextAnchor.MiddleCenter, true);
+        text.color = new Color(.96f, .92f, .84f, 1f);
+        Anchor(text.rectTransform, .03f, .03f, .97f, .97f);
 
         Button button = go.GetComponent<Button>();
-        var colors = button.colors;
+        button.targetGraphic = outer;
+        ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, .92f, .92f, 1f);
-        colors.pressedColor = new Color(.78f, .72f, .72f, 1f);
-        colors.disabledColor = new Color(.42f, .39f, .40f, .75f);
+        colors.highlightedColor = new Color(1f, .92f, .90f, 1f);
+        colors.pressedColor = new Color(.72f, .58f, .58f, 1f);
+        colors.selectedColor = Color.white;
+        colors.fadeDuration = .06f;
         button.colors = colors;
+        return button;
+    }
 
-        Text text = MakeText(go.transform, label, fontSize, TextAnchor.MiddleCenter, true);
-        text.color = Color.white;
-        Anchor(text.rectTransform, .02f, .02f, .98f, .98f);
+    Button MakeNavButton(Transform parent, string icon, string label)
+    {
+        GameObject go = new GameObject(label + "NavButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+
+        Image bg = go.GetComponent<Image>();
+        bg.color = new Color(.055f, .052f, .052f, .94f);
+        AddFrame(bg.rectTransform, new Color(.47f, .40f, .32f, .95f), 2f);
+
+        Text iconText = MakeOutlinedText(go.transform, icon, 45, TextAnchor.MiddleCenter, true);
+        iconText.color = new Color(.78f, .76f, .71f, 1f);
+        Anchor(iconText.rectTransform, .05f, .39f, .95f, .91f);
+
+        Text labelText = MakeOutlinedText(go.transform, label, 23, TextAnchor.MiddleCenter, false);
+        labelText.color = new Color(.91f, .88f, .81f, 1f);
+        Anchor(labelText.rectTransform, .03f, .06f, .97f, .40f);
+
+        Button button = go.GetComponent<Button>();
+        button.targetGraphic = bg;
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1f, .93f, .85f, 1f);
+        colors.pressedColor = new Color(.68f, .60f, .56f, 1f);
+        colors.selectedColor = Color.white;
+        colors.fadeDuration = .06f;
+        button.colors = colors;
         return button;
     }
 
@@ -272,8 +390,8 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         ResetFight();
         SetStageOrFallback(0);
-        if (mainFloorText != null) mainFloorText.text = "FLOOR " + TestFloor;
-        if (mainStatusText != null) mainStatusText.text = "캐릭터 " + TestFloor;
+        if (mainFloorText != null) mainFloorText.text = TestFloor.ToString();
+        if (mainStatusText != null) mainStatusText.text = "그녀가 기다리고 있다...";
         if (mainOverlay != null)
         {
             mainOverlay.SetActive(true);
