@@ -1,18 +1,13 @@
-# 원본 X탑 APK 연결
+# X탑 원본 데이터 업로드
 
-Unity판은 기존 X탑의 415장 전투 이미지와 효과음을 그대로 사용합니다.
+GitHub 웹 업로드는 큰 파일 1개를 올릴 때 제한이 있어서 원본 APK를 두 조각으로 나눠 사용합니다.
 
-폰에서 GitHub의 이 폴더에 원본 APK 한 파일만 업로드하세요.
+아래 두 파일을 이 폴더에 그대로 업로드하세요.
 
-경로:
-unity/XTapUnity/Assets/StreamingAssets/
+- xtop_source.part1
+- xtop_source.part2
 
-파일명:
-xtop_source.apk
+Unity판은 실행할 때 두 파일을 다시 합쳐 원본 X탑 APK의 이미지와 효과음을 읽습니다.
 
-업로드할 원본:
+원본 데이터:
 X탑_v1024.apk
-
-즉 X탑_v1024.apk를 업로드하면서 이름만 xtop_source.apk로 맞추면 됩니다.
-
-그 뒤 Unity Build Automation에서 기존 "기본 안드로이드"를 다시 빌드하면 됩니다.
