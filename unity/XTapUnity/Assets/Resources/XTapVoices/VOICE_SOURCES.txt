@@ -33,3 +33,20 @@ female_scream1
 female_whimper1
 - 318078__drkvixn91__whimper_gasp_1_female
 - https://freesound.org/people/Drkvixn91/sounds/318078/
+
+
+female_moan1
+- 220654__ritola27__grito_mujer8
+- https://freesound.org/people/ritola27/sounds/220654/
+
+female_moan2
+- 220652__ritola27__grito_mujer7
+- https://freesound.org/people/ritola27/sounds/220652/
+
+female_moan3
+- 220650__ritola27__grito_mujer6
+- https://freesound.org/people/ritola27/sounds/220650/
+
+female_moan4
+- 565696__nefarious_needs__female-moaning-1
+- https://freesound.org/people/NeFarIous_NeeDs/sounds/565696/
