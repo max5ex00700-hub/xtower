@@ -22,6 +22,9 @@ public sealed class XTapBattleController : MonoBehaviour
     CanvasGroup bubbleGroup;
     Image weakPoint;
     XTapGachaMachine gachaMachine;
+    XTapAndroidTts ttsSpeaker;
+    Coroutine bubbleAnimRoutine;
+    Coroutine bubbleSpeechRoutine;
 
     GameObject mainOverlay;
     Text mainFloorText;
@@ -120,6 +123,8 @@ public sealed class XTapBattleController : MonoBehaviour
 
         BuildBattleOnlyUi();
         BuildMainUi();
+
+        ttsSpeaker = gameObject.AddComponent<XTapAndroidTts>();
 
         gachaMachine = gameObject.AddComponent<XTapGachaMachine>();
         gachaMachine.Initialize(root, koreanFont, ReturnToMain);
@@ -240,17 +245,22 @@ public sealed class XTapBattleController : MonoBehaviour
         bubblePanel.color = new Color(1f, .98f, .94f, .97f);
         bubblePanel.raycastTarget = false;
         RectTransform bubbleRect = bubblePanel.rectTransform;
-        bubbleRect.anchorMin = bubbleRect.anchorMax = new Vector2(0f, 1f);
-        bubbleRect.pivot = new Vector2(0f, 1f);
-        bubbleRect.sizeDelta = new Vector2(430f, 132f);
-        bubbleRect.anchoredPosition = new Vector2(26f, -34f);
+        // Put combat dialogue beside the face instead of using a giant HUD box
+        // stuck to the upper-left corner. The lower-left tail points toward the character.
+        bubbleRect.anchorMin = bubbleRect.anchorMax = new Vector2(1f, 1f);
+        bubbleRect.pivot = new Vector2(1f, 1f);
+        bubbleRect.sizeDelta = new Vector2(330f, 116f);
+        bubbleRect.anchoredPosition = new Vector2(-38f, -250f);
 
         bubbleGroup = bubblePanel.GetComponent<CanvasGroup>();
         bubbleGroup.alpha = 0;
 
-        bubbleText = MakeText(bubblePanel.transform, "", 28, TextAnchor.MiddleCenter, true);
-        bubbleText.color = new Color(.12f, .08f, .09f, 1);
-        Anchor(bubbleText.rectTransform, .08f, .20f, .92f, .92f);
+        bubbleText = MakeText(bubblePanel.transform, "", 30, TextAnchor.MiddleCenter, true);
+        bubbleText.color = new Color(.10f, .065f, .07f, 1f);
+        bubbleText.resizeTextForBestFit = true;
+        bubbleText.resizeTextMinSize = 22;
+        bubbleText.resizeTextMaxSize = 30;
+        Anchor(bubbleText.rectTransform, .08f, .22f, .92f, .91f);
     }
 
 
@@ -287,7 +297,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1042", 27, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1043", 27, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
         codeText.resizeTextMinSize = 16;
         codeText.resizeTextMaxSize = 27;
@@ -942,9 +952,85 @@ public sealed class XTapBattleController : MonoBehaviour
     void ShowBubble(string text, float seconds)
     {
         StopCoroutine("HideBubbleLater");
+
+        if (bubbleAnimRoutine != null)
+        {
+            StopCoroutine(bubbleAnimRoutine);
+            bubbleAnimRoutine = null;
+        }
+
+        if (bubbleSpeechRoutine != null)
+        {
+            StopCoroutine(bubbleSpeechRoutine);
+            bubbleSpeechRoutine = null;
+        }
+
+        LayoutBattleBubble(text);
+        bubbleGroup.alpha = 1f;
+        bubbleAnimRoutine = StartCoroutine(AnimateBubbleIn(text));
+
+        // Let the short impact/grunt happen first, then read the actual line.
+        // Android TTS uses the voice configured on the device.
+        if (ttsSpeaker != null)
+            bubbleSpeechRoutine = StartCoroutine(SpeakBubbleLater(text, .18f));
+
+        if (seconds < 20f)
+            StartCoroutine(HideBubbleLater(seconds));
+    }
+
+    void LayoutBattleBubble(string text)
+    {
+        if (bubblePanel == null) return;
+
+        int count = string.IsNullOrEmpty(text) ? 1 : text.Length;
+        float width = Mathf.Clamp(185f + count * 18f, 250f, 420f);
+        float height = count > 16 ? 138f : (count > 10 ? 124f : 110f);
+
+        RectTransform r = bubblePanel.rectTransform;
+        r.sizeDelta = new Vector2(width, height);
+        r.anchoredPosition = new Vector2(-38f, -250f);
+    }
+
+    IEnumerator AnimateBubbleIn(string text)
+    {
+        RectTransform r = bubblePanel.rectTransform;
+        r.localScale = Vector3.one * .86f;
+        bubbleText.text = "";
+
+        float t = 0f;
+        const float popTime = .11f;
+        while (t < popTime)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / popTime);
+            float s = p < .72f
+                ? Mathf.Lerp(.86f, 1.045f, p / .72f)
+                : Mathf.Lerp(1.045f, 1f, (p - .72f) / .28f);
+            r.localScale = Vector3.one * s;
+            yield return null;
+        }
+
+        r.localScale = Vector3.one;
+
+        if (!string.IsNullOrEmpty(text))
+        {
+            for (int i = 1; i <= text.Length; i++)
+            {
+                bubbleText.text = text.Substring(0, i);
+                yield return new WaitForSecondsRealtime(.014f);
+            }
+        }
+
         bubbleText.text = text;
-        bubbleGroup.alpha = 1;
-        if (seconds < 20f) StartCoroutine(HideBubbleLater(seconds));
+        bubbleAnimRoutine = null;
+    }
+
+    IEnumerator SpeakBubbleLater(string text, float delay)
+    {
+        yield return new WaitForSecondsRealtime(delay);
+        if (ttsSpeaker != null && bubbleGroup != null && bubbleGroup.alpha > .01f)
+            ttsSpeaker.Speak(text);
+        bubbleSpeechRoutine = null;
     }
 
     IEnumerator HideBubbleLater(float seconds)
@@ -955,7 +1041,23 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void HideBubble()
     {
-        if (bubbleGroup != null) bubbleGroup.alpha = 0;
+        if (bubbleAnimRoutine != null)
+        {
+            StopCoroutine(bubbleAnimRoutine);
+            bubbleAnimRoutine = null;
+        }
+
+        if (bubbleSpeechRoutine != null)
+        {
+            StopCoroutine(bubbleSpeechRoutine);
+            bubbleSpeechRoutine = null;
+        }
+
+        if (bubblePanel != null)
+            bubblePanel.rectTransform.localScale = Vector3.one;
+
+        if (bubbleGroup != null)
+            bubbleGroup.alpha = 0f;
     }
 
     void Play(string entry)
