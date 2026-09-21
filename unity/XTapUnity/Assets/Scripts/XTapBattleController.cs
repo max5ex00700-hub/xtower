@@ -22,9 +22,7 @@ public sealed class XTapBattleController : MonoBehaviour
     CanvasGroup bubbleGroup;
     Image weakPoint;
     XTapGachaMachine gachaMachine;
-    XTapAndroidTts ttsSpeaker;
     Coroutine bubbleAnimRoutine;
-    Coroutine bubbleSpeechRoutine;
 
     GameObject mainOverlay;
     Text mainFloorText;
@@ -74,41 +72,40 @@ public sealed class XTapBattleController : MonoBehaviour
 
     readonly Dictionary<string, AudioClip> voiceClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
     readonly Dictionary<string, AudioClip> combatSfxClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
-    // Weighted by duplication to keep combat reactions soft most of the time:
-    // normal hit = ~70% moan, ~20% gasp, ~10% grunt.
+    // Adult female combat reactions. Keep most hits breathy/soft, with screams rare.
     readonly string[] normalHitVoices =
     {
-        "female_moan1", "female_moan1", "female_moan1",
-        "female_moan2", "female_moan2",
-        "female_moan3", "female_moan3",
-        "female_gasp1", "female_gasp2",
+        "female_moan1", "female_moan2", "female_moan3", "female_moan4",
+        "female_exhale1", "female_breath1",
+        "female_sigh1", "female_sigh2",
+        "female_ooh1", "female_gasp1",
         "female_grunt1"
     };
 
-    // Stronger motion, but still avoids turning every swipe into a scream.
     readonly string[] swipeHitVoices =
     {
-        "female_moan2", "female_moan2",
-        "female_moan3", "female_moan3",
-        "female_moan4", "female_moan4",
-        "female_gasp1", "female_gasp2",
-        "female_gasp2", "female_grunt2"
+        "female_moan2", "female_moan3", "female_moan4", "female_moan4",
+        "female_ooh1", "female_exhale1",
+        "female_breath1", "female_gasp2",
+        "female_grunt2"
     };
 
-    // Critical hit keeps screams rare: ~60% strong moan, ~30% agony, ~10% scream.
+    // Criticals use stronger moans/agony, but true screams stay uncommon.
     readonly string[] criticalHitVoices =
     {
-        "female_moan3", "female_moan3", "female_moan3",
-        "female_moan4", "female_moan4", "female_moan4",
-        "female_agony1", "female_agony1", "female_agony1",
+        "female_moan3", "female_moan3",
+        "female_moan4", "female_moan4",
+        "female_ooh1",
+        "female_agony1", "female_agony2",
+        "female_agony2",
         "female_scream1"
     };
 
     readonly string[] lowHpVoices =
     {
         "female_whimper1", "female_whimper1",
-        "female_moan4", "female_moan4",
-        "female_moan2"
+        "female_breath1", "female_sigh1", "female_sigh2",
+        "female_moan4", "female_exhale1"
     };
 
     IEnumerator Start()
@@ -123,8 +120,6 @@ public sealed class XTapBattleController : MonoBehaviour
 
         BuildBattleOnlyUi();
         BuildMainUi();
-
-        ttsSpeaker = gameObject.AddComponent<XTapAndroidTts>();
 
         gachaMachine = gameObject.AddComponent<XTapGachaMachine>();
         gachaMachine.Initialize(root, koreanFont, ReturnToMain);
@@ -297,7 +292,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1044", 27, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1045", 27, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
         codeText.resizeTextMinSize = 16;
         codeText.resizeTextMaxSize = 27;
@@ -583,7 +578,7 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble(RandomLine(criticalTalk), 1.25f);
             VibrateTouch(true);
             PlayCombatImpact(prefix, swipe, true);
-            PlayRandomVoice(criticalHitVoices, .90f);
+            PlayRandomVoice(criticalHitVoices, .84f);
             yield return WeakPointHitBurst();
             HideWeakPoint();
             yield return TouchPulse(impact, true, swipe);
@@ -595,9 +590,9 @@ public sealed class XTapBattleController : MonoBehaviour
             VibrateTouch(false);
             PlayCombatImpact(prefix, swipe, false);
             if (enemyHp <= Mathf.RoundToInt(EnemyMaxHp * .25f) && UnityEngine.Random.value < .45f)
-                PlayRandomVoice(lowHpVoices, .76f);
+                PlayRandomVoice(lowHpVoices, .72f);
             else
-                PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .80f : .68f);
+                PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .78f : .66f);
             yield return TouchPulse(impact, false, swipe);
             yield return CharacterRecoil(impact, false, false);
         }
@@ -959,20 +954,9 @@ public sealed class XTapBattleController : MonoBehaviour
             bubbleAnimRoutine = null;
         }
 
-        if (bubbleSpeechRoutine != null)
-        {
-            StopCoroutine(bubbleSpeechRoutine);
-            bubbleSpeechRoutine = null;
-        }
-
         LayoutBattleBubble(text);
         bubbleGroup.alpha = 1f;
         bubbleAnimRoutine = StartCoroutine(AnimateBubbleIn(text));
-
-        // Let the short impact/grunt happen first, then read the actual line.
-        // Android TTS uses the voice configured on the device.
-        if (ttsSpeaker != null)
-            bubbleSpeechRoutine = StartCoroutine(SpeakBubbleLater(text, .18f));
 
         if (seconds < 20f)
             StartCoroutine(HideBubbleLater(seconds));
@@ -1025,14 +1009,6 @@ public sealed class XTapBattleController : MonoBehaviour
         bubbleAnimRoutine = null;
     }
 
-    IEnumerator SpeakBubbleLater(string text, float delay)
-    {
-        yield return new WaitForSecondsRealtime(delay);
-        if (ttsSpeaker != null && bubbleGroup != null && bubbleGroup.alpha > .01f)
-            ttsSpeaker.Speak(text);
-        bubbleSpeechRoutine = null;
-    }
-
     IEnumerator HideBubbleLater(float seconds)
     {
         yield return new WaitForSecondsRealtime(seconds);
@@ -1045,12 +1021,6 @@ public sealed class XTapBattleController : MonoBehaviour
         {
             StopCoroutine(bubbleAnimRoutine);
             bubbleAnimRoutine = null;
-        }
-
-        if (bubbleSpeechRoutine != null)
-        {
-            StopCoroutine(bubbleSpeechRoutine);
-            bubbleSpeechRoutine = null;
         }
 
         if (bubblePanel != null)
@@ -1076,7 +1046,10 @@ public sealed class XTapBattleController : MonoBehaviour
             "female_agony1", "female_scream1",
             "female_whimper1",
             "female_moan1", "female_moan2",
-            "female_moan3", "female_moan4"
+            "female_moan3", "female_moan4",
+            "female_exhale1", "female_breath1",
+            "female_sigh1", "female_sigh2",
+            "female_ooh1", "female_agony2"
         };
 
         for (int i = 0; i < ids.Length; i++)
