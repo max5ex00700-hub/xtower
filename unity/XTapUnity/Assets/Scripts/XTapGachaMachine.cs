@@ -11,6 +11,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
     RectTransform host;
     Font font;
     Action onCollected;
+    XTapInventory bag;
 
     GameObject overlay;
     RectTransform machine;
@@ -19,13 +20,17 @@ public sealed class XTapGachaMachine : MonoBehaviour
     RectTransform chute;
     RectTransform rewardRoot;
     Text title;
+    Text correctionText;
     Text nameText;
     Text statsText;
     Text hintText;
 
     bool readyToCollect;
     Coroutine playRoutine;
+    Outcome pendingOutcome;
+    int activeCharacterId = 1;
 
+    readonly int[] corrections = {-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50};
     readonly int[] allowedSizes = {1, 2, 3, 4, 5, 6, 9, 12};
     readonly int[] baseBudgets = {10, 22, 35, 50, 66, 84, 135, 190};
 
@@ -41,11 +46,12 @@ public sealed class XTapGachaMachine : MonoBehaviour
         "결정", "부품", "흔적", "고리", "판금", "심장"
     };
 
-    public void Initialize(RectTransform parent, Font uiFont, Action collected)
+    public void Initialize(RectTransform parent, Font uiFont, Action collected, XTapInventory inventory)
     {
         host = parent;
         font = uiFont;
         onCollected = collected;
+        bag = inventory;
         BuildUi();
         overlay.SetActive(false);
     }
@@ -64,25 +70,33 @@ public sealed class XTapGachaMachine : MonoBehaviour
         CloseAndCollect();
     }
 
-    public void PlayReward()
+    public void PlayReward(int characterId)
     {
         if (host == null || overlay == null) return;
+        activeCharacterId = Mathf.Max(1, characterId);
 
         if (playRoutine != null) StopCoroutine(playRoutine);
         playRoutine = StartCoroutine(PlayRoutine());
+    }
+
+    public void PlayReward()
+    {
+        PlayReward(1);
     }
 
     IEnumerator PlayRoutine()
     {
         IsOpen = true;
         readyToCollect = false;
+        pendingOutcome = null;
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
 
         ClearReward();
+        correctionText.text = "";
         nameText.text = "";
         statsText.text = "";
-        hintText.text = "머신 작동 중";
+        hintText.text = "보정 룰렛 회전 중";
         title.text = "X-TOWER  REWARD";
 
         machine.localScale = Vector3.one * .90f;
@@ -99,9 +113,13 @@ public sealed class XTapGachaMachine : MonoBehaviour
             yield return null;
         }
 
+        int correctionIndex = UnityEngine.Random.Range(0, corrections.Length);
+        int correction = corrections[correctionIndex];
+
+        float segment = 360f / corrections.Length;
         float startAngle = wheel.localEulerAngles.z;
-        float totalSpin = UnityEngine.Random.Range(1280f, 1760f);
-        float duration = 1.75f;
+        float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + correctionIndex * segment;
+        float duration = 1.85f;
         float t = 0f;
 
         while (t < duration)
@@ -112,7 +130,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
             float angle = startAngle - totalSpin * e;
             wheel.localRotation = Quaternion.Euler(0f, 0f, angle);
 
-            float shake = Mathf.Sin(Time.unscaledTime * 70f) * (1f - p) * 5f;
+            float shake = Mathf.Sin(Time.unscaledTime * 72f) * (1f - p) * 5f;
             machine.anchoredPosition = new Vector2(shake, 0f);
 
             float pulse = 1f + Mathf.Sin(Time.unscaledTime * 17f) * .05f;
@@ -125,12 +143,211 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         yield return ChuteKick();
 
-        Reward reward = RollReward();
-        ShowReward(reward);
+        pendingOutcome = RollOutcome(correction);
+        ShowOutcome(pendingOutcome);
         yield return DropReward();
 
-        hintText.text = "화면을 터치해서 획득";
+        hintText.text = pendingOutcome.block != null
+            ? "화면을 터치해서 가방에 넣기"
+            : "화면을 터치해서 계속";
         readyToCollect = true;
+    }
+
+    Outcome RollOutcome(int correction)
+    {
+        Outcome outcome = new Outcome();
+        outcome.correction = correction;
+
+        if (correction == 0)
+        {
+            bool captured = IsCharacterCaptured(activeCharacterId);
+            if (!captured)
+            {
+                outcome.captureAttempt = true;
+                outcome.captureSucceeded = UnityEngine.Random.value < .01f;
+
+                if (outcome.captureSucceeded)
+                {
+                    PlayerPrefs.SetInt(CaptureKey(activeCharacterId), 1);
+                    PlayerPrefs.Save();
+                }
+                return outcome;
+            }
+
+            outcome.block = RollBlock(0, true);
+            return outcome;
+        }
+
+        outcome.block = RollBlock(correction, false);
+        return outcome;
+    }
+
+    XTapGearBlockData RollBlock(int correction, bool exclusive)
+    {
+        int sizeIndex = UnityEngine.Random.Range(0, allowedSizes.Length);
+        int cells = allowedSizes[sizeIndex];
+        int budget = baseBudgets[sizeIndex];
+
+        float multiplier = 1f + correction / 100f;
+        int total = Mathf.Max(3, Mathf.RoundToInt(budget * multiplier));
+
+        float a = UnityEngine.Random.Range(.15f, .70f);
+        float d = UnityEngine.Random.Range(.10f, .65f);
+        float h = UnityEngine.Random.Range(.10f, .65f);
+        float sum = a + d + h;
+
+        int attack = Mathf.Max(1, Mathf.RoundToInt(total * a / sum));
+        int defense = Mathf.Max(1, Mathf.RoundToInt(total * d / sum));
+        int hp = Mathf.Max(1, total - attack - defense);
+
+        XTapGearBlockData r = new XTapGearBlockData();
+        r.id = Guid.NewGuid().ToString("N");
+        r.cellCount = cells;
+        r.attack = attack;
+        r.defense = defense;
+        r.hp = hp;
+        r.correction = correction;
+        r.exclusive = exclusive;
+        r.characterId = activeCharacterId;
+
+        if (exclusive)
+            r.displayName = activeCharacterId + "층 전용 " + nouns[UnityEngine.Random.Range(0, nouns.Length)];
+        else
+            r.displayName = prefixes[UnityEngine.Random.Range(0, prefixes.Length)] + " " +
+                            nouns[UnityEngine.Random.Range(0, nouns.Length)];
+
+        r.shape = EncodeShape(ShapeFor(cells));
+        return r;
+    }
+
+    void ShowOutcome(Outcome outcome)
+    {
+        ClearReward();
+
+        string corr = outcome.correction > 0
+            ? "+" + outcome.correction + "%"
+            : outcome.correction + "%";
+        correctionText.text = "보정  " + corr;
+
+        if (outcome.captureAttempt)
+        {
+            title.text = "CAPTURE BALL";
+            nameText.text = outcome.captureSucceeded ? "포획 성공!" : "포획 실패";
+            statsText.text = outcome.captureSucceeded
+                ? activeCharacterId + "층 캐릭터 포획 상태 저장"
+                : "포획 확률 1%";
+            DrawCaptureBall(outcome.captureSucceeded);
+            return;
+        }
+
+        if (outcome.block == null) return;
+
+        XTapGearBlockData r = outcome.block;
+        title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "BLOCK GEAR";
+        nameText.text = r.displayName + "  ·  " + r.cellCount + "칸";
+        statsText.text = "공격 +" + r.attack + "     방어 +" + r.defense + "     체력 +" + r.hp;
+        DrawBlock(r);
+    }
+
+    void DrawCaptureBall(bool success)
+    {
+        GameObject outer = new GameObject("CaptureBall", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        outer.transform.SetParent(rewardRoot, false);
+        Image img = outer.GetComponent<Image>();
+        img.color = success ? new Color(.96f, .72f, .18f, 1f) : new Color(.36f, .38f, .44f, 1f);
+        img.raycastTarget = false;
+
+        RectTransform rt = img.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
+        rt.sizeDelta = new Vector2(150f, 150f);
+        rt.anchoredPosition = Vector2.zero;
+
+        GameObject core = new GameObject("Core", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        core.transform.SetParent(outer.transform, false);
+        Image ci = core.GetComponent<Image>();
+        ci.color = new Color(.08f, .09f, .11f, 1f);
+        ci.raycastTarget = false;
+        RectTransform cr = ci.rectTransform;
+        cr.anchorMin = cr.anchorMax = new Vector2(.5f, .5f);
+        cr.sizeDelta = new Vector2(62f, 62f);
+
+        Text x = MakeText(core.transform, "X", 42, TextAnchor.MiddleCenter, true);
+        x.color = new Color(.96f, .78f, .22f, 1f);
+        Anchor(x.rectTransform, 0f, 0f, 1f, 1f);
+    }
+
+    void DrawBlock(XTapGearBlockData r)
+    {
+        List<Vector2Int> cells = DecodeShape(r.shape);
+        float cell = 44f;
+        int minX = 999, maxX = -999, minY = 999, maxY = -999;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            minX = Mathf.Min(minX, cells[i].x);
+            maxX = Mathf.Max(maxX, cells[i].x);
+            minY = Mathf.Min(minY, cells[i].y);
+            maxY = Mathf.Max(maxY, cells[i].y);
+        }
+
+        float width = (maxX - minX + 1) * cell;
+        float height = (maxY - minY + 1) * cell;
+        Color blockColor = r.exclusive
+            ? new Color(.66f, .22f, .82f, 1f)
+            : (r.correction > 0 ? new Color(.94f, .65f, .14f, 1f) : new Color(.40f, .47f, .57f, 1f));
+
+        for (int i = 0; i < cells.Count; i++)
+        {
+            Vector2Int p = cells[i];
+            GameObject outer = new GameObject("BlockCell", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            outer.transform.SetParent(rewardRoot, false);
+            Image img = outer.GetComponent<Image>();
+            img.color = blockColor;
+            img.raycastTarget = false;
+
+            RectTransform rt = img.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
+            rt.sizeDelta = new Vector2(cell - 3f, cell - 3f);
+            rt.anchoredPosition = new Vector2(
+                (p.x - minX + .5f) * cell - width * .5f,
+                (p.y - minY + .5f) * cell - height * .5f
+            );
+
+            GameObject inner = new GameObject("Inset", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            inner.transform.SetParent(outer.transform, false);
+            Image ii = inner.GetComponent<Image>();
+            ii.color = new Color(.10f, .105f, .12f, .92f);
+            ii.raycastTarget = false;
+            Anchor(ii.rectTransform, .13f, .13f, .87f, .87f);
+        }
+    }
+
+    void CloseAndCollect()
+    {
+        if (pendingOutcome != null && pendingOutcome.block != null)
+        {
+            if (bag == null || !bag.TryAddBlock(pendingOutcome.block))
+            {
+                hintText.text = "가방 8×3에 들어갈 공간이 없습니다.";
+                readyToCollect = true;
+                return;
+            }
+        }
+
+        readyToCollect = false;
+        IsOpen = false;
+        pendingOutcome = null;
+        overlay.SetActive(false);
+        if (onCollected != null) onCollected();
+    }
+
+    bool IsCharacterCaptured(int characterId)
+    {
+        return PlayerPrefs.GetInt(CaptureKey(characterId), 0) == 1;
+    }
+
+    string CaptureKey(int characterId)
+    {
+        return "xtap_captured_char_" + characterId;
     }
 
     IEnumerator ChuteKick()
@@ -168,43 +385,6 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         rewardRoot.anchoredPosition = end;
         rewardRoot.localScale = Vector3.one;
-    }
-
-    void CloseAndCollect()
-    {
-        readyToCollect = false;
-        IsOpen = false;
-        overlay.SetActive(false);
-        if (onCollected != null) onCollected();
-    }
-
-    Reward RollReward()
-    {
-        int sizeIndex = UnityEngine.Random.Range(0, allowedSizes.Length);
-        int cells = allowedSizes[sizeIndex];
-        int budget = baseBudgets[sizeIndex];
-
-        float quality = UnityEngine.Random.Range(.88f, 1.13f);
-        int total = Mathf.Max(3, Mathf.RoundToInt(budget * quality));
-
-        float a = UnityEngine.Random.Range(.15f, .70f);
-        float d = UnityEngine.Random.Range(.10f, .65f);
-        float h = UnityEngine.Random.Range(.10f, .65f);
-        float sum = a + d + h;
-
-        int attack = Mathf.Max(1, Mathf.RoundToInt(total * a / sum));
-        int defense = Mathf.Max(1, Mathf.RoundToInt(total * d / sum));
-        int hp = Mathf.Max(1, total - attack - defense);
-
-        Reward r = new Reward();
-        r.cellCount = cells;
-        r.attack = attack;
-        r.defense = defense;
-        r.hp = hp;
-        r.displayName = prefixes[UnityEngine.Random.Range(0, prefixes.Length)] + " " +
-                        nouns[UnityEngine.Random.Range(0, nouns.Length)];
-        r.cells = ShapeFor(cells);
-        return r;
     }
 
     List<Vector2Int> ShapeFor(int count)
@@ -271,50 +451,29 @@ public sealed class XTapGachaMachine : MonoBehaviour
         return list;
     }
 
-    void ShowReward(Reward r)
+    string EncodeShape(List<Vector2Int> cells)
     {
-        ClearReward();
-
-        nameText.text = r.displayName + "  ·  " + r.cellCount + "칸";
-        statsText.text = "공격 +" + r.attack + "     방어 +" + r.defense + "     체력 +" + r.hp;
-
-        float cell = 44f;
-        int minX = 999, maxX = -999, minY = 999, maxY = -999;
-        for (int i = 0; i < r.cells.Count; i++)
+        System.Text.StringBuilder sb = new System.Text.StringBuilder();
+        for (int i = 0; i < cells.Count; i++)
         {
-            minX = Mathf.Min(minX, r.cells[i].x);
-            maxX = Mathf.Max(maxX, r.cells[i].x);
-            minY = Mathf.Min(minY, r.cells[i].y);
-            maxY = Mathf.Max(maxY, r.cells[i].y);
+            if (i > 0) sb.Append(';');
+            sb.Append(cells[i].x).Append(',').Append(cells[i].y);
         }
+        return sb.ToString();
+    }
 
-        float width = (maxX - minX + 1) * cell;
-        float height = (maxY - minY + 1) * cell;
-
-        for (int i = 0; i < r.cells.Count; i++)
+    List<Vector2Int> DecodeShape(string encoded)
+    {
+        List<Vector2Int> list = new List<Vector2Int>();
+        string[] pts = encoded.Split(';');
+        for (int i = 0; i < pts.Length; i++)
         {
-            Vector2Int p = r.cells[i];
-            GameObject outer = new GameObject("BlockCell", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            outer.transform.SetParent(rewardRoot, false);
-            Image img = outer.GetComponent<Image>();
-            img.color = new Color(.94f, .70f, .16f, 1f);
-            img.raycastTarget = false;
-
-            RectTransform rt = img.rectTransform;
-            rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
-            rt.sizeDelta = new Vector2(cell - 3f, cell - 3f);
-            rt.anchoredPosition = new Vector2(
-                (p.x - minX + .5f) * cell - width * .5f,
-                (p.y - minY + .5f) * cell - height * .5f
-            );
-
-            GameObject inner = new GameObject("Inset", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            inner.transform.SetParent(outer.transform, false);
-            Image ii = inner.GetComponent<Image>();
-            ii.color = new Color(.12f, .14f, .18f, 1f);
-            ii.raycastTarget = false;
-            Anchor(ii.rectTransform, .13f, .13f, .87f, .87f);
+            string[] xy = pts[i].Split(',');
+            int x, y;
+            if (xy.Length == 2 && int.TryParse(xy[0], out x) && int.TryParse(xy[1], out y))
+                list.Add(new Vector2Int(x, y));
         }
+        return list;
     }
 
     void ClearReward()
@@ -329,15 +488,15 @@ public sealed class XTapGachaMachine : MonoBehaviour
         overlay = new GameObject("GachaOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         overlay.transform.SetParent(host, false);
         Image dim = overlay.GetComponent<Image>();
-        dim.color = new Color(0f, 0f, 0f, .78f);
-        dim.raycastTarget = false;
+        dim.color = new Color(0f, 0f, 0f, .82f);
+        dim.raycastTarget = true;
         Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
 
         machine = new GameObject("GachaMachine", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         machine.SetParent(overlay.transform, false);
         Image body = machine.GetComponent<Image>();
         body.color = new Color(.075f, .085f, .11f, 1f);
-        body.raycastTarget = false;
+        body.raycastTarget = true;
         machine.anchorMin = machine.anchorMax = new Vector2(.5f, .5f);
         machine.pivot = new Vector2(.5f, .5f);
         machine.sizeDelta = new Vector2(760f, 1240f);
@@ -346,31 +505,43 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         title = MakeText(machine, "X-TOWER  REWARD", 34, TextAnchor.MiddleCenter, true);
         title.color = new Color(1f, .84f, .39f, 1f);
-        Anchor(title.rectTransform, .08f, .89f, .92f, .965f);
+        Anchor(title.rectTransform, .08f, .91f, .92f, .97f);
+
+        correctionText = MakeText(machine, "", 27, TextAnchor.MiddleCenter, true);
+        correctionText.color = new Color(.96f, .76f, .25f, 1f);
+        Anchor(correctionText.rectTransform, .15f, .855f, .85f, .91f);
 
         RectTransform window = MakePanel(machine, "WheelWindow", new Color(.025f, .03f, .045f, 1f));
-        Anchor(window, .16f, .47f, .84f, .86f);
+        Anchor(window, .16f, .49f, .84f, .85f);
         MakeFrame(window, new Color(.42f, .44f, .50f, 1f), 8f);
 
         wheel = new GameObject("Wheel", typeof(RectTransform)).GetComponent<RectTransform>();
         wheel.SetParent(window, false);
         wheel.anchorMin = wheel.anchorMax = new Vector2(.5f, .5f);
-        wheel.sizeDelta = new Vector2(380f, 380f);
+        wheel.sizeDelta = new Vector2(390f, 390f);
         wheel.anchoredPosition = Vector2.zero;
 
-        for (int i = 0; i < 12; i++)
+        float segment = 360f / corrections.Length;
+        for (int i = 0; i < corrections.Length; i++)
         {
-            GameObject light = new GameObject("WheelLight" + i, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            light.transform.SetParent(wheel, false);
-            Image li = light.GetComponent<Image>();
-            li.color = i % 2 == 0 ? new Color(1f, .72f, .15f, 1f) : new Color(.95f, .95f, .88f, 1f);
-            li.raycastTarget = false;
-            RectTransform lr = li.rectTransform;
-            lr.anchorMin = lr.anchorMax = new Vector2(.5f, .5f);
-            lr.sizeDelta = new Vector2(26f, 62f);
-            float a = i * 30f * Mathf.Deg2Rad;
-            lr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 160f;
-            lr.localRotation = Quaternion.Euler(0f, 0f, -i * 30f);
+            float a = i * segment * Mathf.Deg2Rad;
+
+            GameObject slot = new GameObject("Slot" + i, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            slot.transform.SetParent(wheel, false);
+            Image si = slot.GetComponent<Image>();
+            si.color = i == 5
+                ? new Color(.58f, .16f, .62f, 1f)
+                : (corrections[i] > 0 ? new Color(.76f, .45f, .10f, 1f) : new Color(.20f, .28f, .38f, 1f));
+            si.raycastTarget = false;
+            RectTransform sr = si.rectTransform;
+            sr.anchorMin = sr.anchorMax = new Vector2(.5f, .5f);
+            sr.sizeDelta = new Vector2(62f, 42f);
+            sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 160f;
+
+            string label = corrections[i] > 0 ? "+" + corrections[i] : corrections[i].ToString();
+            Text lt = MakeText(slot.transform, label, 17, TextAnchor.MiddleCenter, true);
+            lt.color = Color.white;
+            Anchor(lt.rectTransform, 0f, 0f, 1f, 1f);
         }
 
         GameObject coreGo = new GameObject("WheelCore", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -380,38 +551,37 @@ public sealed class XTapGachaMachine : MonoBehaviour
         wheelCore.raycastTarget = false;
         RectTransform cr = wheelCore.rectTransform;
         cr.anchorMin = cr.anchorMax = new Vector2(.5f, .5f);
-        cr.sizeDelta = new Vector2(190f, 190f);
+        cr.sizeDelta = new Vector2(178f, 178f);
 
-        Text x = MakeText(coreGo.transform, "X", 88, TextAnchor.MiddleCenter, true);
+        Text x = MakeText(coreGo.transform, "X", 82, TextAnchor.MiddleCenter, true);
         x.color = new Color(1f, .78f, .20f, 1f);
         Anchor(x.rectTransform, 0f, 0f, 1f, 1f);
 
         RectTransform arrow = MakePanel(window, "Pointer", new Color(1f, .78f, .18f, 1f));
         arrow.anchorMin = arrow.anchorMax = new Vector2(.5f, 1f);
         arrow.pivot = new Vector2(.5f, 1f);
-        arrow.sizeDelta = new Vector2(44f, 72f);
+        arrow.sizeDelta = new Vector2(42f, 72f);
         arrow.anchoredPosition = new Vector2(0f, -7f);
 
         chute = MakePanel(machine, "Chute", new Color(.025f, .03f, .04f, 1f));
-        Anchor(chute, .28f, .29f, .72f, .43f);
+        Anchor(chute, .28f, .30f, .72f, .44f);
         MakeFrame(chute, new Color(.50f, .52f, .58f, 1f), 7f);
-
-        Text chuteText = MakeText(chute, "BLOCK GEAR", 24, TextAnchor.UpperCenter, true);
-        chuteText.color = new Color(.72f, .74f, .79f, 1f);
-        Anchor(chuteText.rectTransform, .05f, .58f, .95f, .92f);
 
         rewardRoot = new GameObject("RewardBlock", typeof(RectTransform)).GetComponent<RectTransform>();
         rewardRoot.SetParent(machine, false);
         rewardRoot.anchorMin = rewardRoot.anchorMax = new Vector2(.5f, .5f);
         rewardRoot.sizeDelta = new Vector2(300f, 190f);
-        rewardRoot.anchoredPosition = new Vector2(0f, -258f);
+        rewardRoot.anchoredPosition = new Vector2(0f, -260f);
 
         nameText = MakeText(machine, "", 29, TextAnchor.MiddleCenter, true);
         nameText.color = Color.white;
         Anchor(nameText.rectTransform, .08f, .13f, .92f, .20f);
 
-        statsText = MakeText(machine, "", 26, TextAnchor.MiddleCenter, true);
+        statsText = MakeText(machine, "", 25, TextAnchor.MiddleCenter, true);
         statsText.color = new Color(.96f, .82f, .38f, 1f);
+        statsText.resizeTextForBestFit = true;
+        statsText.resizeTextMinSize = 18;
+        statsText.resizeTextMaxSize = 25;
         Anchor(statsText.rectTransform, .05f, .075f, .95f, .135f);
 
         hintText = MakeText(machine, "", 22, TextAnchor.MiddleCenter, false);
@@ -431,18 +601,18 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
     void MakeFrame(RectTransform parent, Color color, float thickness)
     {
-        string[] names = {"Top", "Bottom", "Left", "Right"};
-        for (int i = 0; i < 4; i++)
-        {
-            RectTransform r = MakePanel(parent, names[i], color);
-            if (i == 0) Anchor(r, 0f, 1f, 1f, 1f);
-            else if (i == 1) Anchor(r, 0f, 0f, 1f, 0f);
-            else if (i == 2) Anchor(r, 0f, 0f, 0f, 1f);
-            else Anchor(r, 1f, 0f, 1f, 1f);
-
-            if (i < 2) r.sizeDelta = new Vector2(0f, thickness);
-            else r.sizeDelta = new Vector2(thickness, 0f);
-        }
+        RectTransform top = MakePanel(parent, "Top", color);
+        Anchor(top, 0f, 1f, 1f, 1f);
+        top.sizeDelta = new Vector2(0f, thickness);
+        RectTransform bottom = MakePanel(parent, "Bottom", color);
+        Anchor(bottom, 0f, 0f, 1f, 0f);
+        bottom.sizeDelta = new Vector2(0f, thickness);
+        RectTransform left = MakePanel(parent, "Left", color);
+        Anchor(left, 0f, 0f, 0f, 1f);
+        left.sizeDelta = new Vector2(thickness, 0f);
+        RectTransform right = MakePanel(parent, "Right", color);
+        Anchor(right, 1f, 0f, 1f, 1f);
+        right.sizeDelta = new Vector2(thickness, 0f);
     }
 
     Text MakeText(Transform parent, string value, int size, TextAnchor anchor, bool bold)
@@ -469,13 +639,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
         r.offsetMax = Vector2.zero;
     }
 
-    sealed class Reward
+    sealed class Outcome
     {
-        public string displayName;
-        public int cellCount;
-        public int attack;
-        public int defense;
-        public int hp;
-        public List<Vector2Int> cells;
+        public int correction;
+        public bool captureAttempt;
+        public bool captureSucceeded;
+        public XTapGearBlockData block;
     }
 }
