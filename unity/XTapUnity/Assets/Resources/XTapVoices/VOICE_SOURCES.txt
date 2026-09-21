@@ -50,3 +50,28 @@ female_moan3
 female_moan4
 - 565696__nefarious_needs__female-moaning-1
 - https://freesound.org/people/NeFarIous_NeeDs/sounds/565696/
+
+
+female_exhale1
+- 425781__thatkellytrna__girl-exhale
+- Freesound 425781
+
+female_breath1
+- 218309__splicesound__girl-female-inhale-exhale-sigh-breathing
+- Freesound 218309
+
+female_sigh1
+- 384992__threadzz__woman-sigh
+- Freesound 384992
+
+female_sigh2
+- 252224__reitanna__defeated-sigh
+- Freesound 252224
+
+female_ooh1
+- 323707__reitanna__ooh
+- Freesound 323707
+
+female_agony2
+- 220644__ritola27__grito_mujer2
+- Freesound 220644
