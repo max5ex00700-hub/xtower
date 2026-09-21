@@ -350,31 +350,21 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void SetStageOrFallback(int stage)
     {
-        Sprite s = TryStageSprite(stage);
+        // Floor battles must only use that floor's character art.
+        // The original generic assets/s0..s4 are unrelated characters and caused
+        // different women to appear between hits on floor 1.
+        Sprite s = TryFloorStageSprite(TestFloor, stage);
         if (s == null)
             s = assets.GetSprite("assets/f" + TestFloor + "_p00.jpg");
         if (s != null) SetSprite(s);
     }
 
-    Sprite TryStageSprite(int stage)
+    Sprite TryFloorStageSprite(int floor, int stage)
     {
-        string n = "s" + stage;
-        string[] candidates =
-        {
-            "res/drawable/" + n + ".jpg",
-            "res/drawable/" + n + ".png",
-            "res/drawable-nodpi/" + n + ".jpg",
-            "res/drawable-nodpi/" + n + ".png",
-            "assets/" + n + ".jpg",
-            "assets/" + n + ".png"
-        };
-
-        for (int i = 0; i < candidates.Length; i++)
-        {
-            Sprite s = assets.GetSprite(candidates[i]);
-            if (s != null) return s;
-        }
-        return null;
+        // Use a stable pose sequence from the current floor only.
+        // stage 0..4 -> p00, p02, p04, p06, p08.
+        int index = Mathf.Clamp(stage, 0, 4) * 2;
+        return assets.GetSprite("assets/f" + floor + "_p" + index.ToString("00") + ".jpg");
     }
 
     void SetActionSprite(string prefix)
