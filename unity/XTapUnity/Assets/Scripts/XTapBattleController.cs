@@ -61,6 +61,7 @@ public sealed class XTapBattleController : MonoBehaviour
     readonly string[] criticalTalk = {"윽… 거긴!","잠깐…!","그걸 찾았어?","균형이… 깨졌어."};
 
     readonly Dictionary<string, AudioClip> voiceClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
+    readonly Dictionary<string, AudioClip> combatSfxClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
     readonly string[] normalHitVoices = {"female_grunt1", "female_grunt2", "female_gasp1"};
     readonly string[] swipeHitVoices = {"female_grunt2", "female_gasp1", "female_gasp2"};
     readonly string[] criticalHitVoices = {"female_agony1", "female_scream1"};
@@ -91,6 +92,7 @@ public sealed class XTapBattleController : MonoBehaviour
         audioSource.spatialBlend = 0f;
         audioSource.volume = 1f;
         PreloadCombatVoices();
+        PreloadCombatSfx();
 
         if (!assets.Ready)
         {
@@ -241,7 +243,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .88f), .785f, .935f, .965f, .982f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1037", 25, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1038", 25, TextAnchor.MiddleCenter, false);
         codeText.color = new Color(.90f, .87f, .82f, 1f);
         Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
 
@@ -507,7 +509,7 @@ public sealed class XTapBattleController : MonoBehaviour
             weakActive = false;
             ShowBubble(RandomLine(criticalTalk), 1.25f);
             VibrateTouch(true);
-            Play("assets/hit.wav");
+            PlayCombatImpact(prefix, swipe, true);
             PlayRandomVoice(criticalHitVoices, 1f);
             yield return WeakPointHitBurst();
             HideWeakPoint();
@@ -518,7 +520,7 @@ public sealed class XTapBattleController : MonoBehaviour
         {
             ShowBubble(RandomLine(zoneTalk[zone]), 1.05f);
             VibrateTouch(false);
-            Play("assets/hit.wav");
+            PlayCombatImpact(prefix, swipe, false);
             if (enemyHp <= Mathf.RoundToInt(EnemyMaxHp * .25f) && UnityEngine.Random.value < .45f)
                 PlayRandomVoice(lowHpVoices, .88f);
             else
@@ -808,6 +810,72 @@ public sealed class XTapBattleController : MonoBehaviour
 
         for (int i = 0; i < ids.Length; i++)
             LoadVoice(ids[i]);
+    }
+
+    void PreloadCombatSfx()
+    {
+        string[] ids =
+        {
+            "fight_punch_light",
+            "fight_punch_medium",
+            "fight_smash_heavy",
+            "fight_swing_light",
+            "fight_swing_heavy"
+        };
+
+        for (int i = 0; i < ids.Length; i++)
+            LoadCombatSfx(ids[i]);
+    }
+
+    void PlayCombatImpact(string prefix, bool swipe, bool critical)
+    {
+        if (critical)
+        {
+            PlayCombatSfx("fight_swing_heavy", .78f);
+            PlayCombatSfx("fight_smash_heavy", 1f);
+            return;
+        }
+
+        if (swipe)
+        {
+            PlayCombatSfx(prefix == "k" ? "fight_swing_heavy" : "fight_swing_light", .66f);
+        }
+
+        if (prefix == "k")
+            PlayCombatSfx("fight_punch_medium", .95f);
+        else if (prefix == "b")
+            PlayCombatSfx("fight_punch_medium", .88f);
+        else
+            PlayCombatSfx(UnityEngine.Random.value < .55f ? "fight_punch_light" : "fight_punch_medium", .82f);
+    }
+
+    void PlayCombatSfx(string id, float volume)
+    {
+        if (audioSource == null) return;
+        AudioClip clip = LoadCombatSfx(id);
+        if (clip != null) audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+    }
+
+    AudioClip LoadCombatSfx(string id)
+    {
+        AudioClip cached;
+        if (combatSfxClips.TryGetValue(id, out cached)) return cached;
+
+        try
+        {
+            TextAsset encoded = Resources.Load<TextAsset>("XTapCombatSfx/" + id);
+            if (encoded == null || string.IsNullOrWhiteSpace(encoded.text)) return null;
+
+            byte[] wav = Convert.FromBase64String(encoded.text.Trim());
+            AudioClip clip = DecodePcm16Wav(wav, id);
+            if (clip != null) combatSfxClips[id] = clip;
+            return clip;
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 격투 효과음 로드 실패: " + id + " / " + e.Message);
+            return null;
+        }
     }
 
     void PlayRandomVoice(string[] ids, float volume)
