@@ -25,21 +25,50 @@ public sealed class XTapOriginalApkAssets : MonoBehaviour
 
     public IEnumerator Load()
     {
-        string path = Path.Combine(Application.streamingAssetsPath, "xtop_source.apk");
-        using (var req = UnityWebRequest.Get(path))
+        // 1) Prefer a complete source APK when present.
+        string fullPath = Path.Combine(Application.streamingAssetsPath, "xtop_source.apk");
+        using (var req = UnityWebRequest.Get(fullPath))
         {
             yield return req.SendWebRequest();
-            if (req.result != UnityWebRequest.Result.Success)
+            if (req.result == UnityWebRequest.Result.Success && req.downloadHandler.data != null && req.downloadHandler.data.Length > 1024)
             {
-                Error = "원본 X탑 APK를 찾지 못했습니다.";
+                apkBytes = req.downloadHandler.data;
+                Ready = true;
                 yield break;
             }
-            apkBytes = req.downloadHandler.data;
         }
 
-        if (apkBytes == null || apkBytes.Length < 1024)
+        // 2) GitHub web upload has a per-file size limit, so also support two smaller parts.
+        byte[] p1 = null;
+        byte[] p2 = null;
+
+        string part1Path = Path.Combine(Application.streamingAssetsPath, "xtop_source.part1");
+        using (var req1 = UnityWebRequest.Get(part1Path))
         {
-            Error = "원본 X탑 APK 데이터가 비어 있습니다.";
+            yield return req1.SendWebRequest();
+            if (req1.result == UnityWebRequest.Result.Success) p1 = req1.downloadHandler.data;
+        }
+
+        string part2Path = Path.Combine(Application.streamingAssetsPath, "xtop_source.part2");
+        using (var req2 = UnityWebRequest.Get(part2Path))
+        {
+            yield return req2.SendWebRequest();
+            if (req2.result == UnityWebRequest.Result.Success) p2 = req2.downloadHandler.data;
+        }
+
+        if (p1 == null || p1.Length == 0 || p2 == null || p2.Length == 0)
+        {
+            Error = "원본 X탑 데이터가 없습니다. xtop_source.part1 / part2를 StreamingAssets에 올려주세요.";
+            yield break;
+        }
+
+        apkBytes = new byte[p1.Length + p2.Length];
+        Buffer.BlockCopy(p1, 0, apkBytes, 0, p1.Length);
+        Buffer.BlockCopy(p2, 0, apkBytes, p1.Length, p2.Length);
+
+        if (apkBytes.Length < 1024)
+        {
+            Error = "원본 X탑 데이터 결합에 실패했습니다.";
             yield break;
         }
 
