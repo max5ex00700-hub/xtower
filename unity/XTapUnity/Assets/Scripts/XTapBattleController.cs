@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
 public sealed class XTapBattleController : MonoBehaviour
 {
@@ -135,6 +136,15 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void BuildBattleOnlyUi()
     {
+        // Unity UI Buttons need an EventSystem. The battle prototype previously
+        // used raw Input touches only, so no EventSystem existed and every main
+        // screen Button looked correct but ignored taps on device.
+        if (FindObjectOfType<EventSystem>() == null)
+        {
+            var eventGo = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
+            eventGo.transform.SetParent(transform, false);
+        }
+
         var canvasGo = new GameObject("BattleCanvas", typeof(Canvas), typeof(CanvasScaler), typeof(GraphicRaycaster));
         canvasGo.transform.SetParent(transform, false);
         canvas = canvasGo.GetComponent<Canvas>();
