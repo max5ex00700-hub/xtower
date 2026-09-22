@@ -26,15 +26,17 @@ public sealed class XTapGearBlockData
     public int gridY = -1;
     public int rotation;
     public int location = LocationBag;
+    public int enhanceLevel;
 }
 
 public sealed class XTapInventory : MonoBehaviour
 {
     const int GridW = 8;
-    const int GridH = 3;
+    const int BaseGridCells = 24;
     const float CellSize = 102f;
     const float MiniCell = 42f;
     const string SaveKey = "xtap_bag_v1";
+    const string ExpansionKey = "xtap_bag_extra_cells";
 
     [Serializable]
     sealed class SaveData
@@ -53,6 +55,7 @@ public sealed class XTapInventory : MonoBehaviour
     RectTransform overlayRect;
     RectTransform panel;
     RectTransform gridRoot;
+    RectTransform gridCellRoot;
 
     RectTransform heldViewport;
     RectTransform heldContent;
@@ -70,7 +73,7 @@ public sealed class XTapInventory : MonoBehaviour
 
     readonly List<XTapGearBlockData> items = new List<XTapGearBlockData>();
     readonly Dictionary<string, RectTransform> itemViews = new Dictionary<string, RectTransform>();
-    readonly Image[,] gridCells = new Image[GridW, GridH];
+    readonly List<Image> gridCells = new List<Image>();
 
     string selectedId;
     string draggingId;
@@ -215,28 +218,15 @@ public sealed class XTapInventory : MonoBehaviour
         gridBg.raycastTarget = true;
         gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, .5f);
         gridRoot.pivot = new Vector2(.5f, .5f);
-        gridRoot.sizeDelta = new Vector2(GridW * CellSize, GridH * CellSize);
+        gridRoot.sizeDelta = new Vector2(GridW * CellSize, GridRows * CellSize);
         gridRoot.anchoredPosition = new Vector2(0f, 300f);
         Frame(gridRoot, new Color(.43f, .38f, .31f, 1f), 3f);
 
-        for (int y = 0; y < GridH; y++)
-        {
-            for (int x = 0; x < GridW; x++)
-            {
-                GameObject go = new GameObject("Cell_" + x + "_" + y, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-                go.transform.SetParent(gridRoot, false);
-                Image img = go.GetComponent<Image>();
-                img.color = BaseCellColor();
-                img.raycastTarget = false;
+        gridCellRoot = new GameObject("GridCells", typeof(RectTransform)).GetComponent<RectTransform>();
+        gridCellRoot.SetParent(gridRoot, false);
+        Anchor(gridCellRoot, 0f, 0f, 1f, 1f);
 
-                RectTransform r = img.rectTransform;
-                r.anchorMin = r.anchorMax = Vector2.zero;
-                r.pivot = Vector2.zero;
-                r.sizeDelta = new Vector2(CellSize - 4f, CellSize - 4f);
-                r.anchoredPosition = new Vector2(x * CellSize + 2f, y * CellSize + 2f);
-                gridCells[x, y] = img;
-            }
-        }
+        RebuildGridCells();
 
         heldCountText = MakeText(panel, "", 20, TextAnchor.MiddleLeft, true);
         heldCountText.color = new Color(.90f, .85f, .75f, 1f);
@@ -325,6 +315,7 @@ public sealed class XTapInventory : MonoBehaviour
 
     void Render()
     {
+        RebuildGridCells();
         DestroyItemViews();
         ClearChildren(heldContent);
         ClearChildren(groundContent);
@@ -362,7 +353,8 @@ public sealed class XTapInventory : MonoBehaviour
         RenderRow(XTapGearBlockData.LocationHeld, heldContent);
         RenderRow(XTapGearBlockData.LocationGround, groundContent);
 
-        bagCountText.text = "가방 " + bagCount + "개 · " + OccupiedCellCount() + "/24칸";
+        bagCountText.text = "가방 " + bagCount + "개 · " + OccupiedCellCount() + "/" + GridCapacity + "칸" +
+                            (ExpansionBonus > 0 ? "  (+" + ExpansionBonus + ")" : "");
         totalText.text = "총합  공 +" + atk + "   방 +" + def + "   체 +" + hp;
         heldCountText.text = "소지품 " + heldCount + " · 끌어 가방/바닥으로 이동";
         groundCountText.text = "바닥 " + groundCount + " · 끌어 가방/소지품으로 이동";
@@ -501,7 +493,8 @@ public sealed class XTapInventory : MonoBehaviour
         shapeRoot.anchoredPosition = new Vector2(0f, -9f);
         DrawShape(shapeRoot, item, MiniCell, BlockColor(item), true, false);
 
-        Text name = MakeText(root, item.displayName, 18, TextAnchor.MiddleCenter, true);
+        string forgeSuffix = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
+        Text name = MakeText(root, item.displayName + forgeSuffix, 18, TextAnchor.MiddleCenter, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
         name.resizeTextMinSize = 13;
@@ -536,6 +529,7 @@ public sealed class XTapInventory : MonoBehaviour
         br.anchoredPosition = new Vector2(0f, 3f);
 
         Text t = MakeText(badgeGo.transform,
+            (item.enhanceLevel > 0 ? "+" + item.enhanceLevel + "  " : "") +
             "공 " + item.attack + "  방 " + item.defense + "  체 " + item.hp,
             18, TextAnchor.MiddleCenter, true);
         t.color = new Color(1f, .88f, .54f, 1f);
@@ -579,6 +573,100 @@ public sealed class XTapInventory : MonoBehaviour
                     total += Mathf.Max(0, items[i].hp);
             return total;
         }
+    }
+
+    public int ExpansionBonus
+    {
+        get { return Mathf.Max(0, PlayerPrefs.GetInt(ExpansionKey, 0)); }
+    }
+
+    public int GridCapacity
+    {
+        get { return BaseGridCells + ExpansionBonus; }
+    }
+
+    int GridRows
+    {
+        get { return Mathf.Max(3, Mathf.CeilToInt(GridCapacity / (float)GridW)); }
+    }
+
+    bool IsCellUnlocked(int x, int y)
+    {
+        if (x < 0 || x >= GridW || y < 0) return false;
+        int index = y * GridW + x;
+        return index >= 0 && index < GridCapacity;
+    }
+
+    void RebuildGridCells()
+    {
+        if (gridRoot == null || gridCellRoot == null) return;
+
+        for (int i = gridCellRoot.childCount - 1; i >= 0; i--)
+            Destroy(gridCellRoot.GetChild(i).gameObject);
+
+        gridCells.Clear();
+
+        gridRoot.sizeDelta = new Vector2(GridW * CellSize, GridRows * CellSize);
+
+        for (int index = 0; index < GridCapacity; index++)
+        {
+            int x = index % GridW;
+            int y = index / GridW;
+
+            GameObject go = new GameObject("Cell_" + x + "_" + y, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            go.transform.SetParent(gridCellRoot, false);
+
+            Image img = go.GetComponent<Image>();
+            img.color = BaseCellColor();
+            img.raycastTarget = false;
+
+            RectTransform r = img.rectTransform;
+            r.anchorMin = r.anchorMax = Vector2.zero;
+            r.pivot = Vector2.zero;
+            r.sizeDelta = new Vector2(CellSize - 4f, CellSize - 4f);
+            r.anchoredPosition = new Vector2(x * CellSize + 2f, y * CellSize + 2f);
+
+            gridCells.Add(img);
+        }
+    }
+
+    public List<XTapGearBlockData> GetForgeItems()
+    {
+        return new List<XTapGearBlockData>(items);
+    }
+
+    public XTapGearBlockData FindForgeItem(string id)
+    {
+        return Find(id);
+    }
+
+    public bool RemoveForgeItem(string id)
+    {
+        XTapGearBlockData item = Find(id);
+        if (item == null) return false;
+
+        items.Remove(item);
+        if (selectedId == id) selectedId = null;
+        Save();
+        if (IsOpen) Render();
+        return true;
+    }
+
+    public void CommitForgeChanges()
+    {
+        Save();
+        if (IsOpen) Render();
+    }
+
+    public void AddGridCellExpansion(int amount)
+    {
+        if (amount <= 0) return;
+
+        PlayerPrefs.SetInt(ExpansionKey, ExpansionBonus + amount);
+        PlayerPrefs.Save();
+
+        if (IsOpen)
+            Render();
     }
 
     void SetupTouch(GameObject go, string itemId)
@@ -697,7 +785,7 @@ public sealed class XTapInventory : MonoBehaviour
             int cellY;
             ScreenToCell(screen, out cellX, out cellY);
             dragOffsetX = Mathf.Clamp(cellX - item.gridX, 0, GridW - 1);
-            dragOffsetY = Mathf.Clamp(cellY - item.gridY, 0, GridH - 1);
+            dragOffsetY = Mathf.Clamp(cellY - item.gridY, 0, Mathf.Max(0, GridRows - 1));
         }
 
         RectTransform view;
@@ -952,7 +1040,7 @@ public sealed class XTapInventory : MonoBehaviour
         {
             int rot = (originalRotation + rotTry) % 4;
 
-            for (int y = 0; y < GridH; y++)
+            for (int y = 0; y < GridRows; y++)
             {
                 for (int x = 0; x < GridW; x++)
                 {
@@ -989,7 +1077,7 @@ public sealed class XTapInventory : MonoBehaviour
             {
                 int x = other.gridX + oc[j].x;
                 int y = other.gridY + oc[j].y;
-                if (x >= 0 && x < GridW && y >= 0 && y < GridH)
+                if (IsCellUnlocked(x, y))
                     occupied.Add(y * GridW + x);
             }
         }
@@ -999,7 +1087,7 @@ public sealed class XTapInventory : MonoBehaviour
             int x = ox + cells[i].x;
             int y = oy + cells[i].y;
 
-            if (x < 0 || x >= GridW || y < 0 || y >= GridH) return false;
+            if (!IsCellUnlocked(x, y)) return false;
             if (occupied.Contains(y * GridW + x)) return false;
         }
 
@@ -1084,9 +1172,12 @@ public sealed class XTapInventory : MonoBehaviour
             int x = ox + cells[i].x;
             int y = oy + cells[i].y;
 
-            if (x < 0 || x >= GridW || y < 0 || y >= GridH) continue;
+            if (!IsCellUnlocked(x, y)) continue;
 
-            gridCells[x, y].color = valid
+            int index = y * GridW + x;
+            if (index < 0 || index >= gridCells.Count || gridCells[index] == null) continue;
+
+            gridCells[index].color = valid
                 ? new Color(.18f, .46f, .23f, 1f)
                 : new Color(.53f, .14f, .15f, 1f);
         }
@@ -1094,10 +1185,9 @@ public sealed class XTapInventory : MonoBehaviour
 
     void ClearGridHighlight()
     {
-        for (int y = 0; y < GridH; y++)
-            for (int x = 0; x < GridW; x++)
-                if (gridCells[x, y] != null)
-                    gridCells[x, y].color = BaseCellColor();
+        for (int i = 0; i < gridCells.Count; i++)
+            if (gridCells[i] != null)
+                gridCells[i].color = BaseCellColor();
     }
 
     void ClearZoneHighlight()
@@ -1145,7 +1235,7 @@ public sealed class XTapInventory : MonoBehaviour
             if (items[i].location == XTapGearBlockData.LocationBag)
                 total += Mathf.Max(0, items[i].cellCount);
 
-        return Mathf.Clamp(total, 0, GridW * GridH);
+        return Mathf.Clamp(total, 0, GridCapacity);
     }
 
     void RefreshSelectionText()
@@ -1164,7 +1254,9 @@ public sealed class XTapInventory : MonoBehaviour
             : (item.location == XTapGearBlockData.LocationHeld ? "소지품" : "바닥");
 
         detailText.text =
-            zone + " · " + item.displayName + "  [" + item.cellCount + "칸 / " + corr + "]\n" +
+            zone + " · " + item.displayName +
+            (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
+            "  [" + item.cellCount + "칸 / " + corr + "]\n" +
             "공 +" + item.attack + "   방 +" + item.defense + "   체 +" + item.hp +
             "     [탭=90° 회전 / 끌기=이동]";
     }
@@ -1174,6 +1266,7 @@ public sealed class XTapInventory : MonoBehaviour
         if (item == null) return;
 
         RecoverMissingBlockStats(item);
+        item.enhanceLevel = Mathf.Clamp(item.enhanceLevel, 0, 10);
         item.rotation = ((item.rotation % 4) + 4) % 4;
 
         if (item.location < XTapGearBlockData.LocationBag || item.location > XTapGearBlockData.LocationGround)
