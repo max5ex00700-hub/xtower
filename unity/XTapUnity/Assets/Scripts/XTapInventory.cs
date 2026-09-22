@@ -884,7 +884,7 @@ public sealed class XTapInventory : MonoBehaviour
             previewY = cy - dragOffsetY;
 
             HighlightPlacement(item, previewX, previewY);
-            PositionGhostAtGridOrigin(item, previewX, previewY);
+            PositionGhostAtPointer(screen);
             return;
         }
 
@@ -1005,14 +1005,14 @@ public sealed class XTapInventory : MonoBehaviour
         dragGhost.SetParent(overlay.transform, false);
         dragGhost.anchorMin = dragGhost.anchorMax = new Vector2(.5f, .5f);
         dragGhost.pivot = Vector2.zero;
-        dragGhost.sizeDelta = new Vector2((maxX + 1) * CellSize, (maxY + 1) * CellSize);
+        dragGhost.sizeDelta = new Vector2((maxX + 1) * MiniCell, (maxY + 1) * MiniCell);
 
         dragGhostGroup = dragGhost.GetComponent<CanvasGroup>();
         dragGhostGroup.alpha = .74f;
         dragGhostGroup.blocksRaycasts = false;
         dragGhostGroup.interactable = false;
 
-        DrawShape(dragGhost, item, CellSize, BlockColor(item), false, false);
+        DrawShape(dragGhost, item, MiniCell, BlockColor(item), false, false);
         dragGhost.SetAsLastSibling();
     }
 
@@ -1046,8 +1046,8 @@ public sealed class XTapInventory : MonoBehaviour
         Vector2 local;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRect, screen, null, out local);
         dragGhost.anchoredPosition = local - new Vector2(
-            dragOffsetX * CellSize + CellSize * .5f,
-            dragOffsetY * CellSize + CellSize * .5f
+            dragOffsetX * MiniCell + MiniCell * .5f,
+            dragOffsetY * MiniCell + MiniCell * .5f
         );
     }
 
