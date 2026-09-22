@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public sealed class XTapJail : MonoBehaviour
 {
+    const float UiFontScale = 1.28f;
     public bool IsOpen { get; private set; }
 
     RectTransform host;
@@ -134,8 +135,8 @@ public sealed class XTapJail : MonoBehaviour
         detailText = MakeText(panel, "", 24, TextAnchor.MiddleCenter, true);
         detailText.color = new Color(.88f, .91f, .98f, 1f);
         detailText.resizeTextForBestFit = true;
-        detailText.resizeTextMinSize = 16;
-        detailText.resizeTextMaxSize = 24;
+        detailText.resizeTextMinSize = 20;
+        detailText.resizeTextMaxSize = 31;
         Anchor(detailText.rectTransform, .055f, .185f, .945f, .315f);
 
         openBagButton = MakeButton(panel, "선택 캐릭터 가방 열기", 25, new Color(.12f, .18f, .27f, 1f));
@@ -196,8 +197,8 @@ public sealed class XTapJail : MonoBehaviour
                 ? new Color(.88f, .92f, 1f, 1f)
                 : new Color(.43f, .45f, .50f, 1f);
             t.resizeTextForBestFit = true;
-            t.resizeTextMinSize = 14;
-            t.resizeTextMaxSize = 20;
+            t.resizeTextMinSize = 18;
+            t.resizeTextMaxSize = 26;
             Anchor(t.rectTransform, .04f, .08f, .96f, .92f);
 
             Button b = row.GetComponent<Button>();
@@ -296,7 +297,7 @@ public sealed class XTapJail : MonoBehaviour
         Text t = go.GetComponent<Text>();
         t.text = value;
         t.font = font;
-        t.fontSize = size;
+        t.fontSize = Mathf.RoundToInt(size * UiFontScale);
         t.alignment = align;
         t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
         t.horizontalOverflow = HorizontalWrapMode.Wrap;
