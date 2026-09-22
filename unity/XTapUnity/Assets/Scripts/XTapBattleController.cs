@@ -303,7 +303,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1048", 27, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1049", 27, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
         codeText.resizeTextMinSize = 16;
         codeText.resizeTextMaxSize = 27;
@@ -618,16 +618,17 @@ public sealed class XTapBattleController : MonoBehaviour
         {
             for (int i = 0; i < 10; i++)
             {
-                assets.GetSprite("assets/f" + TestFloor + "_" + prefix + i.ToString("00") + ".jpg");
+                assets.GetSprite("assets/f" + CurrentVisualFloor() + "_" + prefix + i.ToString("00") + ".jpg");
                 if (++c % 5 == 0) yield return null;
             }
         }
-        assets.GetSprite("assets/f" + TestFloor + "_cap.jpg");
+        assets.GetSprite("assets/f" + CurrentVisualFloor() + "_cap.jpg");
     }
 
     void ResetFight()
     {
-        enemyHp = EnemyMaxHp;
+        enemyMaxHp = CurrentEnemyMaxHp();
+        enemyHp = enemyMaxHp;
         hitCount = 0;
         won = false;
         busy = false;
@@ -715,7 +716,7 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble(RandomLine(zoneTalk[zone]), 1.05f);
             VibrateTouch(false);
             PlayCombatImpact(prefix, swipe, false);
-            if (enemyHp <= Mathf.RoundToInt(EnemyMaxHp * .25f) && UnityEngine.Random.value < .45f)
+            if (enemyHp <= Mathf.RoundToInt(enemyMaxHp * .25f) && UnityEngine.Random.value < .45f)
                 PlayRandomVoice(lowHpVoices, .72f);
             else
                 PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .78f : .66f);
@@ -728,12 +729,22 @@ public sealed class XTapBattleController : MonoBehaviour
             won = true;
             fightCount++;
             HideWeakPoint();
-            var cap = assets.GetSprite("assets/f" + TestFloor + "_cap.jpg");
+            var cap = assets.GetSprite("assets/f" + CurrentVisualFloor() + "_cap.jpg");
             if (cap != null) SetSprite(cap);
+
+            if (currentStep >= maxUnlockedStep)
+            {
+                maxUnlockedStep = currentStep + 1;
+                SaveProgress();
+            }
+
             ShowBubble("…끝났어.", 30f);
             Play("assets/win.wav");
             yield return new WaitForSecondsRealtime(.45f);
-            if (gachaMachine != null) gachaMachine.PlayReward(TestFloor);
+
+            if (gachaMachine != null)
+                gachaMachine.PlayReward(CurrentCharacterId());
+
             busy = false;
             yield break;
         }
@@ -778,7 +789,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     int Stage()
     {
-        float q = enemyHp / (float)EnemyMaxHp;
+        float q = enemyHp / (float)Mathf.Max(1, enemyMaxHp);
         if (q <= 0f) return 4;
         if (q <= .25f) return 3;
         if (q <= .50f) return 2;
@@ -791,9 +802,10 @@ public sealed class XTapBattleController : MonoBehaviour
         // Floor battles must only use that floor's character art.
         // The original generic assets/s0..s4 are unrelated characters and caused
         // different women to appear between hits on floor 1.
-        Sprite s = TryFloorStageSprite(TestFloor, stage);
+        int visualFloor = CurrentVisualFloor();
+        Sprite s = TryFloorStageSprite(visualFloor, stage);
         if (s == null)
-            s = assets.GetSprite("assets/f" + TestFloor + "_p00.jpg");
+            s = assets.GetSprite("assets/f" + visualFloor + "_p00.jpg");
         if (s != null) SetSprite(s);
     }
 
@@ -808,7 +820,7 @@ public sealed class XTapBattleController : MonoBehaviour
     void SetActionSprite(string prefix)
     {
         int i = UnityEngine.Random.Range(0, 10);
-        Sprite s = assets.GetSprite("assets/f" + TestFloor + "_" + prefix + i.ToString("00") + ".jpg");
+        Sprite s = assets.GetSprite("assets/f" + CurrentVisualFloor() + "_" + prefix + i.ToString("00") + ".jpg");
         if (s != null) SetSprite(s);
     }
 
