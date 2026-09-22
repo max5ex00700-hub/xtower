@@ -35,8 +35,9 @@ public sealed class XTapInventory : MonoBehaviour
     const float UiFontScale = 1.70f;
     const int GridW = 8;
     const int BaseGridCells = 24;
-    const float CellSize = 102f;
+    const float CellSize = 118f;
     const float MiniCell = 42f;
+    const int StoragePageSize = 2;
     const string SaveKey = "xtap_bag_v1";
     const string ExpansionKey = "xtap_bag_extra_cells";
 
@@ -56,8 +57,10 @@ public sealed class XTapInventory : MonoBehaviour
     GameObject overlay;
     RectTransform overlayRect;
     RectTransform panel;
+    RectTransform gridViewport;
     RectTransform gridRoot;
     RectTransform gridCellRoot;
+    ScrollRect gridScroll;
 
     RectTransform heldViewport;
     RectTransform heldContent;
@@ -71,14 +74,22 @@ public sealed class XTapInventory : MonoBehaviour
     Text totalText;
     Text heldCountText;
     Text groundCountText;
+    Text heldPageText;
+    Text groundPageText;
     Text detailText;
     Button tidyButton;
+    Button heldPrevButton;
+    Button heldNextButton;
+    Button groundPrevButton;
+    Button groundNextButton;
 
     readonly List<XTapGearBlockData> items = new List<XTapGearBlockData>();
     readonly Dictionary<string, RectTransform> itemViews = new Dictionary<string, RectTransform>();
     readonly List<Image> gridCells = new List<Image>();
 
     int activeBagOwnerCharacterId;
+    int heldPage;
+    int groundPage;
     string selectedId;
     string draggingId;
     int dragOffsetX;
@@ -125,11 +136,16 @@ public sealed class XTapInventory : MonoBehaviour
         if (overlay == null) return;
 
         activeBagOwnerCharacterId = Mathf.Max(0, ownerCharacterId);
+        heldPage = 0;
+        groundPage = 0;
         selectedId = null;
         IsOpen = true;
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
         Render();
+        Canvas.ForceUpdateCanvases();
+        if (gridScroll != null)
+            gridScroll.verticalNormalizedPosition = 1f;
     }
 
     public void Close()
@@ -195,90 +211,132 @@ public sealed class XTapInventory : MonoBehaviour
         overlayRect = overlay.GetComponent<RectTransform>();
 
         Image dim = overlay.GetComponent<Image>();
-        dim.color = new Color(0f, 0f, 0f, .94f);
+        dim.color = new Color(0f, 0f, 0f, .985f);
         dim.raycastTarget = true;
         Anchor(overlayRect, 0f, 0f, 1f, 1f);
 
         panel = new GameObject("BagPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         panel.SetParent(overlay.transform, false);
+        Anchor(panel, 0f, 0f, 1f, 1f);
 
         Image body = panel.GetComponent<Image>();
-        body.color = new Color(.042f, .039f, .043f, .998f);
+        body.color = new Color(.025f, .024f, .028f, 1f);
         body.raycastTarget = true;
 
-        panel.anchorMin = new Vector2(.018f, .018f);
-        panel.anchorMax = new Vector2(.982f, .982f);
-        panel.pivot = new Vector2(.5f, .5f);
-        panel.offsetMin = Vector2.zero;
-        panel.offsetMax = Vector2.zero;
-        Frame(panel, new Color(.56f, .46f, .31f, 1f), 4f);
-
-        bagTitleText = MakeText(panel, "플레이어", 28, TextAnchor.MiddleLeft, true);
+        bagTitleText = MakeText(panel, "플레이어", 25, TextAnchor.MiddleLeft, true);
         bagTitleText.color = new Color(.98f, .91f, .76f, 1f);
-        Anchor(bagTitleText.rectTransform, .055f, .925f, .70f, .985f);
+        Anchor(bagTitleText.rectTransform, .035f, .950f, .67f, .995f);
 
-        Button closeTop = MakeButton(panel, "닫기", 18);
-        Anchor(closeTop.GetComponent<RectTransform>(), .76f, .925f, .945f, .980f);
+        Button closeTop = MakeButton(panel, "닫기", 16);
+        Anchor(closeTop.GetComponent<RectTransform>(), .78f, .952f, .965f, .993f);
         closeTop.onClick.AddListener(Close);
 
-        totalText = MakeText(panel, "", 16, TextAnchor.MiddleLeft, true);
+        totalText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
         totalText.color = new Color(1f, .76f, .28f, 1f);
-        Anchor(totalText.rectTransform, .06f, .865f, .94f, .925f);
+        Anchor(totalText.rectTransform, .035f, .902f, .965f, .948f);
+
+        GameObject viewportGo = new GameObject(
+            "BagGridViewport",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(RectMask2D),
+            typeof(ScrollRect)
+        );
+        viewportGo.transform.SetParent(panel, false);
+        gridViewport = viewportGo.GetComponent<RectTransform>();
+        Anchor(gridViewport, .02f, .400f, .98f, .900f);
+
+        Image viewportBg = viewportGo.GetComponent<Image>();
+        viewportBg.color = new Color(.018f, .019f, .023f, 1f);
+        viewportBg.raycastTarget = true;
 
         gridRoot = new GameObject("BagGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
-        gridRoot.SetParent(panel, false);
+        gridRoot.SetParent(gridViewport, false);
+        gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, 1f);
+        gridRoot.pivot = new Vector2(.5f, 1f);
+        gridRoot.anchoredPosition = Vector2.zero;
+        gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
 
         Image gridBg = gridRoot.GetComponent<Image>();
         gridBg.color = new Color(.025f, .025f, .030f, 1f);
         gridBg.raycastTarget = true;
 
-        gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, .5f);
-        gridRoot.pivot = new Vector2(.5f, .5f);
-        gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
-        gridRoot.anchoredPosition = new Vector2(0f, 405f);
-        Frame(gridRoot, new Color(.48f, .42f, .33f, 1f), 3f);
+        gridScroll = viewportGo.GetComponent<ScrollRect>();
+        gridScroll.viewport = gridViewport;
+        gridScroll.content = gridRoot;
+        gridScroll.horizontal = false;
+        gridScroll.vertical = true;
+        gridScroll.movementType = ScrollRect.MovementType.Clamped;
+        gridScroll.inertia = true;
+        gridScroll.decelerationRate = .08f;
+        gridScroll.scrollSensitivity = 65f;
 
         gridCellRoot = new GameObject("GridCells", typeof(RectTransform)).GetComponent<RectTransform>();
         gridCellRoot.SetParent(gridRoot, false);
         Anchor(gridCellRoot, 0f, 0f, 1f, 1f);
         RebuildGridCells();
 
-        heldCountText = MakeText(panel, "", 16, TextAnchor.MiddleLeft, true);
+        heldCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
         heldCountText.color = new Color(.94f, .87f, .73f, 1f);
-        Anchor(heldCountText.rectTransform, .06f, .535f, .94f, .575f);
+        Anchor(heldCountText.rectTransform, .035f, .360f, .40f, .398f);
 
-        BuildHorizontalZone(
+        heldPageText = MakeText(panel, "", 13, TextAnchor.MiddleCenter, true);
+        heldPageText.color = new Color(.72f, .70f, .66f, 1f);
+        Anchor(heldPageText.rectTransform, .60f, .360f, .74f, .398f);
+
+        heldPrevButton = MakeButton(panel, "◀", 13);
+        Anchor(heldPrevButton.GetComponent<RectTransform>(), .755f, .362f, .845f, .396f);
+        heldPrevButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationHeld, -1));
+
+        heldNextButton = MakeButton(panel, "▶", 13);
+        Anchor(heldNextButton.GetComponent<RectTransform>(), .855f, .362f, .945f, .396f);
+        heldNextButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationHeld, 1));
+
+        BuildPagedZone(
             panel,
             "HeldZone",
-            .055f, .390f, .945f, .535f,
+            .03f, .245f, .97f, .358f,
             out heldViewport,
             out heldContent,
             out heldZoneImage
         );
 
-        groundCountText = MakeText(panel, "", 16, TextAnchor.MiddleLeft, true);
+        groundCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
         groundCountText.color = new Color(.94f, .87f, .73f, 1f);
-        Anchor(groundCountText.rectTransform, .06f, .350f, .94f, .390f);
+        Anchor(groundCountText.rectTransform, .035f, .205f, .40f, .243f);
 
-        BuildHorizontalZone(
+        groundPageText = MakeText(panel, "", 13, TextAnchor.MiddleCenter, true);
+        groundPageText.color = new Color(.72f, .70f, .66f, 1f);
+        Anchor(groundPageText.rectTransform, .60f, .205f, .74f, .243f);
+
+        groundPrevButton = MakeButton(panel, "◀", 13);
+        Anchor(groundPrevButton.GetComponent<RectTransform>(), .755f, .207f, .845f, .241f);
+        groundPrevButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationGround, -1));
+
+        groundNextButton = MakeButton(panel, "▶", 13);
+        Anchor(groundNextButton.GetComponent<RectTransform>(), .855f, .207f, .945f, .241f);
+        groundNextButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationGround, 1));
+
+        BuildPagedZone(
             panel,
             "GroundZone",
-            .055f, .205f, .945f, .350f,
+            .03f, .090f, .97f, .203f,
             out groundViewport,
             out groundContent,
             out groundZoneImage
         );
 
-        detailText = MakeText(panel, "블록 선택 시 능력치 표시", 14, TextAnchor.MiddleCenter, true);
+        detailText = MakeText(panel, "", 12, TextAnchor.MiddleCenter, true);
         detailText.color = new Color(.90f, .87f, .80f, 1f);
-        Anchor(detailText.rectTransform, .06f, .115f, .94f, .200f);
+        Anchor(detailText.rectTransform, .04f, .052f, .96f, .088f);
 
-        tidyButton = MakeButton(panel, "자동 정리", 18);
-        Anchor(tidyButton.GetComponent<RectTransform>(), .055f, .035f, .945f, .105f);
+        tidyButton = MakeButton(panel, "자동 정리", 15);
+        Anchor(tidyButton.GetComponent<RectTransform>(), .03f, .010f, .97f, .050f);
         tidyButton.onClick.AddListener(TidyBag);
     }
 
-    void BuildHorizontalZone(
+    void BuildPagedZone(
         Transform parent,
         string name,
         float x1,
@@ -289,7 +347,7 @@ public sealed class XTapInventory : MonoBehaviour
         out RectTransform content,
         out Image zoneImage)
     {
-        GameObject vp = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D), typeof(ScrollRect));
+        GameObject vp = new GameObject(name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D));
         vp.transform.SetParent(parent, false);
 
         viewport = vp.GetComponent<RectTransform>();
@@ -298,27 +356,11 @@ public sealed class XTapInventory : MonoBehaviour
         zoneImage = vp.GetComponent<Image>();
         zoneImage.color = BaseZoneColor();
         zoneImage.raycastTarget = true;
-        Frame(viewport, new Color(.34f, .31f, .28f, 1f), 2f);
 
         GameObject contentGo = new GameObject(name + "Content", typeof(RectTransform));
         contentGo.transform.SetParent(vp.transform, false);
         content = contentGo.GetComponent<RectTransform>();
-        content.anchorMin = new Vector2(0f, 0f);
-        content.anchorMax = new Vector2(0f, 1f);
-        content.pivot = new Vector2(0f, .5f);
-        content.sizeDelta = new Vector2(viewport.rect.width, 0f);
-        content.anchoredPosition = Vector2.zero;
-
-        ScrollRect scroll = vp.GetComponent<ScrollRect>();
-        scroll.viewport = viewport;
-        scroll.content = content;
-        scroll.horizontal = true;
-        scroll.vertical = false;
-        scroll.movementType = ScrollRect.MovementType.Elastic;
-        scroll.elasticity = .08f;
-        scroll.inertia = true;
-        scroll.decelerationRate = .08f;
-        scroll.scrollSensitivity = 25f;
+        Anchor(content, 0f, 0f, 1f, 1f);
     }
 
     void Render()
@@ -366,13 +408,26 @@ public sealed class XTapInventory : MonoBehaviour
             }
         }
 
-        RenderRow(XTapGearBlockData.LocationHeld, heldContent);
-        RenderRow(XTapGearBlockData.LocationGround, groundContent);
+        int heldPages = Mathf.Max(1, Mathf.CeilToInt(heldCount / (float)StoragePageSize));
+        int groundPages = Mathf.Max(1, Mathf.CeilToInt(groundCount / (float)StoragePageSize));
+        heldPage = Mathf.Clamp(heldPage, 0, heldPages - 1);
+        groundPage = Mathf.Clamp(groundPage, 0, groundPages - 1);
+
+        RenderPage(XTapGearBlockData.LocationHeld, heldContent, heldPage);
+        RenderPage(XTapGearBlockData.LocationGround, groundContent, groundPage);
 
         totalText.text = "공 +" + atk + "     방 +" + def + "     체 +" + hp +
                          "     ·     " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸";
         heldCountText.text = "소지품   " + heldCount + "개";
         groundCountText.text = "바닥   " + groundCount + "개";
+
+        heldPageText.text = heldCount == 0 ? "0 / 0" : (heldPage + 1) + " / " + heldPages;
+        groundPageText.text = groundCount == 0 ? "0 / 0" : (groundPage + 1) + " / " + groundPages;
+
+        heldPrevButton.interactable = heldPage > 0;
+        heldNextButton.interactable = heldCount > 0 && heldPage < heldPages - 1;
+        groundPrevButton.interactable = groundPage > 0;
+        groundNextButton.interactable = groundCount > 0 && groundPage < groundPages - 1;
 
         RefreshSelectionText();
     }
@@ -391,34 +446,106 @@ public sealed class XTapInventory : MonoBehaviour
             Destroy(root.GetChild(i).gameObject);
     }
 
-    void RenderRow(int location, RectTransform content)
+    void ChangeStoragePage(int location, int delta)
     {
-        float x = 8f;
-        int count = 0;
+        if (location == XTapGearBlockData.LocationHeld)
+            heldPage = Mathf.Max(0, heldPage + delta);
+        else if (location == XTapGearBlockData.LocationGround)
+            groundPage = Mathf.Max(0, groundPage + delta);
 
+        Render();
+    }
+
+    void RenderPage(int location, RectTransform content, int page)
+    {
+        List<XTapGearBlockData> filtered = new List<XTapGearBlockData>();
         for (int i = 0; i < items.Count; i++)
+            if (items[i].location == location)
+                filtered.Add(items[i]);
+
+        int start = page * StoragePageSize;
+        int shown = 0;
+
+        if (start >= filtered.Count)
         {
-            XTapGearBlockData item = items[i];
-            if (item.location != location) continue;
-
-            float width = CreateRowItemView(item, content, x);
-            x += width + 9f;
-            count++;
-        }
-
-        float minWidth = 560f;
-        content.sizeDelta = new Vector2(Mathf.Max(minWidth, x + 8f), 0f);
-
-        if (count == 0)
-        {
-            Text empty = MakeText(content, "(없음)", 19, TextAnchor.MiddleLeft, false);
+            Text empty = MakeText(content, "(없음)", 18, TextAnchor.MiddleCenter, false);
             empty.color = new Color(.48f, .46f, .45f, 1f);
-            RectTransform r = empty.rectTransform;
-            r.anchorMin = r.anchorMax = new Vector2(0f, .5f);
-            r.pivot = new Vector2(0f, .5f);
-            r.sizeDelta = new Vector2(200f, 80f);
-            r.anchoredPosition = new Vector2(18f, 0f);
+            Anchor(empty.rectTransform, 0f, 0f, 1f, 1f);
+            return;
         }
+
+        float gap = 14f;
+        float zoneWidth = Mathf.Max(900f, ((RectTransform)content.parent).rect.width);
+        float cardWidth = (zoneWidth - gap) * .5f;
+
+        for (int i = start; i < filtered.Count && shown < StoragePageSize; i++, shown++)
+        {
+            float x = shown == 0 ? 0f : cardWidth + gap;
+            CreatePageItemView(filtered[i], content, x, cardWidth);
+        }
+    }
+
+    void CreatePageItemView(XTapGearBlockData item, RectTransform content, float x, float width)
+    {
+        List<Vector2Int> cells = GetCells(item);
+        int maxX = 0;
+        int maxY = 0;
+        for (int i = 0; i < cells.Count; i++)
+        {
+            maxX = Mathf.Max(maxX, cells[i].x);
+            maxY = Mathf.Max(maxY, cells[i].y);
+        }
+
+        GameObject go = new GameObject(
+            "StoredBlock_" + item.id,
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(CanvasGroup),
+            typeof(XTapBagItemTouch)
+        );
+        go.transform.SetParent(content, false);
+
+        Image bg = go.GetComponent<Image>();
+        bg.color = selectedId == item.id
+            ? new Color(.17f, .145f, .11f, .98f)
+            : new Color(.055f, .053f, .060f, .98f);
+        bg.raycastTarget = true;
+
+        RectTransform root = go.GetComponent<RectTransform>();
+        root.anchorMin = root.anchorMax = new Vector2(0f, .5f);
+        root.pivot = new Vector2(0f, .5f);
+        root.sizeDelta = new Vector2(width, Mathf.Max(170f, ((RectTransform)content.parent).rect.height - 8f));
+        root.anchoredPosition = new Vector2(x, 0f);
+
+        SetupTouch(go, item.id);
+
+        float shapeWidth = (maxX + 1) * MiniCell;
+        float shapeHeight = (maxY + 1) * MiniCell;
+        RectTransform shapeRoot = new GameObject("Shape", typeof(RectTransform)).GetComponent<RectTransform>();
+        shapeRoot.SetParent(root, false);
+        shapeRoot.anchorMin = shapeRoot.anchorMax = new Vector2(.04f, .5f);
+        shapeRoot.pivot = new Vector2(0f, .5f);
+        shapeRoot.sizeDelta = new Vector2(shapeWidth, shapeHeight);
+        shapeRoot.anchoredPosition = Vector2.zero;
+        DrawShape(shapeRoot, item, MiniCell, BlockColor(item), false, false);
+
+        string forgeSuffix = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
+        Text name = MakeText(root, item.displayName + forgeSuffix, 13, TextAnchor.MiddleLeft, true);
+        name.color = new Color(.92f, .89f, .82f, 1f);
+        name.resizeTextForBestFit = true;
+        name.resizeTextMinSize = 16;
+        name.resizeTextMaxSize = 23;
+        Anchor(name.rectTransform, .42f, .52f, .96f, .94f);
+
+        Text stat = MakeText(root, "공 " + item.attack + "   방 " + item.defense + "   체 " + item.hp, 12, TextAnchor.MiddleLeft, true);
+        stat.color = new Color(1f, .78f, .34f, 1f);
+        stat.resizeTextForBestFit = true;
+        stat.resizeTextMinSize = 15;
+        stat.resizeTextMaxSize = 22;
+        Anchor(stat.rectTransform, .42f, .12f, .96f, .50f);
+
+        itemViews[item.id] = root;
     }
 
     void CreateGridItemView(XTapGearBlockData item)
@@ -449,13 +576,13 @@ public sealed class XTapInventory : MonoBehaviour
         hit.raycastTarget = true;
 
         RectTransform root = go.GetComponent<RectTransform>();
-        root.anchorMin = root.anchorMax = Vector2.zero;
-        root.pivot = Vector2.zero;
+        root.anchorMin = root.anchorMax = new Vector2(0f, 1f);
+        root.pivot = new Vector2(0f, 1f);
         root.sizeDelta = new Vector2((maxX + 1) * CellSize, (maxY + 1) * CellSize);
-        root.anchoredPosition = new Vector2(item.gridX * CellSize, item.gridY * CellSize);
+        root.anchoredPosition = new Vector2(item.gridX * CellSize, -item.gridY * CellSize);
 
         SetupTouch(go, item.id);
-        DrawShape(root, item, CellSize, BlockColor(item), false, false);
+        DrawGridShape(root, item, CellSize, BlockColor(item));
         AddGridStatBadge(root, item);
 
         itemViews[item.id] = root;
@@ -684,10 +811,10 @@ public sealed class XTapInventory : MonoBehaviour
             img.raycastTarget = false;
 
             RectTransform r = img.rectTransform;
-            r.anchorMin = r.anchorMax = Vector2.zero;
-            r.pivot = Vector2.zero;
+            r.anchorMin = r.anchorMax = new Vector2(0f, 1f);
+            r.pivot = new Vector2(0f, 1f);
             r.sizeDelta = new Vector2(CellSize - 4f, CellSize - 4f);
-            r.anchoredPosition = new Vector2(x * CellSize + 2f, y * CellSize + 2f);
+            r.anchoredPosition = new Vector2(x * CellSize + 2f, -(y * CellSize + 2f));
 
             gridCells.Add(img);
         }
@@ -737,6 +864,35 @@ public sealed class XTapInventory : MonoBehaviour
         XTapBagItemTouch touch = go.GetComponent<XTapBagItemTouch>();
         touch.owner = this;
         touch.itemId = itemId;
+    }
+
+    void DrawGridShape(RectTransform parent, XTapGearBlockData item, float cellSize, Color color)
+    {
+        List<Vector2Int> cells = GetCells(item);
+
+        for (int i = 0; i < cells.Count; i++)
+        {
+            Vector2Int p = cells[i];
+
+            GameObject cg = new GameObject("Piece", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            cg.transform.SetParent(parent, false);
+            Image ci = cg.GetComponent<Image>();
+            ci.color = color;
+            ci.raycastTarget = false;
+
+            RectTransform cr = ci.rectTransform;
+            cr.anchorMin = cr.anchorMax = new Vector2(0f, 1f);
+            cr.pivot = new Vector2(0f, 1f);
+            cr.sizeDelta = new Vector2(cellSize - 5f, cellSize - 5f);
+            cr.anchoredPosition = new Vector2(p.x * cellSize + 2.5f, -(p.y * cellSize + 2.5f));
+
+            GameObject inset = new GameObject("Inset", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            inset.transform.SetParent(cg.transform, false);
+            Image ii = inset.GetComponent<Image>();
+            ii.color = new Color(.08f, .085f, .10f, .88f);
+            ii.raycastTarget = false;
+            Anchor(ii.rectTransform, .13f, .13f, .87f, .87f);
+        }
     }
 
     void DrawShape(
@@ -874,7 +1030,7 @@ public sealed class XTapInventory : MonoBehaviour
         ClearGridHighlight();
         ClearZoneHighlight();
 
-        if (RectTransformUtility.RectangleContainsScreenPoint(gridRoot, screen, null))
+        if (RectTransformUtility.RectangleContainsScreenPoint(gridViewport, screen, null))
         {
             int cx;
             int cy;
@@ -911,7 +1067,7 @@ public sealed class XTapInventory : MonoBehaviour
 
         bool moved = false;
 
-        if (RectTransformUtility.RectangleContainsScreenPoint(gridRoot, screen, null))
+        if (RectTransformUtility.RectangleContainsScreenPoint(gridViewport, screen, null))
         {
             int cx;
             int cy;
@@ -1285,10 +1441,11 @@ public sealed class XTapInventory : MonoBehaviour
     {
         Vector2 local;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(gridRoot, screen, null, out local);
-        Vector2 fromBottomLeft = local - gridRoot.rect.min;
+        float fromLeft = local.x - gridRoot.rect.xMin;
+        float fromTop = gridRoot.rect.yMax - local.y;
 
-        x = Mathf.FloorToInt(fromBottomLeft.x / CellSize);
-        y = Mathf.FloorToInt(fromBottomLeft.y / CellSize);
+        x = Mathf.FloorToInt(fromLeft / CellSize);
+        y = Mathf.FloorToInt(fromTop / CellSize);
     }
 
     XTapGearBlockData Find(string id)
@@ -1320,7 +1477,7 @@ public sealed class XTapInventory : MonoBehaviour
 
         if (item == null)
         {
-            detailText.text = "블록 선택 시 능력치 표시   ·   탭 회전   ·   끌기 이동";
+            detailText.text = "";
             return;
         }
 
