@@ -132,7 +132,7 @@ public sealed class XTapBattleController : MonoBehaviour
         BuildMainUi();
 
         inventory = gameObject.AddComponent<XTapInventory>();
-        inventory.Initialize(root, koreanFont, RefreshMainProgressUi);
+        inventory.Initialize(root, koreanFont, OnInventoryClosed);
 
         gachaMachine = gameObject.AddComponent<XTapGachaMachine>();
         gachaMachine.Initialize(root, koreanFont, ReturnToMain, inventory);
@@ -505,6 +505,12 @@ public sealed class XTapBattleController : MonoBehaviour
     void OpenInventory()
     {
         if (inventory != null) inventory.Open();
+    }
+
+    void OnInventoryClosed()
+    {
+        RefreshMainProgressUi();
+        if (jail != null) jail.RefreshIfOpen();
     }
 
     void OpenBlacksmith()
