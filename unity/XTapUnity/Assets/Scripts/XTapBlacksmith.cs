@@ -5,6 +5,7 @@ using UnityEngine.UI;
 
 public sealed class XTapBlacksmith : MonoBehaviour
 {
+    const float UiFontScale = 1.28f;
     enum ForgeMode
     {
         Enhance,
@@ -113,8 +114,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         ruleText = MakeText(panel, "", 20, TextAnchor.MiddleLeft, false);
         ruleText.color = new Color(.91f, .84f, .72f, 1f);
         ruleText.resizeTextForBestFit = true;
-        ruleText.resizeTextMinSize = 14;
-        ruleText.resizeTextMaxSize = 20;
+        ruleText.resizeTextMinSize = 18;
+        ruleText.resizeTextMaxSize = 26;
         Anchor(ruleText.rectTransform, .055f, .742f, .945f, .815f);
 
         RectTransform listFrame = MakePanel(panel, "ForgeItems", new Color(.025f, .022f, .022f, 1f));
@@ -165,8 +166,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         selectionText = MakeText(panel, "", 20, TextAnchor.MiddleLeft, true);
         selectionText.color = new Color(.96f, .88f, .72f, 1f);
         selectionText.resizeTextForBestFit = true;
-        selectionText.resizeTextMinSize = 14;
-        selectionText.resizeTextMaxSize = 20;
+        selectionText.resizeTextMinSize = 18;
+        selectionText.resizeTextMaxSize = 26;
         Anchor(selectionText.rectTransform, .055f, .235f, .945f, .305f);
 
         chanceText = MakeText(panel, "", 28, TextAnchor.MiddleCenter, true);
@@ -176,8 +177,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         resultText = MakeText(panel, "블록을 선택하세요.", 20, TextAnchor.MiddleCenter, false);
         resultText.color = new Color(.88f, .82f, .74f, 1f);
         resultText.resizeTextForBestFit = true;
-        resultText.resizeTextMinSize = 14;
-        resultText.resizeTextMaxSize = 20;
+        resultText.resizeTextMinSize = 18;
+        resultText.resizeTextMaxSize = 26;
         Anchor(resultText.rectTransform, .055f, .125f, .945f, .185f);
 
         Button clear = MakeButton(panel, "선택 초기화", 20, new Color(.095f, .075f, .065f, 1f));
@@ -310,8 +311,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 ? new Color(1f, .78f, .34f, 1f)
                 : (isMaterial ? new Color(.80f, .90f, .66f, 1f) : new Color(.91f, .87f, .81f, 1f));
             t.resizeTextForBestFit = true;
-            t.resizeTextMinSize = 13;
-            t.resizeTextMaxSize = 19;
+            t.resizeTextMinSize = 17;
+            t.resizeTextMaxSize = 31;
             Anchor(t.rectTransform, .04f, .08f, .96f, .92f);
 
             Button b = row.GetComponent<Button>();
@@ -613,7 +614,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Text t = go.GetComponent<Text>();
         t.text = value;
         t.font = font;
-        t.fontSize = size;
+        t.fontSize = Mathf.RoundToInt(size * UiFontScale);
         t.alignment = align;
         t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
         t.horizontalOverflow = HorizontalWrapMode.Wrap;
