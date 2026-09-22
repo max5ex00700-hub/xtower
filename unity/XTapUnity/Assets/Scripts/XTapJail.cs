@@ -51,6 +51,11 @@ public sealed class XTapJail : MonoBehaviour
         if (onClosed != null) onClosed();
     }
 
+    public void RefreshIfOpen()
+    {
+        if (IsOpen) Refresh();
+    }
+
     void BuildUi()
     {
         overlay = new GameObject("JailOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
