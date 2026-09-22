@@ -7,7 +7,7 @@ using UnityEngine.UI;
 [Serializable]
 public sealed class XTapGearBlockData
 {
-    const float UiFontScale = 1.28f;
+    const float UiFontScale = 3.84f;
     // 0 = bag grid(equipped), 1 = carried inventory, 2 = ground.
     public const int LocationBag = 0;
     public const int LocationHeld = 1;
@@ -224,8 +224,8 @@ public sealed class XTapInventory : MonoBehaviour
         Text guide = MakeText(panel, "그리드 · 소지품 · 바닥을 같이 두고 끌어 장착   /   블록 탭 = 90° 회전", 18, TextAnchor.MiddleCenter, false);
         guide.color = new Color(.74f, .70f, .65f, 1f);
         guide.resizeTextForBestFit = true;
-        guide.resizeTextMinSize = 18;
-        guide.resizeTextMaxSize = 23;
+        guide.resizeTextMinSize = 54;
+        guide.resizeTextMaxSize = 69;
         Anchor(guide.rectTransform, .055f, .878f, .945f, .922f);
 
         bagCountText = MakeText(panel, "", 19, TextAnchor.MiddleLeft, false);
@@ -282,8 +282,8 @@ public sealed class XTapInventory : MonoBehaviour
         detailText = MakeText(panel, "블록을 탭하면 90° 회전합니다. 끌어서 원하는 영역에 놓으세요.", 21, TextAnchor.MiddleCenter, false);
         detailText.color = new Color(.86f, .84f, .78f, 1f);
         detailText.resizeTextForBestFit = true;
-        detailText.resizeTextMinSize = 19;
-        detailText.resizeTextMaxSize = 21;
+        detailText.resizeTextMinSize = 57;
+        detailText.resizeTextMaxSize = 63;
         Anchor(detailText.rectTransform, .07f, .125f, .93f, .222f);
 
         tidyButton = MakeButton(panel, "가방 자동 정리", 22);
@@ -530,15 +530,15 @@ public sealed class XTapInventory : MonoBehaviour
         Text name = MakeText(root, item.displayName + forgeSuffix, 18, TextAnchor.MiddleCenter, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
-        name.resizeTextMinSize = 17;
-        name.resizeTextMaxSize = 23;
+        name.resizeTextMinSize = 51;
+        name.resizeTextMaxSize = 69;
         Anchor(name.rectTransform, .05f, .19f, .95f, .40f);
 
         Text stat = MakeText(root, "공 " + item.attack + "   방 " + item.defense + "   체 " + item.hp + "   [탭=회전]", 16, TextAnchor.MiddleCenter, true);
         stat.color = new Color(.74f, .71f, .66f, 1f);
         stat.resizeTextForBestFit = true;
-        stat.resizeTextMinSize = 15;
-        stat.resizeTextMaxSize = 26;
+        stat.resizeTextMinSize = 45;
+        stat.resizeTextMaxSize = 78;
         Anchor(stat.rectTransform, .04f, .02f, .96f, .20f);
 
         itemViews[item.id] = root;
@@ -567,8 +567,8 @@ public sealed class XTapInventory : MonoBehaviour
             18, TextAnchor.MiddleCenter, true);
         t.color = new Color(1f, .88f, .54f, 1f);
         t.resizeTextForBestFit = true;
-        t.resizeTextMinSize = 18;
-        t.resizeTextMaxSize = 23;
+        t.resizeTextMinSize = 54;
+        t.resizeTextMaxSize = 69;
         Anchor(t.rectTransform, .03f, .02f, .97f, .98f);
     }
 
@@ -807,8 +807,8 @@ public sealed class XTapInventory : MonoBehaviour
                 Text s = MakeText(cg.transform, item.attack + "/" + item.defense + "/" + item.hp, 12, TextAnchor.MiddleCenter, true);
                 s.color = new Color(.96f, .92f, .82f, 1f);
                 s.resizeTextForBestFit = true;
-                s.resizeTextMinSize = 10;
-                s.resizeTextMaxSize = 15;
+                s.resizeTextMinSize = 30;
+                s.resizeTextMaxSize = 45;
                 Anchor(s.rectTransform, .02f, .02f, .98f, .98f);
             }
         }
