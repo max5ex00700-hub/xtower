@@ -7,8 +7,10 @@ using UnityEngine.EventSystems;
 
 public sealed class XTapBattleController : MonoBehaviour
 {
-    const int TestFloor = 1;
-    const int EnemyMaxHp = 60;
+    const int BaseEnemyHp = 60;
+    const int StagesPerFloor = 10;
+    const string CurrentStepKey = "xtap_current_progress_step";
+    const string MaxUnlockedStepKey = "xtap_max_unlocked_progress_step";
 
     XTapOriginalApkAssets assets;
     AudioSource audioSource;
@@ -42,7 +44,10 @@ public sealed class XTapBattleController : MonoBehaviour
     static readonly int JellySwipeId = Shader.PropertyToID("_SwipeStrength");
     static readonly int JellyAspectId = Shader.PropertyToID("_Aspect");
 
-    int enemyHp = EnemyMaxHp;
+    int currentStep;
+    int maxUnlockedStep;
+    int enemyMaxHp = BaseEnemyHp;
+    int enemyHp = BaseEnemyHp;
     int hitCount;
     int fightCount;
     bool busy;
@@ -114,6 +119,8 @@ public sealed class XTapBattleController : MonoBehaviour
         Application.targetFrameRate = 60;
         Screen.orientation = ScreenOrientation.Portrait;
         Screen.fullScreen = true;
+
+        LoadProgress();
 
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
@@ -308,9 +315,9 @@ public sealed class XTapBattleController : MonoBehaviour
         floorWord.color = new Color(.92f, .91f, .88f, 1f);
         Anchor(floorWord.rectTransform, .045f, .748f, .255f, .805f);
 
-        mainFloorText = MakeOutlinedText(mainOverlay.transform, TestFloor.ToString(), 84, TextAnchor.MiddleLeft, true);
+        mainFloorText = MakeOutlinedText(mainOverlay.transform, StageLabel(), 84, TextAnchor.MiddleLeft, true);
         mainFloorText.color = new Color(.73f, .015f, .02f, 1f);
-        Anchor(mainFloorText.rectTransform, .235f, .735f, .405f, .820f);
+        Anchor(mainFloorText.rectTransform, .235f, .735f, .510f, .820f);
         mainFloorText.resizeTextForBestFit = true;
         mainFloorText.resizeTextMinSize = 36;
         mainFloorText.resizeTextMaxSize = 84;
@@ -365,13 +372,21 @@ public sealed class XTapBattleController : MonoBehaviour
             {
                 b.onClick.AddListener(ReturnToMain);
             }
+            else if (i == 1)
+            {
+                b.onClick.AddListener(delegate { MoveProgress(-1); });
+            }
+            else if (i == 2)
+            {
+                b.onClick.AddListener(delegate { MoveProgress(1); });
+            }
             else if (i == 3)
             {
                 b.onClick.AddListener(OpenInventory);
             }
             else
             {
-                // Floor navigation / forge / jail remain disabled until their systems exist.
+                // Forge / jail remain disabled until their systems exist.
                 b.interactable = false;
                 ColorBlock cb = b.colors;
                 cb.disabledColor = Color.white;
@@ -488,13 +503,111 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         ResetFight();
         SetStageOrFallback(0);
-        if (mainFloorText != null) mainFloorText.text = TestFloor.ToString();
-        if (mainStatusText != null) mainStatusText.text = "그녀가 기다리고 있다...";
+        RefreshMainProgressUi();
+
         if (mainOverlay != null)
         {
             mainOverlay.SetActive(true);
             mainOverlay.transform.SetAsLastSibling();
         }
+    }
+
+    void MoveProgress(int delta)
+    {
+        int target = currentStep + delta;
+
+        if (target < 0)
+        {
+            if (mainStatusText != null) mainStatusText.text = "여기가 시작점입니다.";
+            return;
+        }
+
+        if (target > maxUnlockedStep)
+        {
+            if (mainStatusText != null)
+                mainStatusText.text = StageLabel() + "을 먼저 클리어해야 올라갈 수 있습니다.";
+            return;
+        }
+
+        currentStep = target;
+        SaveProgress();
+        ResetFight();
+        SetStageOrFallback(0);
+        RefreshMainProgressUi();
+    }
+
+    void RefreshMainProgressUi()
+    {
+        if (mainFloorText != null)
+            mainFloorText.text = StageLabel();
+
+        if (mainStatusText == null) return;
+
+        int growthPercent = Mathf.RoundToInt(ProgressMultiplier() * 100f);
+        string clearText = currentStep < maxUnlockedStep ? "클리어 · ↑ 이동 가능" : "도전 중";
+        string gearText = "";
+
+        if (inventory != null)
+        {
+            gearText = " · 장비 공+" + inventory.EquippedAttack +
+                       " 방+" + inventory.EquippedDefense +
+                       " 체+" + inventory.EquippedHp;
+        }
+
+        mainStatusText.text = clearText + " · 성장 " + growthPercent + "%" + gearText;
+    }
+
+    void LoadProgress()
+    {
+        currentStep = Mathf.Max(0, PlayerPrefs.GetInt(CurrentStepKey, 0));
+        maxUnlockedStep = Mathf.Max(0, PlayerPrefs.GetInt(MaxUnlockedStepKey, 0));
+
+        if (currentStep > maxUnlockedStep)
+            currentStep = maxUnlockedStep;
+    }
+
+    void SaveProgress()
+    {
+        PlayerPrefs.SetInt(CurrentStepKey, currentStep);
+        PlayerPrefs.SetInt(MaxUnlockedStepKey, maxUnlockedStep);
+        PlayerPrefs.Save();
+    }
+
+    int TowerFloor()
+    {
+        return currentStep / StagesPerFloor + 1;
+    }
+
+    int SubStage()
+    {
+        return currentStep % StagesPerFloor + 1;
+    }
+
+    string StageLabel()
+    {
+        return TowerFloor() + "-" + SubStage();
+    }
+
+    float ProgressMultiplier()
+    {
+        // 1-1=100%, 1-2=105% ... 1-10=145%, 2-1=150%.
+        return 1f + currentStep * .05f;
+    }
+
+    int CurrentEnemyMaxHp()
+    {
+        return Mathf.Max(1, Mathf.RoundToInt(BaseEnemyHp * ProgressMultiplier()));
+    }
+
+    int CurrentCharacterId()
+    {
+        return ((TowerFloor() - 1) % 10) + 1;
+    }
+
+    int CurrentVisualFloor()
+    {
+        // Floor art is currently guaranteed for 1-3; higher floors cycle it.
+        return ((TowerFloor() - 1) % 3) + 1;
     }
 
     IEnumerator PreloadCurrentImages()
