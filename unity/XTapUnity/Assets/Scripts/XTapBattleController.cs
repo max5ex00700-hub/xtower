@@ -120,7 +120,14 @@ public sealed class XTapBattleController : MonoBehaviour
     IEnumerator Start()
     {
         Application.targetFrameRate = 60;
+
+        // X탑 전체 화면 기준: 세로 9:16 디자인 캔버스 + Android 풀스크린.
         Screen.orientation = ScreenOrientation.Portrait;
+        Screen.autorotateToPortrait = false;
+        Screen.autorotateToPortraitUpsideDown = false;
+        Screen.autorotateToLandscapeLeft = false;
+        Screen.autorotateToLandscapeRight = false;
+        Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
         Screen.fullScreen = true;
 
         LoadProgress();
@@ -225,6 +232,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         var scaler = canvasGo.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        // All gameplay/UI is authored against a portrait 9:16 reference.
         scaler.referenceResolution = new Vector2(1080, 1920);
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = .5f;
