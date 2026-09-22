@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public sealed class XTapBlacksmith : MonoBehaviour
 {
-    const float UiFontScale = 1.28f;
+    const float UiFontScale = 3.84f;
     enum ForgeMode
     {
         Enhance,
@@ -74,53 +74,49 @@ public sealed class XTapBlacksmith : MonoBehaviour
         overlay.transform.SetParent(host, false);
 
         Image dim = overlay.GetComponent<Image>();
-        dim.color = new Color(.015f, .010f, .008f, .96f);
+        dim.color = new Color(.015f, .010f, .008f, .975f);
         dim.raycastTarget = true;
         Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
 
         panel = new GameObject("ForgePanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         panel.SetParent(overlay.transform, false);
-        Anchor(panel, .025f, .025f, .975f, .975f);
+        Anchor(panel, .018f, .018f, .982f, .982f);
 
         Image body = panel.GetComponent<Image>();
-        body.color = new Color(.055f, .039f, .030f, .995f);
+        body.color = new Color(.055f, .039f, .030f, .998f);
         body.raycastTarget = true;
-        Frame(panel, new Color(.68f, .36f, .12f, 1f), 4f);
+        Frame(panel, new Color(.72f, .37f, .12f, 1f), 4f);
 
-        Text title = MakeText(panel, "⚒  대 장 간", 42, TextAnchor.MiddleLeft, true);
-        title.color = new Color(1f, .72f, .28f, 1f);
-        Anchor(title.rectTransform, .05f, .925f, .70f, .985f);
+        Text title = MakeText(panel, "대장간", 34, TextAnchor.MiddleLeft, true);
+        title.color = new Color(1f, .73f, .30f, 1f);
+        Anchor(title.rectTransform, .055f, .902f, .62f, .985f);
 
-        Text sub = MakeText(panel, "FORGE · 블록을 태워 더 강한 블록으로", 18, TextAnchor.MiddleLeft, false);
-        sub.color = new Color(.72f, .62f, .54f, 1f);
-        Anchor(sub.rectTransform, .055f, .890f, .80f, .928f);
-
-        Button close = MakeButton(panel, "닫기", 22, new Color(.16f, .09f, .065f, 1f));
-        Anchor(close.GetComponent<RectTransform>(), .79f, .932f, .94f, .980f);
+        Button close = MakeButton(panel, "닫기", 18, new Color(.16f, .09f, .065f, 1f));
+        Anchor(close.GetComponent<RectTransform>(), .76f, .912f, .945f, .975f);
         close.onClick.AddListener(Close);
 
-        enhanceTab = MakeButton(panel, "강화", 24, new Color(.20f, .105f, .055f, 1f));
-        synthesisTab = MakeButton(panel, "합성", 24, new Color(.12f, .08f, .07f, 1f));
-        dismantleTab = MakeButton(panel, "분해", 24, new Color(.12f, .08f, .07f, 1f));
+        enhanceTab = MakeButton(panel, "강화", 20, new Color(.20f, .105f, .055f, 1f));
+        synthesisTab = MakeButton(panel, "합성", 20, new Color(.12f, .08f, .07f, 1f));
+        dismantleTab = MakeButton(panel, "분해", 20, new Color(.12f, .08f, .07f, 1f));
 
-        Anchor(enhanceTab.GetComponent<RectTransform>(), .05f, .825f, .33f, .875f);
-        Anchor(synthesisTab.GetComponent<RectTransform>(), .36f, .825f, .64f, .875f);
-        Anchor(dismantleTab.GetComponent<RectTransform>(), .67f, .825f, .95f, .875f);
+        Anchor(enhanceTab.GetComponent<RectTransform>(), .05f, .805f, .335f, .885f);
+        Anchor(synthesisTab.GetComponent<RectTransform>(), .357f, .805f, .642f, .885f);
+        Anchor(dismantleTab.GetComponent<RectTransform>(), .665f, .805f, .95f, .885f);
 
         enhanceTab.onClick.AddListener(delegate { SetMode(ForgeMode.Enhance); });
         synthesisTab.onClick.AddListener(delegate { SetMode(ForgeMode.Synthesis); });
         dismantleTab.onClick.AddListener(delegate { SetMode(ForgeMode.Dismantle); });
 
-        ruleText = MakeText(panel, "", 20, TextAnchor.MiddleLeft, false);
-        ruleText.color = new Color(.91f, .84f, .72f, 1f);
+        ruleText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
+        ruleText.color = new Color(.93f, .85f, .72f, 1f);
         ruleText.resizeTextForBestFit = true;
-        ruleText.resizeTextMinSize = 18;
-        ruleText.resizeTextMaxSize = 26;
-        Anchor(ruleText.rectTransform, .055f, .742f, .945f, .815f);
+        ruleText.resizeTextMinSize = 44;
+        ruleText.resizeTextMaxSize = 58;
+        Anchor(ruleText.rectTransform, .06f, .730f, .94f, .790f);
 
         RectTransform listFrame = MakePanel(panel, "ForgeItems", new Color(.025f, .022f, .022f, 1f));
-        Anchor(listFrame, .05f, .315f, .95f, .735f);
-        Frame(listFrame, new Color(.31f, .22f, .17f, 1f), 2f);
+        Anchor(listFrame, .05f, .335f, .95f, .715f);
+        Frame(listFrame, new Color(.35f, .24f, .17f, 1f), 3f);
 
         GameObject scrollGo = new GameObject("ForgeScroll", typeof(RectTransform), typeof(ScrollRect));
         scrollGo.transform.SetParent(listFrame, false);
@@ -143,8 +139,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         listContent.offsetMax = Vector2.zero;
 
         VerticalLayoutGroup layout = contentGo.GetComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(8, 8, 8, 8);
-        layout.spacing = 8f;
+        layout.padding = new RectOffset(12, 12, 12, 12);
+        layout.spacing = 12f;
         layout.childControlHeight = false;
         layout.childControlWidth = true;
         layout.childForceExpandHeight = false;
@@ -163,26 +159,29 @@ public sealed class XTapBlacksmith : MonoBehaviour
         scroll.elasticity = .08f;
         scroll.inertia = true;
 
-        selectionText = MakeText(panel, "", 20, TextAnchor.MiddleLeft, true);
+        selectionText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
         selectionText.color = new Color(.96f, .88f, .72f, 1f);
         selectionText.resizeTextForBestFit = true;
-        selectionText.resizeTextMinSize = 18;
-        selectionText.resizeTextMaxSize = 26;
-        Anchor(selectionText.rectTransform, .055f, .235f, .945f, .305f);
+        selectionText.resizeTextMinSize = 42;
+        selectionText.resizeTextMaxSize = 58;
+        Anchor(selectionText.rectTransform, .06f, .255f, .94f, .325f);
 
-        chanceText = MakeText(panel, "", 28, TextAnchor.MiddleCenter, true);
+        chanceText = MakeText(panel, "", 20, TextAnchor.MiddleCenter, true);
         chanceText.color = new Color(1f, .66f, .20f, 1f);
-        Anchor(chanceText.rectTransform, .055f, .185f, .945f, .235f);
+        chanceText.resizeTextForBestFit = true;
+        chanceText.resizeTextMinSize = 54;
+        chanceText.resizeTextMaxSize = 78;
+        Anchor(chanceText.rectTransform, .06f, .185f, .94f, .255f);
 
-        resultText = MakeText(panel, "블록을 선택하세요.", 20, TextAnchor.MiddleCenter, false);
+        resultText = MakeText(panel, "블록을 선택하세요.", 14, TextAnchor.MiddleCenter, false);
         resultText.color = new Color(.88f, .82f, .74f, 1f);
         resultText.resizeTextForBestFit = true;
-        resultText.resizeTextMinSize = 18;
-        resultText.resizeTextMaxSize = 26;
-        Anchor(resultText.rectTransform, .055f, .125f, .945f, .185f);
+        resultText.resizeTextMinSize = 38;
+        resultText.resizeTextMaxSize = 54;
+        Anchor(resultText.rectTransform, .06f, .125f, .94f, .180f);
 
-        Button clear = MakeButton(panel, "선택 초기화", 20, new Color(.095f, .075f, .065f, 1f));
-        Anchor(clear.GetComponent<RectTransform>(), .055f, .050f, .42f, .110f);
+        Button clear = MakeButton(panel, "초기화", 17, new Color(.095f, .075f, .065f, 1f));
+        Anchor(clear.GetComponent<RectTransform>(), .055f, .035f, .345f, .110f);
         clear.onClick.AddListener(delegate
         {
             ClearSelection();
@@ -190,9 +189,13 @@ public sealed class XTapBlacksmith : MonoBehaviour
             Refresh();
         });
 
-        executeButton = MakeButton(panel, "작업 실행", 24, new Color(.36f, .15f, .055f, 1f));
-        Anchor(executeButton.GetComponent<RectTransform>(), .58f, .050f, .945f, .110f);
+        executeButton = MakeButton(panel, "작업 실행", 19, new Color(.36f, .15f, .055f, 1f));
+        Anchor(executeButton.GetComponent<RectTransform>(), .37f, .035f, .72f, .110f);
         executeButton.onClick.AddListener(Execute);
+
+        Button closeBottom = MakeButton(panel, "닫기", 17, new Color(.095f, .075f, .065f, 1f));
+        Anchor(closeBottom.GetComponent<RectTransform>(), .745f, .035f, .945f, .110f);
+        closeBottom.onClick.AddListener(Close);
 
         SetMode(ForgeMode.Enhance);
     }
@@ -243,23 +246,11 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (ruleText == null) return;
 
         if (mode == ForgeMode.Enhance)
-        {
-            ruleText.text =
-                "강화 · 대상 1개 + 재료 블록 · 재료 1개당 성공률 +10%\n" +
-                "성공: 공 +1 / 체 +5 / 짝수 강화마다 방 +1 · 최대 +10 · 재료는 성공/실패 모두 소모";
-        }
+            ruleText.text = "재료 1개당 성공률 +10%  ·  성공 시 공+1 / 체+5 / 짝수 강화 방+1";
         else if (mode == ForgeMode.Synthesis)
-        {
-            ruleText.text =
-                "합성 · 대상 1개 + 재료 1개 · 성공률 1%\n" +
-                "성공하면 재료의 현재 공/방/체를 대상에 그대로 더함 · 실패해도 재료 소모";
-        }
+            ruleText.text = "대상 1개 + 재료 1개  ·  성공률 1%  ·  성공 시 재료 능력 흡수";
         else
-        {
-            ruleText.text =
-                "분해 · 재료 최대 10개 · 1개=10% … 10개=100%\n" +
-                "성공하면 가방 배치칸 +1 영구 확장 · 실패해도 선택 재료 전부 소모";
-        }
+            ruleText.text = "재료 최대 10개  ·  1개당 10%  ·  성공 시 플레이어 가방 +1칸";
     }
 
     void RebuildItemList()
@@ -274,7 +265,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             Text empty = MakeText(listContent, "사용할 블록이 없습니다.", 21, TextAnchor.MiddleCenter, false);
             empty.color = new Color(.55f, .50f, .47f, 1f);
             LayoutElement le = empty.gameObject.AddComponent<LayoutElement>();
-            le.preferredHeight = 90f;
+            le.preferredHeight = 170f;
             return;
         }
 
@@ -299,21 +290,21 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 bg.color = new Color(.075f, .065f, .062f, 1f);
 
             LayoutElement le = row.GetComponent<LayoutElement>();
-            le.preferredHeight = 92f;
+            le.preferredHeight = 176f;
 
             string prefix = isTarget ? "[대상] " : (isMaterial ? "[재료] " : "");
             string enhance = item.enhanceLevel > 0 ? " +" + item.enhanceLevel : "";
             string line1 = prefix + "[" + LocationName(item) + "] " + item.displayName + enhance;
             string line2 = item.cellCount + "칸 · 공 " + item.attack + " / 방 " + item.defense + " / 체 " + item.hp;
 
-            Text t = MakeText(row.transform, line1 + "\n" + line2, 19, TextAnchor.MiddleLeft, isTarget || isMaterial);
+            Text t = MakeText(row.transform, line1 + "\n" + line2, 16, TextAnchor.MiddleLeft, isTarget || isMaterial);
             t.color = isTarget
                 ? new Color(1f, .78f, .34f, 1f)
                 : (isMaterial ? new Color(.80f, .90f, .66f, 1f) : new Color(.91f, .87f, .81f, 1f));
             t.resizeTextForBestFit = true;
-            t.resizeTextMinSize = 17;
-            t.resizeTextMaxSize = 31;
-            Anchor(t.rectTransform, .04f, .08f, .96f, .92f);
+            t.resizeTextMinSize = 44;
+            t.resizeTextMaxSize = 62;
+            Anchor(t.rectTransform, .045f, .10f, .955f, .90f);
 
             Button b = row.GetComponent<Button>();
             b.targetGraphic = bg;
