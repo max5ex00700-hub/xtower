@@ -116,9 +116,9 @@ jobs:
           decode_audio_glob "unity/XTapUnity/Assets/Resources/XTapCombatSfx/fight_*.txt"
 
           echo "Drawable assets:"
-          ls -lh app/src/main/res/drawable-nodpi | head -60
+          ls -lh app/src/main/res/drawable-nodpi | head -60 || true
           echo "Audio assets:"
-          ls -lh app/src/main/res/raw | head -80
+          ls -lh app/src/main/res/raw | head -80 || true
 
       - name: Build native engine debug APK
         run: gradle :app:assembleDebug --stacktrace
