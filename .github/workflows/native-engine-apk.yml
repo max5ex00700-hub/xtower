@@ -90,13 +90,15 @@ jobs:
               fi
             }
 
-            for prefix in p k b d; do
-              for n in $(seq 0 9); do
-                i=$(printf "%02d" "$n")
-                extract_jpg "assets/f1_${prefix}${i}.jpg" "app/src/main/res/drawable-nodpi/f1_${prefix}${i}.jpg"
+            for floor in 1 2 3; do
+              for prefix in p k b d; do
+                for n in $(seq 0 9); do
+                  i=$(printf "%02d" "$n")
+                  extract_jpg "assets/f${floor}_${prefix}${i}.jpg" "app/src/main/res/drawable-nodpi/f${floor}_${prefix}${i}.jpg"
+                done
               done
+              extract_jpg "assets/f${floor}_cap.jpg" "app/src/main/res/drawable-nodpi/f${floor}_cap.jpg"
             done
-            extract_jpg "assets/f1_cap.jpg" "app/src/main/res/drawable-nodpi/f1_cap.jpg"
           fi
 
           # Decode the same female reactions and combat impacts currently used in Unity.
