@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 
 public sealed class XTapBattleController : MonoBehaviour
 {
-    const float UiFontScale = 1.28f;
+    const float UiFontScale = 3.84f;
     const int BaseEnemyHp = 60;
     const int StagesPerFloor = 10;
     const string CurrentStepKey = "xtap_current_progress_step";
@@ -273,8 +273,8 @@ public sealed class XTapBattleController : MonoBehaviour
         bubbleText = MakeText(bubblePanel.transform, "", 30, TextAnchor.MiddleCenter, true);
         bubbleText.color = new Color(.10f, .065f, .07f, 1f);
         bubbleText.resizeTextForBestFit = true;
-        bubbleText.resizeTextMinSize = 28;
-        bubbleText.resizeTextMaxSize = 38;
+        bubbleText.resizeTextMinSize = 84;
+        bubbleText.resizeTextMaxSize = 114;
         Anchor(bubbleText.rectTransform, .08f, .22f, .92f, .91f);
     }
 
@@ -307,15 +307,15 @@ public sealed class XTapBattleController : MonoBehaviour
         version.color = new Color(.82f, .78f, .74f, 1f);
         Anchor(version.rectTransform, .170f, .808f, .360f, .848f);
         version.resizeTextForBestFit = true;
-        version.resizeTextMinSize = 19;
-        version.resizeTextMaxSize = 37;
+        version.resizeTextMinSize = 57;
+        version.resizeTextMaxSize = 111;
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
         Text codeText = MakeOutlinedText(codePlate.transform, "코드 1052", 27, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
-        codeText.resizeTextMinSize = 20;
-        codeText.resizeTextMaxSize = 35;
+        codeText.resizeTextMinSize = 60;
+        codeText.resizeTextMaxSize = 105;
         codeText.color = new Color(.90f, .87f, .82f, 1f);
         Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
 
@@ -328,15 +328,15 @@ public sealed class XTapBattleController : MonoBehaviour
         mainFloorText.color = new Color(.73f, .015f, .02f, 1f);
         Anchor(mainFloorText.rectTransform, .235f, .735f, .510f, .820f);
         mainFloorText.resizeTextForBestFit = true;
-        mainFloorText.resizeTextMinSize = 46;
-        mainFloorText.resizeTextMaxSize = 108;
+        mainFloorText.resizeTextMinSize = 138;
+        mainFloorText.resizeTextMaxSize = 324;
 
         mainStatusText = MakeOutlinedText(mainOverlay.transform, "그녀가 기다리고 있다...", 30, TextAnchor.MiddleLeft, false);
         mainStatusText.color = new Color(.94f, .91f, .86f, 1f);
         Anchor(mainStatusText.rectTransform, .045f, .700f, .580f, .748f);
         mainStatusText.resizeTextForBestFit = true;
-        mainStatusText.resizeTextMinSize = 23;
-        mainStatusText.resizeTextMaxSize = 38;
+        mainStatusText.resizeTextMinSize = 69;
+        mainStatusText.resizeTextMaxSize = 114;
 
         // Main-screen speech bubble. This is separate from the combat reaction bubble.
         Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
@@ -349,8 +349,8 @@ public sealed class XTapBattleController : MonoBehaviour
         mainBubbleText.color = new Color(.08f, .065f, .06f, 1f);
         Anchor(mainBubbleText.rectTransform, .06f, .18f, .95f, .92f);
         mainBubbleText.resizeTextForBestFit = true;
-        mainBubbleText.resizeTextMinSize = 22;
-        mainBubbleText.resizeTextMaxSize = 35;
+        mainBubbleText.resizeTextMinSize = 66;
+        mainBubbleText.resizeTextMaxSize = 105;
 
         // Large central action button.
         Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 52);
