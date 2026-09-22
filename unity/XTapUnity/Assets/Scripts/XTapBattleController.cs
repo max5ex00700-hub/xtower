@@ -264,17 +264,17 @@ public sealed class XTapBattleController : MonoBehaviour
         // stuck to the upper-left corner. The lower-left tail points toward the character.
         bubbleRect.anchorMin = bubbleRect.anchorMax = new Vector2(1f, 1f);
         bubbleRect.pivot = new Vector2(1f, 1f);
-        bubbleRect.sizeDelta = new Vector2(330f, 116f);
-        bubbleRect.anchoredPosition = new Vector2(-38f, -250f);
+        bubbleRect.sizeDelta = new Vector2(570f, 220f);
+        bubbleRect.anchoredPosition = new Vector2(-38f, -235f);
 
         bubbleGroup = bubblePanel.GetComponent<CanvasGroup>();
         bubbleGroup.alpha = 0;
 
-        bubbleText = MakeText(bubblePanel.transform, "", 30, TextAnchor.MiddleCenter, true);
+        bubbleText = MakeText(bubblePanel.transform, "", 16, TextAnchor.MiddleCenter, true);
         bubbleText.color = new Color(.10f, .065f, .07f, 1f);
         bubbleText.resizeTextForBestFit = true;
-        bubbleText.resizeTextMinSize = 84;
-        bubbleText.resizeTextMaxSize = 114;
+        bubbleText.resizeTextMinSize = 46;
+        bubbleText.resizeTextMaxSize = 62;
         Anchor(bubbleText.rectTransform, .08f, .22f, .92f, .91f);
     }
 
@@ -292,51 +292,51 @@ public sealed class XTapBattleController : MonoBehaviour
         MakePanel(mainOverlay.transform, "BottomShade", new Color(.015f, .012f, .014f, .42f), 0f, 0f, 1f, .29f);
 
         // X탑 logo: large blood-red X with pale stone-white 탑.
-        Text logoX = MakeOutlinedText(mainOverlay.transform, "X", 132, TextAnchor.MiddleCenter, true);
+        Text logoX = MakeOutlinedText(mainOverlay.transform, "X", 50, TextAnchor.MiddleCenter, true);
         logoX.color = new Color(.62f, .015f, .02f, 1f);
         Anchor(logoX.rectTransform, .020f, .842f, .165f, .995f);
 
-        Text logoTower = MakeOutlinedText(mainOverlay.transform, "탑", 116, TextAnchor.MiddleCenter, true);
+        Text logoTower = MakeOutlinedText(mainOverlay.transform, "탑", 44, TextAnchor.MiddleCenter, true);
         logoTower.color = new Color(.93f, .91f, .87f, 1f);
         Anchor(logoTower.rectTransform, .135f, .848f, .315f, .992f);
 
         string displayVersion = Application.version;
         int dash = displayVersion.IndexOf('-');
         if (dash > 0) displayVersion = displayVersion.Substring(0, dash);
-        Text version = MakeOutlinedText(mainOverlay.transform, "v " + displayVersion, 29, TextAnchor.MiddleCenter, false);
+        Text version = MakeOutlinedText(mainOverlay.transform, "v " + displayVersion, 11, TextAnchor.MiddleCenter, false);
         version.color = new Color(.82f, .78f, .74f, 1f);
         Anchor(version.rectTransform, .170f, .808f, .360f, .848f);
         version.resizeTextForBestFit = true;
-        version.resizeTextMinSize = 57;
-        version.resizeTextMaxSize = 111;
+        version.resizeTextMinSize = 32;
+        version.resizeTextMaxSize = 46;
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1052", 27, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1053", 11, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
-        codeText.resizeTextMinSize = 60;
-        codeText.resizeTextMaxSize = 105;
+        codeText.resizeTextMinSize = 32;
+        codeText.resizeTextMaxSize = 46;
         codeText.color = new Color(.90f, .87f, .82f, 1f);
         Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
 
         // Floor information sits on the left, matching the supplied gothic concept.
-        Text floorWord = MakeOutlinedText(mainOverlay.transform, "FLOOR", 48, TextAnchor.MiddleLeft, true);
+        Text floorWord = MakeOutlinedText(mainOverlay.transform, "FLOOR", 18, TextAnchor.MiddleLeft, true);
         floorWord.color = new Color(.92f, .91f, .88f, 1f);
         Anchor(floorWord.rectTransform, .045f, .748f, .255f, .805f);
 
-        mainFloorText = MakeOutlinedText(mainOverlay.transform, StageLabel(), 84, TextAnchor.MiddleLeft, true);
+        mainFloorText = MakeOutlinedText(mainOverlay.transform, StageLabel(), 32, TextAnchor.MiddleLeft, true);
         mainFloorText.color = new Color(.73f, .015f, .02f, 1f);
         Anchor(mainFloorText.rectTransform, .235f, .735f, .510f, .820f);
         mainFloorText.resizeTextForBestFit = true;
-        mainFloorText.resizeTextMinSize = 138;
-        mainFloorText.resizeTextMaxSize = 324;
+        mainFloorText.resizeTextMinSize = 78;
+        mainFloorText.resizeTextMaxSize = 128;
 
-        mainStatusText = MakeOutlinedText(mainOverlay.transform, "그녀가 기다리고 있다...", 30, TextAnchor.MiddleLeft, false);
+        mainStatusText = MakeOutlinedText(mainOverlay.transform, "그녀가 기다리고 있다...", 14, TextAnchor.MiddleLeft, false);
         mainStatusText.color = new Color(.94f, .91f, .86f, 1f);
-        Anchor(mainStatusText.rectTransform, .045f, .700f, .580f, .748f);
+        Anchor(mainStatusText.rectTransform, .045f, .685f, .730f, .748f);
         mainStatusText.resizeTextForBestFit = true;
-        mainStatusText.resizeTextMinSize = 69;
-        mainStatusText.resizeTextMaxSize = 114;
+        mainStatusText.resizeTextMinSize = 40;
+        mainStatusText.resizeTextMaxSize = 58;
 
         // Main-screen speech bubble. This is separate from the combat reaction bubble.
         Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
@@ -344,16 +344,16 @@ public sealed class XTapBattleController : MonoBehaviour
         mainBubble.sprite = speechBubbleSprite;
         mainBubble.color = new Color(.96f, .95f, .92f, .97f);
         mainBubble.raycastTarget = false;
-        Anchor(mainBubble.rectTransform, .690f, .790f, .980f, .885f);
-        Text mainBubbleText = MakeText(mainBubble.transform, "...또 오는 거야?", 27, TextAnchor.MiddleCenter, false);
+        Anchor(mainBubble.rectTransform, .570f, .775f, .980f, .895f);
+        Text mainBubbleText = MakeText(mainBubble.transform, "...또 오는 거야?", 15, TextAnchor.MiddleCenter, false);
         mainBubbleText.color = new Color(.08f, .065f, .06f, 1f);
         Anchor(mainBubbleText.rectTransform, .06f, .18f, .95f, .92f);
         mainBubbleText.resizeTextForBestFit = true;
-        mainBubbleText.resizeTextMinSize = 66;
-        mainBubbleText.resizeTextMaxSize = 105;
+        mainBubbleText.resizeTextMinSize = 40;
+        mainBubbleText.resizeTextMaxSize = 58;
 
         // Large central action button.
-        Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 52);
+        Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 20);
         RectTransform fr = fight.GetComponent<RectTransform>();
         fr.anchorMin = new Vector2(.205f, .190f);
         fr.anchorMax = new Vector2(.795f, .305f);
@@ -477,11 +477,11 @@ public sealed class XTapBattleController : MonoBehaviour
         bg.color = new Color(.055f, .052f, .052f, .94f);
         AddFrame(bg.rectTransform, new Color(.47f, .40f, .32f, .95f), 2f);
 
-        Text iconText = MakeOutlinedText(go.transform, icon, 45, TextAnchor.MiddleCenter, true);
+        Text iconText = MakeOutlinedText(go.transform, icon, 18, TextAnchor.MiddleCenter, true);
         iconText.color = new Color(.78f, .76f, .71f, 1f);
         Anchor(iconText.rectTransform, .05f, .39f, .95f, .91f);
 
-        Text labelText = MakeOutlinedText(go.transform, label, 23, TextAnchor.MiddleCenter, false);
+        Text labelText = MakeOutlinedText(go.transform, label, 11, TextAnchor.MiddleCenter, false);
         labelText.color = new Color(.91f, .88f, .81f, 1f);
         Anchor(labelText.rectTransform, .03f, .06f, .97f, .40f);
 
