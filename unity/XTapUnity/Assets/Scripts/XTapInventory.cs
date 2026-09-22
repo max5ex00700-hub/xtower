@@ -26,6 +26,7 @@ public sealed class XTapGearBlockData
     public int gridY = -1;
     public int rotation;
     public int location = LocationBag;
+    public int bagOwnerCharacterId;
     public int enhanceLevel;
 }
 
@@ -64,6 +65,7 @@ public sealed class XTapInventory : MonoBehaviour
     Image heldZoneImage;
     Image groundZoneImage;
 
+    Text bagTitleText;
     Text bagCountText;
     Text totalText;
     Text heldCountText;
@@ -75,12 +77,14 @@ public sealed class XTapInventory : MonoBehaviour
     readonly Dictionary<string, RectTransform> itemViews = new Dictionary<string, RectTransform>();
     readonly List<Image> gridCells = new List<Image>();
 
+    int activeBagOwnerCharacterId;
     string selectedId;
     string draggingId;
     int dragOffsetX;
     int dragOffsetY;
 
     int originalLocation;
+    int originalBagOwnerCharacterId;
     int originalX;
     int originalY;
     int originalRotation;
@@ -103,7 +107,24 @@ public sealed class XTapInventory : MonoBehaviour
 
     public void Open()
     {
+        OpenBagForOwner(0);
+    }
+
+    public void OpenCharacterBag(int characterId)
+    {
+        characterId = Mathf.Clamp(characterId, 1, 10);
+        if (PlayerPrefs.GetInt("xtap_captured_char_" + characterId, 0) != 1)
+            return;
+
+        OpenBagForOwner(characterId);
+    }
+
+    void OpenBagForOwner(int ownerCharacterId)
+    {
         if (overlay == null) return;
+
+        activeBagOwnerCharacterId = Mathf.Max(0, ownerCharacterId);
+        selectedId = null;
         IsOpen = true;
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
@@ -128,6 +149,7 @@ public sealed class XTapInventory : MonoBehaviour
         if (string.IsNullOrEmpty(item.id)) item.id = Guid.NewGuid().ToString("N");
 
         item.location = XTapGearBlockData.LocationGround;
+        item.bagOwnerCharacterId = 0;
         item.gridX = -1;
         item.gridY = -1;
         item.rotation = ((item.rotation % 4) + 4) % 4;
@@ -150,6 +172,7 @@ public sealed class XTapInventory : MonoBehaviour
         if (item == null) return false;
 
         int oldLocation = item.location;
+        int oldBagOwner = item.bagOwnerCharacterId;
         int oldX = item.gridX;
         int oldY = item.gridY;
         int oldRotation = item.rotation;
@@ -157,6 +180,7 @@ public sealed class XTapInventory : MonoBehaviour
         bool fits = FindFirstPlacement(item);
 
         item.location = oldLocation;
+        item.bagOwnerCharacterId = oldBagOwner;
         item.gridX = oldX;
         item.gridY = oldY;
         item.rotation = oldRotation;
@@ -188,9 +212,9 @@ public sealed class XTapInventory : MonoBehaviour
         panel.offsetMax = Vector2.zero;
         Frame(panel, new Color(.52f, .43f, .30f, 1f), 4f);
 
-        Text title = MakeText(panel, "배 낭   8 × 3", 36, TextAnchor.MiddleLeft, true);
-        title.color = new Color(.96f, .90f, .78f, 1f);
-        Anchor(title.rectTransform, .07f, .925f, .72f, .982f);
+        bagTitleText = MakeText(panel, "플레이어 가방   8 × 3", 36, TextAnchor.MiddleLeft, true);
+        bagTitleText.color = new Color(.96f, .90f, .78f, 1f);
+        Anchor(bagTitleText.rectTransform, .07f, .925f, .72f, .982f);
 
         Button closeTop = MakeButton(panel, "닫기", 22);
         Anchor(closeTop.GetComponent<RectTransform>(), .78f, .928f, .93f, .978f);
@@ -218,7 +242,7 @@ public sealed class XTapInventory : MonoBehaviour
         gridBg.raycastTarget = true;
         gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, .5f);
         gridRoot.pivot = new Vector2(.5f, .5f);
-        gridRoot.sizeDelta = new Vector2(GridW * CellSize, GridRows * CellSize);
+        gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
         gridRoot.anchoredPosition = new Vector2(0f, 300f);
         Frame(gridRoot, new Color(.43f, .38f, .31f, 1f), 3f);
 
@@ -320,6 +344,13 @@ public sealed class XTapInventory : MonoBehaviour
         ClearChildren(heldContent);
         ClearChildren(groundContent);
 
+        if (bagTitleText != null)
+        {
+            bagTitleText.text = activeBagOwnerCharacterId == 0
+                ? "플레이어 가방   8 × " + ActiveGridRows
+                : "캐릭터 " + activeBagOwnerCharacterId + " 가방   8 × 3";
+        }
+
         int bagCount = 0;
         int heldCount = 0;
         int groundCount = 0;
@@ -332,7 +363,8 @@ public sealed class XTapInventory : MonoBehaviour
             XTapGearBlockData item = items[i];
             NormalizeItem(item);
 
-            if (item.location == XTapGearBlockData.LocationBag)
+            if (item.location == XTapGearBlockData.LocationBag &&
+                item.bagOwnerCharacterId == activeBagOwnerCharacterId)
             {
                 bagCount++;
                 atk += item.attack;
@@ -353,8 +385,8 @@ public sealed class XTapInventory : MonoBehaviour
         RenderRow(XTapGearBlockData.LocationHeld, heldContent);
         RenderRow(XTapGearBlockData.LocationGround, groundContent);
 
-        bagCountText.text = "가방 " + bagCount + "개 · " + OccupiedCellCount() + "/" + GridCapacity + "칸" +
-                            (ExpansionBonus > 0 ? "  (+" + ExpansionBonus + ")" : "");
+        bagCountText.text = "가방 " + bagCount + "개 · " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸" +
+                            (activeBagOwnerCharacterId == 0 && ExpansionBonus > 0 ? "  (+" + ExpansionBonus + ")" : "");
         totalText.text = "총합  공 +" + atk + "   방 +" + def + "   체 +" + hp;
         heldCountText.text = "소지품 " + heldCount + " · 끌어 가방/바닥으로 이동";
         groundCountText.text = "바닥 " + groundCount + " · 끌어 가방/소지품으로 이동";
@@ -545,7 +577,8 @@ public sealed class XTapInventory : MonoBehaviour
         {
             int total = 0;
             for (int i = 0; i < items.Count; i++)
-                if (items[i].location == XTapGearBlockData.LocationBag)
+                if (items[i].location == XTapGearBlockData.LocationBag &&
+                    items[i].bagOwnerCharacterId == 0)
                     total += Mathf.Max(0, items[i].attack);
             return total;
         }
@@ -557,7 +590,8 @@ public sealed class XTapInventory : MonoBehaviour
         {
             int total = 0;
             for (int i = 0; i < items.Count; i++)
-                if (items[i].location == XTapGearBlockData.LocationBag)
+                if (items[i].location == XTapGearBlockData.LocationBag &&
+                    items[i].bagOwnerCharacterId == 0)
                     total += Mathf.Max(0, items[i].defense);
             return total;
         }
@@ -569,10 +603,51 @@ public sealed class XTapInventory : MonoBehaviour
         {
             int total = 0;
             for (int i = 0; i < items.Count; i++)
-                if (items[i].location == XTapGearBlockData.LocationBag)
+                if (items[i].location == XTapGearBlockData.LocationBag &&
+                    items[i].bagOwnerCharacterId == 0)
                     total += Mathf.Max(0, items[i].hp);
             return total;
         }
+    }
+
+    public int GetEquippedAttack(int ownerCharacterId)
+    {
+        int total = 0;
+        for (int i = 0; i < items.Count; i++)
+            if (items[i].location == XTapGearBlockData.LocationBag &&
+                items[i].bagOwnerCharacterId == ownerCharacterId)
+                total += Mathf.Max(0, items[i].attack);
+        return total;
+    }
+
+    public int GetEquippedDefense(int ownerCharacterId)
+    {
+        int total = 0;
+        for (int i = 0; i < items.Count; i++)
+            if (items[i].location == XTapGearBlockData.LocationBag &&
+                items[i].bagOwnerCharacterId == ownerCharacterId)
+                total += Mathf.Max(0, items[i].defense);
+        return total;
+    }
+
+    public int GetEquippedHp(int ownerCharacterId)
+    {
+        int total = 0;
+        for (int i = 0; i < items.Count; i++)
+            if (items[i].location == XTapGearBlockData.LocationBag &&
+                items[i].bagOwnerCharacterId == ownerCharacterId)
+                total += Mathf.Max(0, items[i].hp);
+        return total;
+    }
+
+    public int GetEquippedCellCount(int ownerCharacterId)
+    {
+        int total = 0;
+        for (int i = 0; i < items.Count; i++)
+            if (items[i].location == XTapGearBlockData.LocationBag &&
+                items[i].bagOwnerCharacterId == ownerCharacterId)
+                total += Mathf.Max(0, items[i].cellCount);
+        return total;
     }
 
     public int ExpansionBonus
@@ -585,16 +660,21 @@ public sealed class XTapInventory : MonoBehaviour
         get { return BaseGridCells + ExpansionBonus; }
     }
 
-    int GridRows
+    int ActiveGridCapacity
     {
-        get { return Mathf.Max(3, Mathf.CeilToInt(GridCapacity / (float)GridW)); }
+        get { return activeBagOwnerCharacterId == 0 ? GridCapacity : BaseGridCells; }
+    }
+
+    int ActiveGridRows
+    {
+        get { return Mathf.Max(3, Mathf.CeilToInt(ActiveGridCapacity / (float)GridW)); }
     }
 
     bool IsCellUnlocked(int x, int y)
     {
         if (x < 0 || x >= GridW || y < 0) return false;
         int index = y * GridW + x;
-        return index >= 0 && index < GridCapacity;
+        return index >= 0 && index < ActiveGridCapacity;
     }
 
     void RebuildGridCells()
@@ -606,9 +686,9 @@ public sealed class XTapInventory : MonoBehaviour
 
         gridCells.Clear();
 
-        gridRoot.sizeDelta = new Vector2(GridW * CellSize, GridRows * CellSize);
+        gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
 
-        for (int index = 0; index < GridCapacity; index++)
+        for (int index = 0; index < ActiveGridCapacity; index++)
         {
             int x = index % GridW;
             int y = index / GridW;
@@ -772,6 +852,7 @@ public sealed class XTapInventory : MonoBehaviour
         draggingId = id;
 
         originalLocation = item.location;
+        originalBagOwnerCharacterId = item.bagOwnerCharacterId;
         originalX = item.gridX;
         originalY = item.gridY;
         originalRotation = item.rotation;
@@ -785,7 +866,7 @@ public sealed class XTapInventory : MonoBehaviour
             int cellY;
             ScreenToCell(screen, out cellX, out cellY);
             dragOffsetX = Mathf.Clamp(cellX - item.gridX, 0, GridW - 1);
-            dragOffsetY = Mathf.Clamp(cellY - item.gridY, 0, Mathf.Max(0, GridRows - 1));
+            dragOffsetY = Mathf.Clamp(cellY - item.gridY, 0, Mathf.Max(0, ActiveGridRows - 1));
         }
 
         RectTransform view;
@@ -858,6 +939,7 @@ public sealed class XTapInventory : MonoBehaviour
             if (CanPlace(item, tx, ty, item.rotation, item.id))
             {
                 item.location = XTapGearBlockData.LocationBag;
+                item.bagOwnerCharacterId = activeBagOwnerCharacterId;
                 item.gridX = tx;
                 item.gridY = ty;
                 moved = true;
@@ -866,6 +948,7 @@ public sealed class XTapInventory : MonoBehaviour
         else if (RectTransformUtility.RectangleContainsScreenPoint(heldViewport, screen, null))
         {
             item.location = XTapGearBlockData.LocationHeld;
+            item.bagOwnerCharacterId = 0;
             item.gridX = -1;
             item.gridY = -1;
             moved = true;
@@ -873,6 +956,7 @@ public sealed class XTapInventory : MonoBehaviour
         else if (RectTransformUtility.RectangleContainsScreenPoint(groundViewport, screen, null))
         {
             item.location = XTapGearBlockData.LocationGround;
+            item.bagOwnerCharacterId = 0;
             item.gridX = -1;
             item.gridY = -1;
             moved = true;
@@ -881,6 +965,7 @@ public sealed class XTapInventory : MonoBehaviour
         if (!moved)
         {
             item.location = originalLocation;
+            item.bagOwnerCharacterId = originalBagOwnerCharacterId;
             item.gridX = originalX;
             item.gridY = originalY;
             item.rotation = originalRotation;
@@ -904,6 +989,7 @@ public sealed class XTapInventory : MonoBehaviour
             if (item != null)
             {
                 item.location = originalLocation;
+                item.bagOwnerCharacterId = originalBagOwnerCharacterId;
                 item.gridX = originalX;
                 item.gridY = originalY;
                 item.rotation = originalRotation;
@@ -990,7 +1076,8 @@ public sealed class XTapInventory : MonoBehaviour
         for (int i = 0; i < items.Count; i++)
         {
             XTapGearBlockData item = items[i];
-            if (item.location != XTapGearBlockData.LocationBag) continue;
+            if (item.location != XTapGearBlockData.LocationBag ||
+                item.bagOwnerCharacterId != activeBagOwnerCharacterId) continue;
 
             bagItems.Add(item);
             backup[item.id] = new Vector3Int(item.gridX, item.gridY, item.rotation);
@@ -1040,13 +1127,14 @@ public sealed class XTapInventory : MonoBehaviour
         {
             int rot = (originalRotation + rotTry) % 4;
 
-            for (int y = 0; y < GridRows; y++)
+            for (int y = 0; y < ActiveGridRows; y++)
             {
                 for (int x = 0; x < GridW; x++)
                 {
                     if (CanPlace(item, x, y, rot, item.id))
                     {
                         item.location = XTapGearBlockData.LocationBag;
+                        item.bagOwnerCharacterId = activeBagOwnerCharacterId;
                         item.gridX = x;
                         item.gridY = y;
                         item.rotation = rot;
@@ -1062,6 +1150,9 @@ public sealed class XTapInventory : MonoBehaviour
 
     bool CanPlace(XTapGearBlockData item, int ox, int oy, int rotation, string ignoreId)
     {
+        if (item.exclusive && activeBagOwnerCharacterId != item.characterId)
+            return false;
+
         List<Vector2Int> cells = GetCells(item, rotation);
         HashSet<int> occupied = new HashSet<int>();
 
@@ -1070,6 +1161,7 @@ public sealed class XTapInventory : MonoBehaviour
             XTapGearBlockData other = items[i];
             if (other.id == ignoreId) continue;
             if (other.location != XTapGearBlockData.LocationBag) continue;
+            if (other.bagOwnerCharacterId != activeBagOwnerCharacterId) continue;
             if (other.gridX < 0 || other.gridY < 0) continue;
 
             List<Vector2Int> oc = GetCells(other);
@@ -1232,10 +1324,11 @@ public sealed class XTapInventory : MonoBehaviour
         int total = 0;
 
         for (int i = 0; i < items.Count; i++)
-            if (items[i].location == XTapGearBlockData.LocationBag)
+            if (items[i].location == XTapGearBlockData.LocationBag &&
+                items[i].bagOwnerCharacterId == activeBagOwnerCharacterId)
                 total += Mathf.Max(0, items[i].cellCount);
 
-        return Mathf.Clamp(total, 0, GridCapacity);
+        return Mathf.Clamp(total, 0, ActiveGridCapacity);
     }
 
     void RefreshSelectionText()
@@ -1250,7 +1343,7 @@ public sealed class XTapInventory : MonoBehaviour
 
         string corr = item.correction > 0 ? "+" + item.correction + "%" : item.correction + "%";
         string zone = item.location == XTapGearBlockData.LocationBag
-            ? "가방"
+            ? (item.bagOwnerCharacterId == 0 ? "플레이어 가방" : "캐릭터 " + item.bagOwnerCharacterId + " 가방")
             : (item.location == XTapGearBlockData.LocationHeld ? "소지품" : "바닥");
 
         detailText.text =
@@ -1272,6 +1365,19 @@ public sealed class XTapInventory : MonoBehaviour
         if (item.location < XTapGearBlockData.LocationBag || item.location > XTapGearBlockData.LocationGround)
             item.location = XTapGearBlockData.LocationHeld;
 
+        item.bagOwnerCharacterId = Mathf.Clamp(item.bagOwnerCharacterId, 0, 10);
+
+        // Character-exclusive gear can only be equipped in that captured character's bag.
+        if (item.exclusive &&
+            item.location == XTapGearBlockData.LocationBag &&
+            item.bagOwnerCharacterId != item.characterId)
+        {
+            item.location = XTapGearBlockData.LocationHeld;
+            item.bagOwnerCharacterId = 0;
+            item.gridX = -1;
+            item.gridY = -1;
+        }
+
         // Old saves only had grid coordinates. Keep valid placed blocks equipped;
         // anything without a valid grid position becomes carried inventory.
         if (item.location == XTapGearBlockData.LocationBag && (item.gridX < 0 || item.gridY < 0))
@@ -1279,6 +1385,7 @@ public sealed class XTapInventory : MonoBehaviour
 
         if (item.location != XTapGearBlockData.LocationBag)
         {
+            item.bagOwnerCharacterId = 0;
             item.gridX = -1;
             item.gridY = -1;
         }
