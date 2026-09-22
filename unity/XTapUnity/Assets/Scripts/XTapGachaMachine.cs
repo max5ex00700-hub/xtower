@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public sealed class XTapGachaMachine : MonoBehaviour
 {
-    const float UiFontScale = 1.28f;
+    const float UiFontScale = 3.84f;
     public bool IsOpen { get; private set; }
 
     RectTransform host;
@@ -583,8 +583,8 @@ public sealed class XTapGachaMachine : MonoBehaviour
         statsText = MakeText(machine, "", 25, TextAnchor.MiddleCenter, true);
         statsText.color = new Color(.96f, .82f, .38f, 1f);
         statsText.resizeTextForBestFit = true;
-        statsText.resizeTextMinSize = 23;
-        statsText.resizeTextMaxSize = 32;
+        statsText.resizeTextMinSize = 69;
+        statsText.resizeTextMaxSize = 96;
         Anchor(statsText.rectTransform, .05f, .075f, .95f, .135f);
 
         hintText = MakeText(machine, "", 22, TextAnchor.MiddleCenter, false);
