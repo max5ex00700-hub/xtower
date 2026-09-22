@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 public sealed class XTapJail : MonoBehaviour
 {
-    const float UiFontScale = 1.28f;
+    const float UiFontScale = 3.84f;
     public bool IsOpen { get; private set; }
 
     RectTransform host;
@@ -63,34 +63,37 @@ public sealed class XTapJail : MonoBehaviour
         overlay.transform.SetParent(host, false);
 
         Image dim = overlay.GetComponent<Image>();
-        dim.color = new Color(.010f, .012f, .017f, .975f);
+        dim.color = new Color(.010f, .012f, .017f, .985f);
         dim.raycastTarget = true;
         Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
 
         RectTransform panel = new GameObject("JailPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         panel.SetParent(overlay.transform, false);
-        Anchor(panel, .025f, .025f, .975f, .975f);
+        Anchor(panel, .018f, .018f, .982f, .982f);
 
         Image body = panel.GetComponent<Image>();
-        body.color = new Color(.030f, .034f, .044f, .995f);
+        body.color = new Color(.030f, .034f, .044f, .998f);
         body.raycastTarget = true;
-        Frame(panel, new Color(.30f, .37f, .50f, 1f), 4f);
+        Frame(panel, new Color(.32f, .41f, .56f, 1f), 4f);
 
-        Text title = MakeText(panel, "▥  감 옥", 42, TextAnchor.MiddleLeft, true);
-        title.color = new Color(.84f, .88f, .96f, 1f);
-        Anchor(title.rectTransform, .05f, .925f, .72f, .985f);
+        Text title = MakeText(panel, "감옥", 34, TextAnchor.MiddleLeft, true);
+        title.color = new Color(.86f, .91f, 1f, 1f);
+        Anchor(title.rectTransform, .055f, .902f, .62f, .985f);
 
-        Text sub = MakeText(panel, "포획 캐릭터 · 캐릭터별 독립 8 × 3 장비 가방", 19, TextAnchor.MiddleLeft, false);
-        sub.color = new Color(.58f, .66f, .78f, 1f);
-        Anchor(sub.rectTransform, .055f, .885f, .80f, .928f);
-
-        Button close = MakeButton(panel, "닫기", 22, new Color(.075f, .085f, .105f, 1f));
-        Anchor(close.GetComponent<RectTransform>(), .79f, .932f, .94f, .980f);
+        Button close = MakeButton(panel, "닫기", 18, new Color(.075f, .085f, .105f, 1f));
+        Anchor(close.GetComponent<RectTransform>(), .76f, .912f, .945f, .975f);
         close.onClick.AddListener(Close);
 
+        Text sub = MakeText(panel, "포획 캐릭터 · 각 캐릭터 전용 8×3 가방", 15, TextAnchor.MiddleLeft, true);
+        sub.color = new Color(.64f, .73f, .88f, 1f);
+        sub.resizeTextForBestFit = true;
+        sub.resizeTextMinSize = 42;
+        sub.resizeTextMaxSize = 58;
+        Anchor(sub.rectTransform, .06f, .842f, .94f, .895f);
+
         RectTransform listFrame = MakePanel(panel, "CharacterList", new Color(.018f, .020f, .027f, 1f));
-        Anchor(listFrame, .05f, .34f, .95f, .865f);
-        Frame(listFrame, new Color(.19f, .24f, .33f, 1f), 2f);
+        Anchor(listFrame, .05f, .325f, .95f, .825f);
+        Frame(listFrame, new Color(.22f, .29f, .40f, 1f), 3f);
 
         GameObject scrollGo = new GameObject("JailScroll", typeof(RectTransform), typeof(ScrollRect));
         scrollGo.transform.SetParent(listFrame, false);
@@ -112,8 +115,8 @@ public sealed class XTapJail : MonoBehaviour
         listContent.offsetMax = Vector2.zero;
 
         VerticalLayoutGroup layout = contentGo.GetComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(8, 8, 8, 8);
-        layout.spacing = 8f;
+        layout.padding = new RectOffset(12, 12, 12, 12);
+        layout.spacing = 12f;
         layout.childControlHeight = false;
         layout.childControlWidth = true;
         layout.childForceExpandHeight = false;
@@ -132,16 +135,20 @@ public sealed class XTapJail : MonoBehaviour
         scroll.elasticity = .08f;
         scroll.inertia = true;
 
-        detailText = MakeText(panel, "", 24, TextAnchor.MiddleCenter, true);
-        detailText.color = new Color(.88f, .91f, .98f, 1f);
+        detailText = MakeText(panel, "", 16, TextAnchor.MiddleCenter, true);
+        detailText.color = new Color(.90f, .94f, 1f, 1f);
         detailText.resizeTextForBestFit = true;
-        detailText.resizeTextMinSize = 20;
-        detailText.resizeTextMaxSize = 31;
-        Anchor(detailText.rectTransform, .055f, .185f, .945f, .315f);
+        detailText.resizeTextMinSize = 44;
+        detailText.resizeTextMaxSize = 62;
+        Anchor(detailText.rectTransform, .06f, .185f, .94f, .305f);
 
-        openBagButton = MakeButton(panel, "선택 캐릭터 가방 열기", 25, new Color(.12f, .18f, .27f, 1f));
-        Anchor(openBagButton.GetComponent<RectTransform>(), .20f, .075f, .80f, .155f);
+        openBagButton = MakeButton(panel, "선택 캐릭터 가방 열기", 18, new Color(.12f, .18f, .27f, 1f));
+        Anchor(openBagButton.GetComponent<RectTransform>(), .055f, .055f, .70f, .145f);
         openBagButton.onClick.AddListener(OpenSelectedBag);
+
+        Button closeBottom = MakeButton(panel, "닫기", 17, new Color(.075f, .085f, .105f, 1f));
+        Anchor(closeBottom.GetComponent<RectTransform>(), .73f, .055f, .945f, .145f);
+        closeBottom.onClick.AddListener(Close);
     }
 
     void Refresh()
@@ -176,7 +183,7 @@ public sealed class XTapJail : MonoBehaviour
                 bg.color = new Color(.075f, .10f, .145f, 1f);
 
             LayoutElement le = row.GetComponent<LayoutElement>();
-            le.preferredHeight = 100f;
+            le.preferredHeight = 180f;
 
             string state = captured ? "포획됨" : "미포획";
             string stats = captured
@@ -188,8 +195,8 @@ public sealed class XTapJail : MonoBehaviour
 
             Text t = MakeText(
                 row.transform,
-                characterId + "층 캐릭터   [" + state + "]\n" + stats,
-                20,
+                "캐릭터 " + characterId + "   " + state + "\n" + stats,
+                16,
                 TextAnchor.MiddleLeft,
                 captured
             );
@@ -197,9 +204,9 @@ public sealed class XTapJail : MonoBehaviour
                 ? new Color(.88f, .92f, 1f, 1f)
                 : new Color(.43f, .45f, .50f, 1f);
             t.resizeTextForBestFit = true;
-            t.resizeTextMinSize = 18;
-            t.resizeTextMaxSize = 26;
-            Anchor(t.rectTransform, .04f, .08f, .96f, .92f);
+            t.resizeTextMinSize = 44;
+            t.resizeTextMaxSize = 62;
+            Anchor(t.rectTransform, .045f, .10f, .955f, .90f);
 
             Button b = row.GetComponent<Button>();
             b.targetGraphic = bg;
