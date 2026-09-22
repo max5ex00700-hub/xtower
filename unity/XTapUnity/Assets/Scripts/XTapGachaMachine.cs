@@ -148,7 +148,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         yield return DropReward();
 
         hintText.text = pendingOutcome.block != null
-            ? "화면을 터치해서 가방에 넣기"
+            ? "화면을 터치해서 보상을 바닥에 내려놓기"
             : "화면을 터치해서 계속";
         readyToCollect = true;
     }
@@ -323,11 +323,13 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
     void CloseAndCollect()
     {
+        // Original inventory flow: gacha rewards first land on the floor.
+        // A full 8x3 equipment grid must never destroy or block a reward.
         if (pendingOutcome != null && pendingOutcome.block != null)
         {
-            if (bag == null || !bag.TryAddBlock(pendingOutcome.block))
+            if (bag == null || !bag.AddToGround(pendingOutcome.block))
             {
-                hintText.text = "가방 8×3에 들어갈 공간이 없습니다.";
+                hintText.text = "보상을 바닥에 저장하지 못했습니다.";
                 readyToCollect = true;
                 return;
             }
