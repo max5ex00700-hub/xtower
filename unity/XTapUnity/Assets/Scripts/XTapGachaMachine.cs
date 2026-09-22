@@ -502,26 +502,26 @@ public sealed class XTapGachaMachine : MonoBehaviour
         body.raycastTarget = true;
         machine.anchorMin = machine.anchorMax = new Vector2(.5f, .5f);
         machine.pivot = new Vector2(.5f, .5f);
-        machine.sizeDelta = new Vector2(760f, 1240f);
+        machine.sizeDelta = new Vector2(900f, 1600f);
 
         MakeFrame(machine, new Color(.84f, .60f, .13f, 1f), 18f);
 
-        title = MakeText(machine, "X-TOWER  REWARD", 34, TextAnchor.MiddleCenter, true);
+        title = MakeText(machine, "X-TOWER  REWARD", 28, TextAnchor.MiddleCenter, true);
         title.color = new Color(1f, .84f, .39f, 1f);
-        Anchor(title.rectTransform, .08f, .91f, .92f, .97f);
+        Anchor(title.rectTransform, .06f, .905f, .94f, .985f);
 
-        correctionText = MakeText(machine, "", 27, TextAnchor.MiddleCenter, true);
+        correctionText = MakeText(machine, "", 20, TextAnchor.MiddleCenter, true);
         correctionText.color = new Color(.96f, .76f, .25f, 1f);
-        Anchor(correctionText.rectTransform, .15f, .855f, .85f, .91f);
+        Anchor(correctionText.rectTransform, .12f, .830f, .88f, .905f);
 
         RectTransform window = MakePanel(machine, "WheelWindow", new Color(.025f, .03f, .045f, 1f));
-        Anchor(window, .16f, .49f, .84f, .85f);
+        Anchor(window, .17f, .455f, .83f, .820f);
         MakeFrame(window, new Color(.42f, .44f, .50f, 1f), 8f);
 
         wheel = new GameObject("Wheel", typeof(RectTransform)).GetComponent<RectTransform>();
         wheel.SetParent(window, false);
         wheel.anchorMin = wheel.anchorMax = new Vector2(.5f, .5f);
-        wheel.sizeDelta = new Vector2(390f, 390f);
+        wheel.sizeDelta = new Vector2(430f, 430f);
         wheel.anchoredPosition = Vector2.zero;
 
         float segment = 360f / corrections.Length;
@@ -538,11 +538,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
             si.raycastTarget = false;
             RectTransform sr = si.rectTransform;
             sr.anchorMin = sr.anchorMax = new Vector2(.5f, .5f);
-            sr.sizeDelta = new Vector2(62f, 42f);
-            sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 160f;
+            sr.sizeDelta = new Vector2(86f, 64f);
+            sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 176f;
 
             string label = corrections[i] > 0 ? "+" + corrections[i] : corrections[i].ToString();
-            Text lt = MakeText(slot.transform, label, 17, TextAnchor.MiddleCenter, true);
+            Text lt = MakeText(slot.transform, label, 12, TextAnchor.MiddleCenter, true);
             lt.color = Color.white;
             Anchor(lt.rectTransform, 0f, 0f, 1f, 1f);
         }
@@ -554,9 +554,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
         wheelCore.raycastTarget = false;
         RectTransform cr = wheelCore.rectTransform;
         cr.anchorMin = cr.anchorMax = new Vector2(.5f, .5f);
-        cr.sizeDelta = new Vector2(178f, 178f);
+        cr.sizeDelta = new Vector2(200f, 200f);
 
-        Text x = MakeText(coreGo.transform, "X", 82, TextAnchor.MiddleCenter, true);
+        Text x = MakeText(coreGo.transform, "X", 46, TextAnchor.MiddleCenter, true);
         x.color = new Color(1f, .78f, .20f, 1f);
         Anchor(x.rectTransform, 0f, 0f, 1f, 1f);
 
@@ -567,29 +567,29 @@ public sealed class XTapGachaMachine : MonoBehaviour
         arrow.anchoredPosition = new Vector2(0f, -7f);
 
         chute = MakePanel(machine, "Chute", new Color(.025f, .03f, .04f, 1f));
-        Anchor(chute, .28f, .30f, .72f, .44f);
+        Anchor(chute, .25f, .285f, .75f, .420f);
         MakeFrame(chute, new Color(.50f, .52f, .58f, 1f), 7f);
 
         rewardRoot = new GameObject("RewardBlock", typeof(RectTransform)).GetComponent<RectTransform>();
         rewardRoot.SetParent(machine, false);
         rewardRoot.anchorMin = rewardRoot.anchorMax = new Vector2(.5f, .5f);
-        rewardRoot.sizeDelta = new Vector2(300f, 190f);
-        rewardRoot.anchoredPosition = new Vector2(0f, -260f);
+        rewardRoot.sizeDelta = new Vector2(380f, 240f);
+        rewardRoot.anchoredPosition = new Vector2(0f, -360f);
 
-        nameText = MakeText(machine, "", 29, TextAnchor.MiddleCenter, true);
+        nameText = MakeText(machine, "", 20, TextAnchor.MiddleCenter, true);
         nameText.color = Color.white;
-        Anchor(nameText.rectTransform, .08f, .13f, .92f, .20f);
+        Anchor(nameText.rectTransform, .06f, .185f, .94f, .265f);
 
-        statsText = MakeText(machine, "", 25, TextAnchor.MiddleCenter, true);
+        statsText = MakeText(machine, "", 18, TextAnchor.MiddleCenter, true);
         statsText.color = new Color(.96f, .82f, .38f, 1f);
         statsText.resizeTextForBestFit = true;
-        statsText.resizeTextMinSize = 69;
-        statsText.resizeTextMaxSize = 96;
-        Anchor(statsText.rectTransform, .05f, .075f, .95f, .135f);
+        statsText.resizeTextMinSize = 48;
+        statsText.resizeTextMaxSize = 70;
+        Anchor(statsText.rectTransform, .05f, .105f, .95f, .185f);
 
-        hintText = MakeText(machine, "", 22, TextAnchor.MiddleCenter, false);
+        hintText = MakeText(machine, "", 15, TextAnchor.MiddleCenter, false);
         hintText.color = new Color(.72f, .74f, .80f, 1f);
-        Anchor(hintText.rectTransform, .05f, .025f, .95f, .072f);
+        Anchor(hintText.rectTransform, .05f, .025f, .95f, .095f);
     }
 
     RectTransform MakePanel(Transform parent, string n, Color c)
