@@ -302,7 +302,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
             string prefix = isTarget ? "[대상] " : (isMaterial ? "[재료] " : "");
             string enhance = item.enhanceLevel > 0 ? " +" + item.enhanceLevel : "";
-            string line1 = prefix + "[" + LocationName(item.location) + "] " + item.displayName + enhance;
+            string line1 = prefix + "[" + LocationName(item) + "] " + item.displayName + enhance;
             string line2 = item.cellCount + "칸 · 공 " + item.attack + " / 방 " + item.defense + " / 체 " + item.hp;
 
             Text t = MakeText(row.transform, line1 + "\n" + line2, 19, TextAnchor.MiddleLeft, isTarget || isMaterial);
@@ -321,10 +321,14 @@ public sealed class XTapBlacksmith : MonoBehaviour
         }
     }
 
-    string LocationName(int location)
+    string LocationName(XTapGearBlockData item)
     {
-        if (location == XTapGearBlockData.LocationBag) return "가방";
-        if (location == XTapGearBlockData.LocationHeld) return "소지";
+        if (item == null) return "없음";
+        if (item.location == XTapGearBlockData.LocationBag)
+            return item.bagOwnerCharacterId == 0
+                ? "플레이어 가방"
+                : "캐릭터 " + item.bagOwnerCharacterId + " 가방";
+        if (item.location == XTapGearBlockData.LocationHeld) return "소지";
         return "바닥";
     }
 
