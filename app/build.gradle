@@ -8,8 +8,8 @@ android {
         applicationId "com.xtower.game.nativeengine"
         minSdk 24
         targetSdk 35
-        versionCode 1001
-        versionName "native-0.1.0"
+        versionCode 1051
+        versionName "native-10.51"
     }
 
     buildTypes {
