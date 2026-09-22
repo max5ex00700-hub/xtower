@@ -7,7 +7,6 @@ using UnityEngine.UI;
 [Serializable]
 public sealed class XTapGearBlockData
 {
-    const float UiFontScale = 3.84f;
     // 0 = bag grid(equipped), 1 = carried inventory, 2 = ground.
     public const int LocationBag = 0;
     public const int LocationHeld = 1;
@@ -33,6 +32,7 @@ public sealed class XTapGearBlockData
 
 public sealed class XTapInventory : MonoBehaviour
 {
+    const float UiFontScale = 3.84f;
     const int GridW = 8;
     const int BaseGridCells = 24;
     const float CellSize = 102f;
