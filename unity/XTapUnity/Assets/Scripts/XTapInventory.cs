@@ -32,7 +32,7 @@ public sealed class XTapGearBlockData
 
 public sealed class XTapInventory : MonoBehaviour
 {
-    const float UiFontScale = 3.84f;
+    const float UiFontScale = 1.70f;
     const int GridW = 8;
     const int BaseGridCells = 24;
     const float CellSize = 102f;
@@ -213,34 +213,25 @@ public sealed class XTapInventory : MonoBehaviour
         panel.offsetMax = Vector2.zero;
         Frame(panel, new Color(.56f, .46f, .31f, 1f), 4f);
 
-        bagTitleText = MakeText(panel, "플레이어 가방", 32, TextAnchor.MiddleLeft, true);
+        bagTitleText = MakeText(panel, "플레이어 가방", 30, TextAnchor.MiddleLeft, true);
         bagTitleText.color = new Color(.98f, .91f, .76f, 1f);
-        Anchor(bagTitleText.rectTransform, .055f, .905f, .66f, .985f);
+        Anchor(bagTitleText.rectTransform, .055f, .925f, .72f, .985f);
 
         Button closeTop = MakeButton(panel, "닫기", 18);
-        Anchor(closeTop.GetComponent<RectTransform>(), .76f, .915f, .945f, .975f);
+        Anchor(closeTop.GetComponent<RectTransform>(), .76f, .925f, .945f, .980f);
         closeTop.onClick.AddListener(Close);
 
-        Text guide = MakeText(panel, "탭 90° 회전   ·   끌어서 이동", 15, TextAnchor.MiddleLeft, true);
+        Text guide = MakeText(panel, "탭: 회전   ·   끌기: 이동", 15, TextAnchor.MiddleLeft, true);
         guide.color = new Color(.78f, .73f, .65f, 1f);
-        guide.resizeTextForBestFit = true;
-        guide.resizeTextMinSize = 42;
-        guide.resizeTextMaxSize = 58;
-        Anchor(guide.rectTransform, .06f, .850f, .94f, .905f);
+        Anchor(guide.rectTransform, .06f, .885f, .94f, .925f);
 
         bagCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
-        bagCountText.color = new Color(.82f, .78f, .70f, 1f);
-        bagCountText.resizeTextForBestFit = true;
-        bagCountText.resizeTextMinSize = 42;
-        bagCountText.resizeTextMaxSize = 58;
-        Anchor(bagCountText.rectTransform, .06f, .795f, .44f, .850f);
+        bagCountText.color = new Color(.88f, .84f, .76f, 1f);
+        Anchor(bagCountText.rectTransform, .06f, .842f, .94f, .885f);
 
-        totalText = MakeText(panel, "", 15, TextAnchor.MiddleRight, true);
+        totalText = MakeText(panel, "", 16, TextAnchor.MiddleLeft, true);
         totalText.color = new Color(1f, .76f, .28f, 1f);
-        totalText.resizeTextForBestFit = true;
-        totalText.resizeTextMinSize = 42;
-        totalText.resizeTextMaxSize = 58;
-        Anchor(totalText.rectTransform, .42f, .795f, .94f, .850f);
+        Anchor(totalText.rectTransform, .06f, .795f, .94f, .842f);
 
         gridRoot = new GameObject("BagGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         gridRoot.SetParent(panel, false);
@@ -252,7 +243,7 @@ public sealed class XTapInventory : MonoBehaviour
         gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, .5f);
         gridRoot.pivot = new Vector2(.5f, .5f);
         gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
-        gridRoot.anchoredPosition = new Vector2(0f, 350f);
+        gridRoot.anchoredPosition = new Vector2(0f, 330f);
         Frame(gridRoot, new Color(.48f, .42f, .33f, 1f), 3f);
 
         gridCellRoot = new GameObject("GridCells", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -260,44 +251,35 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(gridCellRoot, 0f, 0f, 1f, 1f);
         RebuildGridCells();
 
-        heldCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
+        heldCountText = MakeText(panel, "", 16, TextAnchor.MiddleLeft, true);
         heldCountText.color = new Color(.94f, .87f, .73f, 1f);
-        heldCountText.resizeTextForBestFit = true;
-        heldCountText.resizeTextMinSize = 42;
-        heldCountText.resizeTextMaxSize = 58;
-        Anchor(heldCountText.rectTransform, .06f, .535f, .94f, .580f);
+        Anchor(heldCountText.rectTransform, .06f, .535f, .94f, .575f);
 
         BuildHorizontalZone(
             panel,
             "HeldZone",
-            .055f, .385f, .945f, .535f,
+            .055f, .390f, .945f, .535f,
             out heldViewport,
             out heldContent,
             out heldZoneImage
         );
 
-        groundCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
+        groundCountText = MakeText(panel, "", 16, TextAnchor.MiddleLeft, true);
         groundCountText.color = new Color(.94f, .87f, .73f, 1f);
-        groundCountText.resizeTextForBestFit = true;
-        groundCountText.resizeTextMinSize = 42;
-        groundCountText.resizeTextMaxSize = 58;
-        Anchor(groundCountText.rectTransform, .06f, .345f, .94f, .385f);
+        Anchor(groundCountText.rectTransform, .06f, .350f, .94f, .390f);
 
         BuildHorizontalZone(
             panel,
             "GroundZone",
-            .055f, .195f, .945f, .345f,
+            .055f, .205f, .945f, .350f,
             out groundViewport,
             out groundContent,
             out groundZoneImage
         );
 
-        detailText = MakeText(panel, "탭=회전   ·   끌기=이동", 15, TextAnchor.MiddleCenter, true);
+        detailText = MakeText(panel, "블록 선택 시 능력치 표시", 14, TextAnchor.MiddleCenter, true);
         detailText.color = new Color(.90f, .87f, .80f, 1f);
-        detailText.resizeTextForBestFit = true;
-        detailText.resizeTextMinSize = 42;
-        detailText.resizeTextMaxSize = 58;
-        Anchor(detailText.rectTransform, .06f, .120f, .94f, .190f);
+        Anchor(detailText.rectTransform, .06f, .115f, .94f, .200f);
 
         tidyButton = MakeButton(panel, "자동 정리", 18);
         Anchor(tidyButton.GetComponent<RectTransform>(), .055f, .035f, .46f, .105f);
@@ -361,8 +343,8 @@ public sealed class XTapInventory : MonoBehaviour
         if (bagTitleText != null)
         {
             bagTitleText.text = activeBagOwnerCharacterId == 0
-                ? "플레이어 가방   8 × " + ActiveGridRows
-                : "캐릭터 " + activeBagOwnerCharacterId + " 가방   8 × 3";
+                ? "플레이어 가방"
+                : "캐릭터 " + activeBagOwnerCharacterId + " 가방";
         }
 
         int bagCount = 0;
@@ -399,11 +381,11 @@ public sealed class XTapInventory : MonoBehaviour
         RenderRow(XTapGearBlockData.LocationHeld, heldContent);
         RenderRow(XTapGearBlockData.LocationGround, groundContent);
 
-        bagCountText.text = "가방 " + bagCount + "개 · " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸" +
-                            (activeBagOwnerCharacterId == 0 && ExpansionBonus > 0 ? "  (+" + ExpansionBonus + ")" : "");
-        totalText.text = "총합  공 +" + atk + "   방 +" + def + "   체 +" + hp;
-        heldCountText.text = "소지품 " + heldCount + " · 끌어 가방/바닥으로 이동";
-        groundCountText.text = "바닥 " + groundCount + " · 끌어 가방/소지품으로 이동";
+        bagCountText.text = "장착 " + bagCount + "개   ·   " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸" +
+                            (activeBagOwnerCharacterId == 0 && ExpansionBonus > 0 ? "   (+" + ExpansionBonus + "칸)" : "");
+        totalText.text = "장착 능력   공 +" + atk + "     방 +" + def + "     체 +" + hp;
+        heldCountText.text = "소지품   " + heldCount + "개";
+        groundCountText.text = "바닥   " + groundCount + "개";
 
         RefreshSelectionText();
     }
@@ -543,15 +525,15 @@ public sealed class XTapInventory : MonoBehaviour
         Text name = MakeText(root, item.displayName + forgeSuffix, 15, TextAnchor.MiddleCenter, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
-        name.resizeTextMinSize = 42;
-        name.resizeTextMaxSize = 58;
+        name.resizeTextMinSize = 18;
+        name.resizeTextMaxSize = 30;
         Anchor(name.rectTransform, .05f, .24f, .95f, .48f);
 
         Text stat = MakeText(root, "공 " + item.attack + "  방 " + item.defense + "  체 " + item.hp, 14, TextAnchor.MiddleCenter, true);
         stat.color = new Color(.74f, .71f, .66f, 1f);
         stat.resizeTextForBestFit = true;
-        stat.resizeTextMinSize = 38;
-        stat.resizeTextMaxSize = 54;
+        stat.resizeTextMinSize = 16;
+        stat.resizeTextMaxSize = 28;
         Anchor(stat.rectTransform, .04f, .04f, .96f, .24f);
 
         itemViews[item.id] = root;
@@ -576,12 +558,12 @@ public sealed class XTapInventory : MonoBehaviour
 
         Text t = MakeText(badgeGo.transform,
             (item.enhanceLevel > 0 ? "+" + item.enhanceLevel + "  " : "") +
-            "공" + item.attack + " / 방" + item.defense + " / 체" + item.hp,
+            "공" + item.attack + "  방" + item.defense + "\n체" + item.hp,
             11, TextAnchor.MiddleCenter, true);
         t.color = new Color(1f, .88f, .54f, 1f);
         t.resizeTextForBestFit = true;
-        t.resizeTextMinSize = 28;
-        t.resizeTextMaxSize = 42;
+        t.resizeTextMinSize = 12;
+        t.resizeTextMaxSize = 18;
         Anchor(t.rectTransform, .03f, .02f, .97f, .98f);
     }
 
@@ -820,8 +802,8 @@ public sealed class XTapInventory : MonoBehaviour
                 Text s = MakeText(cg.transform, item.attack + "/" + item.defense + "/" + item.hp, 12, TextAnchor.MiddleCenter, true);
                 s.color = new Color(.96f, .92f, .82f, 1f);
                 s.resizeTextForBestFit = true;
-                s.resizeTextMinSize = 30;
-                s.resizeTextMaxSize = 45;
+                s.resizeTextMinSize = 12;
+                s.resizeTextMaxSize = 18;
                 Anchor(s.rectTransform, .02f, .02f, .98f, .98f);
             }
         }
@@ -1351,7 +1333,7 @@ public sealed class XTapInventory : MonoBehaviour
 
         if (item == null)
         {
-            detailText.text = "블록을 탭하면 90° 회전합니다. 끌어서 원하는 영역에 놓으세요.";
+            detailText.text = "블록 선택 시 능력치 표시   ·   탭 회전   ·   끌기 이동";
             return;
         }
 
@@ -1364,8 +1346,7 @@ public sealed class XTapInventory : MonoBehaviour
             zone + " · " + item.displayName +
             (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
             "  [" + item.cellCount + "칸 / " + corr + "]\n" +
-            "공 +" + item.attack + "   방 +" + item.defense + "   체 +" + item.hp +
-            "     [탭=90° 회전 / 끌기=이동]";
+            "공 +" + item.attack + "     방 +" + item.defense + "     체 +" + item.hp;
     }
 
     void NormalizeItem(XTapGearBlockData item)
