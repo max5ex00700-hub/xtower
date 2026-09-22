@@ -32,8 +32,8 @@ public sealed class XTapInventory : MonoBehaviour
 {
     const int GridW = 8;
     const int GridH = 3;
-    const float CellSize = 68f;
-    const float MiniCell = 30f;
+    const float CellSize = 102f;
+    const float MiniCell = 42f;
     const string SaveKey = "xtap_bag_v1";
 
     [Serializable]
@@ -176,9 +176,13 @@ public sealed class XTapInventory : MonoBehaviour
         Image body = panel.GetComponent<Image>();
         body.color = new Color(.042f, .039f, .043f, .995f);
         body.raycastTarget = true;
-        panel.anchorMin = panel.anchorMax = new Vector2(.5f, .5f);
+        // Full-screen inventory. The old centered popup made the 8x3 grid,
+        // carried items and floor compete for too little space.
+        panel.anchorMin = new Vector2(.018f, .018f);
+        panel.anchorMax = new Vector2(.982f, .982f);
         panel.pivot = new Vector2(.5f, .5f);
-        panel.sizeDelta = new Vector2(690f, 1180f);
+        panel.offsetMin = Vector2.zero;
+        panel.offsetMax = Vector2.zero;
         Frame(panel, new Color(.52f, .43f, .30f, 1f), 4f);
 
         Text title = MakeText(panel, "배 낭   8 × 3", 36, TextAnchor.MiddleLeft, true);
@@ -212,7 +216,7 @@ public sealed class XTapInventory : MonoBehaviour
         gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, .5f);
         gridRoot.pivot = new Vector2(.5f, .5f);
         gridRoot.sizeDelta = new Vector2(GridW * CellSize, GridH * CellSize);
-        gridRoot.anchoredPosition = new Vector2(0f, 255f);
+        gridRoot.anchoredPosition = new Vector2(0f, 300f);
         Frame(gridRoot, new Color(.43f, .38f, .31f, 1f), 3f);
 
         for (int y = 0; y < GridH; y++)
@@ -444,7 +448,8 @@ public sealed class XTapInventory : MonoBehaviour
         root.anchoredPosition = new Vector2(item.gridX * CellSize, item.gridY * CellSize);
 
         SetupTouch(go, item.id);
-        DrawShape(root, item, CellSize, BlockColor(item), false, true);
+        DrawShape(root, item, CellSize, BlockColor(item), false, false);
+        AddGridStatBadge(root, item);
 
         itemViews[item.id] = root;
     }
@@ -461,7 +466,7 @@ public sealed class XTapInventory : MonoBehaviour
         }
 
         float shapeWidth = (maxX + 1) * MiniCell;
-        float width = Mathf.Max(178f, shapeWidth + 24f);
+        float width = Mathf.Max(230f, shapeWidth + 32f);
 
         GameObject go = new GameObject(
             "StoredBlock_" + item.id,
@@ -482,7 +487,7 @@ public sealed class XTapInventory : MonoBehaviour
         RectTransform root = go.GetComponent<RectTransform>();
         root.anchorMin = root.anchorMax = new Vector2(0f, .5f);
         root.pivot = new Vector2(0f, .5f);
-        root.sizeDelta = new Vector2(width, 138f);
+        root.sizeDelta = new Vector2(width, 168f);
         root.anchoredPosition = new Vector2(x, 0f);
         Frame(root, selectedId == item.id ? new Color(.78f, .61f, .29f, 1f) : new Color(.30f, .28f, .26f, 1f), 2f);
 
@@ -493,25 +498,87 @@ public sealed class XTapInventory : MonoBehaviour
         shapeRoot.anchorMin = shapeRoot.anchorMax = new Vector2(.5f, 1f);
         shapeRoot.pivot = new Vector2(.5f, 1f);
         shapeRoot.sizeDelta = new Vector2(shapeWidth, (maxY + 1) * MiniCell);
-        shapeRoot.anchoredPosition = new Vector2(0f, -7f);
+        shapeRoot.anchoredPosition = new Vector2(0f, -9f);
         DrawShape(shapeRoot, item, MiniCell, BlockColor(item), true, false);
 
-        Text name = MakeText(root, item.displayName, 15, TextAnchor.MiddleCenter, true);
+        Text name = MakeText(root, item.displayName, 18, TextAnchor.MiddleCenter, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
-        name.resizeTextMinSize = 11;
-        name.resizeTextMaxSize = 15;
+        name.resizeTextMinSize = 13;
+        name.resizeTextMaxSize = 18;
         Anchor(name.rectTransform, .05f, .19f, .95f, .40f);
 
-        Text stat = MakeText(root, "공+" + item.attack + " 방+" + item.defense + " 체+" + item.hp + "  [탭=회전]", 13, TextAnchor.MiddleCenter, false);
+        Text stat = MakeText(root, "공 " + item.attack + "   방 " + item.defense + "   체 " + item.hp + "   [탭=회전]", 16, TextAnchor.MiddleCenter, true);
         stat.color = new Color(.74f, .71f, .66f, 1f);
         stat.resizeTextForBestFit = true;
-        stat.resizeTextMinSize = 10;
-        stat.resizeTextMaxSize = 13;
+        stat.resizeTextMinSize = 12;
+        stat.resizeTextMaxSize = 16;
         Anchor(stat.rectTransform, .04f, .02f, .96f, .20f);
 
         itemViews[item.id] = root;
         return width;
+    }
+
+    void AddGridStatBadge(RectTransform root, XTapGearBlockData item)
+    {
+        GameObject badgeGo = new GameObject("StatsBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        badgeGo.transform.SetParent(root, false);
+
+        Image badge = badgeGo.GetComponent<Image>();
+        badge.color = new Color(.025f, .022f, .024f, .82f);
+        badge.raycastTarget = false;
+
+        RectTransform br = badge.rectTransform;
+        br.anchorMin = new Vector2(0f, 0f);
+        br.anchorMax = new Vector2(1f, 0f);
+        br.pivot = new Vector2(.5f, 0f);
+        br.sizeDelta = new Vector2(0f, 34f);
+        br.anchoredPosition = new Vector2(0f, 3f);
+
+        Text t = MakeText(badgeGo.transform,
+            "공 " + item.attack + "  방 " + item.defense + "  체 " + item.hp,
+            18, TextAnchor.MiddleCenter, true);
+        t.color = new Color(1f, .88f, .54f, 1f);
+        t.resizeTextForBestFit = true;
+        t.resizeTextMinSize = 11;
+        t.resizeTextMaxSize = 18;
+        Anchor(t.rectTransform, .03f, .02f, .97f, .98f);
+    }
+
+    public int EquippedAttack
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < items.Count; i++)
+                if (items[i].location == XTapGearBlockData.LocationBag)
+                    total += Mathf.Max(0, items[i].attack);
+            return total;
+        }
+    }
+
+    public int EquippedDefense
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < items.Count; i++)
+                if (items[i].location == XTapGearBlockData.LocationBag)
+                    total += Mathf.Max(0, items[i].defense);
+            return total;
+        }
+    }
+
+    public int EquippedHp
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < items.Count; i++)
+                if (items[i].location == XTapGearBlockData.LocationBag)
+                    total += Mathf.Max(0, items[i].hp);
+            return total;
+        }
     }
 
     void SetupTouch(GameObject go, string itemId)
@@ -1106,6 +1173,7 @@ public sealed class XTapInventory : MonoBehaviour
     {
         if (item == null) return;
 
+        RecoverMissingBlockStats(item);
         item.rotation = ((item.rotation % 4) + 4) % 4;
 
         if (item.location < XTapGearBlockData.LocationBag || item.location > XTapGearBlockData.LocationGround)
@@ -1121,6 +1189,41 @@ public sealed class XTapInventory : MonoBehaviour
             item.gridX = -1;
             item.gridY = -1;
         }
+    }
+
+    void RecoverMissingBlockStats(XTapGearBlockData item)
+    {
+        if (item == null) return;
+
+        int decodedCells = DecodeShape(item.shape).Count;
+        if (item.cellCount <= 0)
+            item.cellCount = Mathf.Max(1, decodedCells);
+
+        if (item.attack > 0 || item.defense > 0 || item.hp > 0)
+            return;
+
+        int[] sizes = {1, 2, 3, 4, 5, 6, 9, 12};
+        int[] budgets = {10, 22, 35, 50, 66, 84, 135, 190};
+
+        int index = 0;
+        int bestDistance = int.MaxValue;
+        for (int i = 0; i < sizes.Length; i++)
+        {
+            int d = Mathf.Abs(sizes[i] - item.cellCount);
+            if (d < bestDistance)
+            {
+                bestDistance = d;
+                index = i;
+            }
+        }
+
+        float multiplier = Mathf.Max(.5f, 1f + item.correction / 100f);
+        int total = Mathf.Max(3, Mathf.RoundToInt(budgets[index] * multiplier));
+
+        // Legacy blocks created before stat persistence get a stable default split.
+        item.attack = Mathf.Max(1, Mathf.RoundToInt(total * .40f));
+        item.defense = Mathf.Max(1, Mathf.RoundToInt(total * .20f));
+        item.hp = Mathf.Max(1, total - item.attack - item.defense);
     }
 
     void Load()
