@@ -213,25 +213,17 @@ public sealed class XTapInventory : MonoBehaviour
         panel.offsetMax = Vector2.zero;
         Frame(panel, new Color(.56f, .46f, .31f, 1f), 4f);
 
-        bagTitleText = MakeText(panel, "플레이어 가방", 30, TextAnchor.MiddleLeft, true);
+        bagTitleText = MakeText(panel, "플레이어", 28, TextAnchor.MiddleLeft, true);
         bagTitleText.color = new Color(.98f, .91f, .76f, 1f);
-        Anchor(bagTitleText.rectTransform, .055f, .925f, .72f, .985f);
+        Anchor(bagTitleText.rectTransform, .055f, .925f, .70f, .985f);
 
         Button closeTop = MakeButton(panel, "닫기", 18);
         Anchor(closeTop.GetComponent<RectTransform>(), .76f, .925f, .945f, .980f);
         closeTop.onClick.AddListener(Close);
 
-        Text guide = MakeText(panel, "탭: 회전   ·   끌기: 이동", 15, TextAnchor.MiddleLeft, true);
-        guide.color = new Color(.78f, .73f, .65f, 1f);
-        Anchor(guide.rectTransform, .06f, .885f, .94f, .925f);
-
-        bagCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
-        bagCountText.color = new Color(.88f, .84f, .76f, 1f);
-        Anchor(bagCountText.rectTransform, .06f, .842f, .94f, .885f);
-
         totalText = MakeText(panel, "", 16, TextAnchor.MiddleLeft, true);
         totalText.color = new Color(1f, .76f, .28f, 1f);
-        Anchor(totalText.rectTransform, .06f, .795f, .94f, .842f);
+        Anchor(totalText.rectTransform, .06f, .865f, .94f, .925f);
 
         gridRoot = new GameObject("BagGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         gridRoot.SetParent(panel, false);
@@ -243,7 +235,7 @@ public sealed class XTapInventory : MonoBehaviour
         gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, .5f);
         gridRoot.pivot = new Vector2(.5f, .5f);
         gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
-        gridRoot.anchoredPosition = new Vector2(0f, 330f);
+        gridRoot.anchoredPosition = new Vector2(0f, 405f);
         Frame(gridRoot, new Color(.48f, .42f, .33f, 1f), 3f);
 
         gridCellRoot = new GameObject("GridCells", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -282,12 +274,8 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(detailText.rectTransform, .06f, .115f, .94f, .200f);
 
         tidyButton = MakeButton(panel, "자동 정리", 18);
-        Anchor(tidyButton.GetComponent<RectTransform>(), .055f, .035f, .46f, .105f);
+        Anchor(tidyButton.GetComponent<RectTransform>(), .055f, .035f, .945f, .105f);
         tidyButton.onClick.AddListener(TidyBag);
-
-        Button closeBottom = MakeButton(panel, "닫기", 18);
-        Anchor(closeBottom.GetComponent<RectTransform>(), .54f, .035f, .945f, .105f);
-        closeBottom.onClick.AddListener(Close);
     }
 
     void BuildHorizontalZone(
@@ -343,8 +331,8 @@ public sealed class XTapInventory : MonoBehaviour
         if (bagTitleText != null)
         {
             bagTitleText.text = activeBagOwnerCharacterId == 0
-                ? "플레이어 가방"
-                : "캐릭터 " + activeBagOwnerCharacterId + " 가방";
+                ? "플레이어"
+                : "캐릭터 " + activeBagOwnerCharacterId;
         }
 
         int bagCount = 0;
@@ -381,9 +369,8 @@ public sealed class XTapInventory : MonoBehaviour
         RenderRow(XTapGearBlockData.LocationHeld, heldContent);
         RenderRow(XTapGearBlockData.LocationGround, groundContent);
 
-        bagCountText.text = "장착 " + bagCount + "개   ·   " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸" +
-                            (activeBagOwnerCharacterId == 0 && ExpansionBonus > 0 ? "   (+" + ExpansionBonus + "칸)" : "");
-        totalText.text = "장착 능력   공 +" + atk + "     방 +" + def + "     체 +" + hp;
+        totalText.text = "공 +" + atk + "     방 +" + def + "     체 +" + hp +
+                         "     ·     " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸";
         heldCountText.text = "소지품   " + heldCount + "개";
         groundCountText.text = "바닥   " + groundCount + "개";
 
