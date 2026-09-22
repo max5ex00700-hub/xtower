@@ -26,6 +26,7 @@ public sealed class XTapBattleController : MonoBehaviour
     XTapGachaMachine gachaMachine;
     XTapInventory inventory;
     XTapBlacksmith blacksmith;
+    XTapJail jail;
     Coroutine bubbleAnimRoutine;
 
     GameObject mainOverlay;
@@ -138,6 +139,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
         blacksmith = gameObject.AddComponent<XTapBlacksmith>();
         blacksmith.Initialize(root, koreanFont, inventory, RefreshMainProgressUi);
+
+        jail = gameObject.AddComponent<XTapJail>();
+        jail.Initialize(root, koreanFont, inventory, RefreshMainProgressUi);
 
         var assetGo = new GameObject("OriginalApkAssets");
         assets = assetGo.AddComponent<XTapOriginalApkAssets>();
@@ -307,7 +311,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
         AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1050", 27, TextAnchor.MiddleCenter, false);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1051", 27, TextAnchor.MiddleCenter, false);
         codeText.resizeTextForBestFit = true;
         codeText.resizeTextMinSize = 16;
         codeText.resizeTextMaxSize = 27;
@@ -392,13 +396,9 @@ public sealed class XTapBattleController : MonoBehaviour
             {
                 b.onClick.AddListener(OpenBlacksmith);
             }
-            else
+            else if (i == 5)
             {
-                // Jail remains disabled until its system exists.
-                b.interactable = false;
-                ColorBlock cb = b.colors;
-                cb.disabledColor = Color.white;
-                b.colors = cb;
+                b.onClick.AddListener(OpenJail);
             }
         }
 
@@ -510,6 +510,11 @@ public sealed class XTapBattleController : MonoBehaviour
     void OpenBlacksmith()
     {
         if (blacksmith != null) blacksmith.Open();
+    }
+
+    void OpenJail()
+    {
+        if (jail != null) jail.Open();
     }
 
     void ReturnToMain()
