@@ -211,7 +211,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         r.characterId = activeCharacterId;
 
         if (exclusive)
-            r.displayName = activeCharacterId + "층 전용 " + nouns[UnityEngine.Random.Range(0, nouns.Length)];
+            r.displayName = "캐릭터 " + activeCharacterId + " 전용 " + nouns[UnityEngine.Random.Range(0, nouns.Length)];
         else
             r.displayName = prefixes[UnityEngine.Random.Range(0, prefixes.Length)] + " " +
                             nouns[UnityEngine.Random.Range(0, nouns.Length)];
