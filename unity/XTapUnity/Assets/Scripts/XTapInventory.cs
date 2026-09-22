@@ -195,103 +195,116 @@ public sealed class XTapInventory : MonoBehaviour
         overlayRect = overlay.GetComponent<RectTransform>();
 
         Image dim = overlay.GetComponent<Image>();
-        dim.color = new Color(0f, 0f, 0f, .90f);
+        dim.color = new Color(0f, 0f, 0f, .94f);
         dim.raycastTarget = true;
         Anchor(overlayRect, 0f, 0f, 1f, 1f);
 
         panel = new GameObject("BagPanel", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         panel.SetParent(overlay.transform, false);
+
         Image body = panel.GetComponent<Image>();
-        body.color = new Color(.042f, .039f, .043f, .995f);
+        body.color = new Color(.042f, .039f, .043f, .998f);
         body.raycastTarget = true;
-        // Full-screen inventory. The old centered popup made the 8x3 grid,
-        // carried items and floor compete for too little space.
+
         panel.anchorMin = new Vector2(.018f, .018f);
         panel.anchorMax = new Vector2(.982f, .982f);
         panel.pivot = new Vector2(.5f, .5f);
         panel.offsetMin = Vector2.zero;
         panel.offsetMax = Vector2.zero;
-        Frame(panel, new Color(.52f, .43f, .30f, 1f), 4f);
+        Frame(panel, new Color(.56f, .46f, .31f, 1f), 4f);
 
-        bagTitleText = MakeText(panel, "플레이어 가방   8 × 3", 36, TextAnchor.MiddleLeft, true);
-        bagTitleText.color = new Color(.96f, .90f, .78f, 1f);
-        Anchor(bagTitleText.rectTransform, .07f, .925f, .72f, .982f);
+        bagTitleText = MakeText(panel, "플레이어 가방", 32, TextAnchor.MiddleLeft, true);
+        bagTitleText.color = new Color(.98f, .91f, .76f, 1f);
+        Anchor(bagTitleText.rectTransform, .055f, .905f, .66f, .985f);
 
-        Button closeTop = MakeButton(panel, "닫기", 22);
-        Anchor(closeTop.GetComponent<RectTransform>(), .78f, .928f, .93f, .978f);
+        Button closeTop = MakeButton(panel, "닫기", 18);
+        Anchor(closeTop.GetComponent<RectTransform>(), .76f, .915f, .945f, .975f);
         closeTop.onClick.AddListener(Close);
 
-        Text guide = MakeText(panel, "그리드 · 소지품 · 바닥을 같이 두고 끌어 장착   /   블록 탭 = 90° 회전", 18, TextAnchor.MiddleCenter, false);
-        guide.color = new Color(.74f, .70f, .65f, 1f);
+        Text guide = MakeText(panel, "탭 90° 회전   ·   끌어서 이동", 15, TextAnchor.MiddleLeft, true);
+        guide.color = new Color(.78f, .73f, .65f, 1f);
         guide.resizeTextForBestFit = true;
-        guide.resizeTextMinSize = 54;
-        guide.resizeTextMaxSize = 69;
-        Anchor(guide.rectTransform, .055f, .878f, .945f, .922f);
+        guide.resizeTextMinSize = 42;
+        guide.resizeTextMaxSize = 58;
+        Anchor(guide.rectTransform, .06f, .850f, .94f, .905f);
 
-        bagCountText = MakeText(panel, "", 19, TextAnchor.MiddleLeft, false);
-        bagCountText.color = new Color(.76f, .73f, .68f, 1f);
-        Anchor(bagCountText.rectTransform, .075f, .835f, .40f, .877f);
+        bagCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
+        bagCountText.color = new Color(.82f, .78f, .70f, 1f);
+        bagCountText.resizeTextForBestFit = true;
+        bagCountText.resizeTextMinSize = 42;
+        bagCountText.resizeTextMaxSize = 58;
+        Anchor(bagCountText.rectTransform, .06f, .795f, .44f, .850f);
 
-        totalText = MakeText(panel, "", 20, TextAnchor.MiddleRight, true);
-        totalText.color = new Color(.96f, .75f, .30f, 1f);
-        Anchor(totalText.rectTransform, .36f, .835f, .925f, .877f);
+        totalText = MakeText(panel, "", 15, TextAnchor.MiddleRight, true);
+        totalText.color = new Color(1f, .76f, .28f, 1f);
+        totalText.resizeTextForBestFit = true;
+        totalText.resizeTextMinSize = 42;
+        totalText.resizeTextMaxSize = 58;
+        Anchor(totalText.rectTransform, .42f, .795f, .94f, .850f);
 
         gridRoot = new GameObject("BagGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         gridRoot.SetParent(panel, false);
+
         Image gridBg = gridRoot.GetComponent<Image>();
         gridBg.color = new Color(.025f, .025f, .030f, 1f);
         gridBg.raycastTarget = true;
+
         gridRoot.anchorMin = gridRoot.anchorMax = new Vector2(.5f, .5f);
         gridRoot.pivot = new Vector2(.5f, .5f);
         gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
-        gridRoot.anchoredPosition = new Vector2(0f, 300f);
-        Frame(gridRoot, new Color(.43f, .38f, .31f, 1f), 3f);
+        gridRoot.anchoredPosition = new Vector2(0f, 350f);
+        Frame(gridRoot, new Color(.48f, .42f, .33f, 1f), 3f);
 
         gridCellRoot = new GameObject("GridCells", typeof(RectTransform)).GetComponent<RectTransform>();
         gridCellRoot.SetParent(gridRoot, false);
         Anchor(gridCellRoot, 0f, 0f, 1f, 1f);
-
         RebuildGridCells();
 
-        heldCountText = MakeText(panel, "", 20, TextAnchor.MiddleLeft, true);
-        heldCountText.color = new Color(.90f, .85f, .75f, 1f);
-        Anchor(heldCountText.rectTransform, .07f, .555f, .93f, .602f);
+        heldCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
+        heldCountText.color = new Color(.94f, .87f, .73f, 1f);
+        heldCountText.resizeTextForBestFit = true;
+        heldCountText.resizeTextMinSize = 42;
+        heldCountText.resizeTextMaxSize = 58;
+        Anchor(heldCountText.rectTransform, .06f, .535f, .94f, .580f);
 
         BuildHorizontalZone(
             panel,
             "HeldZone",
-            .07f, .420f, .93f, .555f,
+            .055f, .385f, .945f, .535f,
             out heldViewport,
             out heldContent,
             out heldZoneImage
         );
 
-        groundCountText = MakeText(panel, "", 20, TextAnchor.MiddleLeft, true);
-        groundCountText.color = new Color(.90f, .85f, .75f, 1f);
-        Anchor(groundCountText.rectTransform, .07f, .370f, .93f, .417f);
+        groundCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
+        groundCountText.color = new Color(.94f, .87f, .73f, 1f);
+        groundCountText.resizeTextForBestFit = true;
+        groundCountText.resizeTextMinSize = 42;
+        groundCountText.resizeTextMaxSize = 58;
+        Anchor(groundCountText.rectTransform, .06f, .345f, .94f, .385f);
 
         BuildHorizontalZone(
             panel,
             "GroundZone",
-            .07f, .235f, .93f, .370f,
+            .055f, .195f, .945f, .345f,
             out groundViewport,
             out groundContent,
             out groundZoneImage
         );
 
-        detailText = MakeText(panel, "블록을 탭하면 90° 회전합니다. 끌어서 원하는 영역에 놓으세요.", 21, TextAnchor.MiddleCenter, false);
-        detailText.color = new Color(.86f, .84f, .78f, 1f);
+        detailText = MakeText(panel, "탭=회전   ·   끌기=이동", 15, TextAnchor.MiddleCenter, true);
+        detailText.color = new Color(.90f, .87f, .80f, 1f);
         detailText.resizeTextForBestFit = true;
-        detailText.resizeTextMinSize = 57;
-        detailText.resizeTextMaxSize = 63;
-        Anchor(detailText.rectTransform, .07f, .125f, .93f, .222f);
+        detailText.resizeTextMinSize = 42;
+        detailText.resizeTextMaxSize = 58;
+        Anchor(detailText.rectTransform, .06f, .120f, .94f, .190f);
 
-        tidyButton = MakeButton(panel, "가방 자동 정리", 22);
-        Anchor(tidyButton.GetComponent<RectTransform>(), .08f, .045f, .47f, .108f);
+        tidyButton = MakeButton(panel, "자동 정리", 18);
+        Anchor(tidyButton.GetComponent<RectTransform>(), .055f, .035f, .46f, .105f);
         tidyButton.onClick.AddListener(TidyBag);
 
-        Button closeBottom = MakeButton(panel, "닫기", 22);
-        Anchor(closeBottom.GetComponent<RectTransform>(), .53f, .045f, .92f, .108f);
+        Button closeBottom = MakeButton(panel, "닫기", 18);
+        Anchor(closeBottom.GetComponent<RectTransform>(), .54f, .035f, .945f, .105f);
         closeBottom.onClick.AddListener(Close);
     }
 
@@ -491,7 +504,7 @@ public sealed class XTapInventory : MonoBehaviour
         }
 
         float shapeWidth = (maxX + 1) * MiniCell;
-        float width = Mathf.Max(230f, shapeWidth + 32f);
+        float width = Mathf.Max(310f, shapeWidth + 40f);
 
         GameObject go = new GameObject(
             "StoredBlock_" + item.id,
@@ -512,7 +525,7 @@ public sealed class XTapInventory : MonoBehaviour
         RectTransform root = go.GetComponent<RectTransform>();
         root.anchorMin = root.anchorMax = new Vector2(0f, .5f);
         root.pivot = new Vector2(0f, .5f);
-        root.sizeDelta = new Vector2(width, 168f);
+        root.sizeDelta = new Vector2(width, 240f);
         root.anchoredPosition = new Vector2(x, 0f);
         Frame(root, selectedId == item.id ? new Color(.78f, .61f, .29f, 1f) : new Color(.30f, .28f, .26f, 1f), 2f);
 
@@ -523,23 +536,23 @@ public sealed class XTapInventory : MonoBehaviour
         shapeRoot.anchorMin = shapeRoot.anchorMax = new Vector2(.5f, 1f);
         shapeRoot.pivot = new Vector2(.5f, 1f);
         shapeRoot.sizeDelta = new Vector2(shapeWidth, (maxY + 1) * MiniCell);
-        shapeRoot.anchoredPosition = new Vector2(0f, -9f);
+        shapeRoot.anchoredPosition = new Vector2(0f, -14f);
         DrawShape(shapeRoot, item, MiniCell, BlockColor(item), true, false);
 
         string forgeSuffix = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
-        Text name = MakeText(root, item.displayName + forgeSuffix, 18, TextAnchor.MiddleCenter, true);
+        Text name = MakeText(root, item.displayName + forgeSuffix, 15, TextAnchor.MiddleCenter, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
-        name.resizeTextMinSize = 51;
-        name.resizeTextMaxSize = 69;
-        Anchor(name.rectTransform, .05f, .19f, .95f, .40f);
+        name.resizeTextMinSize = 42;
+        name.resizeTextMaxSize = 58;
+        Anchor(name.rectTransform, .05f, .24f, .95f, .48f);
 
-        Text stat = MakeText(root, "공 " + item.attack + "   방 " + item.defense + "   체 " + item.hp + "   [탭=회전]", 16, TextAnchor.MiddleCenter, true);
+        Text stat = MakeText(root, "공 " + item.attack + "  방 " + item.defense + "  체 " + item.hp, 14, TextAnchor.MiddleCenter, true);
         stat.color = new Color(.74f, .71f, .66f, 1f);
         stat.resizeTextForBestFit = true;
-        stat.resizeTextMinSize = 45;
-        stat.resizeTextMaxSize = 78;
-        Anchor(stat.rectTransform, .04f, .02f, .96f, .20f);
+        stat.resizeTextMinSize = 38;
+        stat.resizeTextMaxSize = 54;
+        Anchor(stat.rectTransform, .04f, .04f, .96f, .24f);
 
         itemViews[item.id] = root;
         return width;
@@ -558,17 +571,17 @@ public sealed class XTapInventory : MonoBehaviour
         br.anchorMin = new Vector2(0f, 0f);
         br.anchorMax = new Vector2(1f, 0f);
         br.pivot = new Vector2(.5f, 0f);
-        br.sizeDelta = new Vector2(0f, 34f);
+        br.sizeDelta = new Vector2(0f, 58f);
         br.anchoredPosition = new Vector2(0f, 3f);
 
         Text t = MakeText(badgeGo.transform,
             (item.enhanceLevel > 0 ? "+" + item.enhanceLevel + "  " : "") +
-            "공 " + item.attack + "  방 " + item.defense + "  체 " + item.hp,
-            18, TextAnchor.MiddleCenter, true);
+            "공" + item.attack + " / 방" + item.defense + " / 체" + item.hp,
+            11, TextAnchor.MiddleCenter, true);
         t.color = new Color(1f, .88f, .54f, 1f);
         t.resizeTextForBestFit = true;
-        t.resizeTextMinSize = 54;
-        t.resizeTextMaxSize = 69;
+        t.resizeTextMinSize = 28;
+        t.resizeTextMaxSize = 42;
         Anchor(t.rectTransform, .03f, .02f, .97f, .98f);
     }
 
