@@ -130,7 +130,7 @@ public sealed class XTapBattleController : MonoBehaviour
         BuildMainUi();
 
         inventory = gameObject.AddComponent<XTapInventory>();
-        inventory.Initialize(root, koreanFont, null);
+        inventory.Initialize(root, koreanFont, RefreshMainProgressUi);
 
         gachaMachine = gameObject.AddComponent<XTapGachaMachine>();
         gachaMachine.Initialize(root, koreanFont, ReturnToMain, inventory);
