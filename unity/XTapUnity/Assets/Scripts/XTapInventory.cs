@@ -376,7 +376,7 @@ public sealed class XTapInventory : MonoBehaviour
             {
                 heldCount++;
             }
-            else
+            else if (item.location == XTapGearBlockData.LocationGround)
             {
                 groundCount++;
             }
