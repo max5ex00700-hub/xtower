@@ -188,9 +188,9 @@ public sealed class XTapJail : MonoBehaviour
             string state = captured ? "포획됨" : "미포획";
             string stats = captured
                 ? "가방 " + inventory.GetEquippedCellCount(characterId) + "/24칸  ·  공+" +
-                  inventory.GetEquippedAttack(characterId) + "  방+" +
-                  inventory.GetEquippedDefense(characterId) + "  체+" +
-                  inventory.GetEquippedHp(characterId)
+                  XTapStatFormat.Compact(inventory.GetEquippedAttack(characterId)) + "  방+" +
+                  XTapStatFormat.Compact(inventory.GetEquippedDefense(characterId)) + "  체+" +
+                  XTapStatFormat.Compact(inventory.GetEquippedHp(characterId))
                 : "0% 룰렛에서 포획 성공 시 해금";
 
             Text t = MakeText(
@@ -232,9 +232,9 @@ public sealed class XTapJail : MonoBehaviour
 
         detailText.text =
             "캐릭터 " + selectedCharacterId + " 전용 가방   8 × 3 / 24칸\n" +
-            "장착 합계  공 +" + inventory.GetEquippedAttack(selectedCharacterId) +
-            "   방 +" + inventory.GetEquippedDefense(selectedCharacterId) +
-            "   체 +" + inventory.GetEquippedHp(selectedCharacterId);
+            "장착 합계  공 +" + XTapStatFormat.Compact(inventory.GetEquippedAttack(selectedCharacterId)) +
+            "   방 +" + XTapStatFormat.Compact(inventory.GetEquippedDefense(selectedCharacterId)) +
+            "   체 +" + XTapStatFormat.Compact(inventory.GetEquippedHp(selectedCharacterId));
 
         openBagButton.interactable = true;
     }
