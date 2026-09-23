@@ -15,9 +15,9 @@ public sealed class XTapGearBlockData
     public string id;
     public string displayName;
     public int cellCount;
-    public int attack;
-    public int defense;
-    public int hp;
+    public double attack;
+    public double defense;
+    public double hp;
     public int correction;
     public bool exclusive;
     public int characterId;
@@ -380,9 +380,9 @@ public sealed class XTapInventory : MonoBehaviour
         int bagCount = 0;
         int heldCount = 0;
         int groundCount = 0;
-        int atk = 0;
-        int def = 0;
-        int hp = 0;
+        double atk = 0d;
+        double def = 0d;
+        double hp = 0d;
 
         for (int i = 0; i < items.Count; i++)
         {
@@ -701,72 +701,72 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(t.rectTransform, .04f, .05f, .96f, .95f);
     }
 
-    public int EquippedAttack
+    public double EquippedAttack
     {
         get
         {
-            int total = 0;
+            double total = 0d;
             for (int i = 0; i < items.Count; i++)
                 if (items[i].location == XTapGearBlockData.LocationBag &&
                     items[i].bagOwnerCharacterId == 0)
-                    total += Mathf.Max(0, items[i].attack);
+                    total += Math.Max(0d, items[i].attack);
             return total;
         }
     }
 
-    public int EquippedDefense
+    public double EquippedDefense
     {
         get
         {
-            int total = 0;
+            double total = 0d;
             for (int i = 0; i < items.Count; i++)
                 if (items[i].location == XTapGearBlockData.LocationBag &&
                     items[i].bagOwnerCharacterId == 0)
-                    total += Mathf.Max(0, items[i].defense);
+                    total += Math.Max(0d, items[i].defense);
             return total;
         }
     }
 
-    public int EquippedHp
+    public double EquippedHp
     {
         get
         {
-            int total = 0;
+            double total = 0d;
             for (int i = 0; i < items.Count; i++)
                 if (items[i].location == XTapGearBlockData.LocationBag &&
                     items[i].bagOwnerCharacterId == 0)
-                    total += Mathf.Max(0, items[i].hp);
+                    total += Math.Max(0d, items[i].hp);
             return total;
         }
     }
 
-    public int GetEquippedAttack(int ownerCharacterId)
+    public double GetEquippedAttack(int ownerCharacterId)
     {
-        int total = 0;
+        double total = 0d;
         for (int i = 0; i < items.Count; i++)
             if (items[i].location == XTapGearBlockData.LocationBag &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
-                total += Mathf.Max(0, items[i].attack);
+                total += Math.Max(0d, items[i].attack);
         return total;
     }
 
-    public int GetEquippedDefense(int ownerCharacterId)
+    public double GetEquippedDefense(int ownerCharacterId)
     {
-        int total = 0;
+        double total = 0d;
         for (int i = 0; i < items.Count; i++)
             if (items[i].location == XTapGearBlockData.LocationBag &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
-                total += Mathf.Max(0, items[i].defense);
+                total += Math.Max(0d, items[i].defense);
         return total;
     }
 
-    public int GetEquippedHp(int ownerCharacterId)
+    public double GetEquippedHp(int ownerCharacterId)
     {
-        int total = 0;
+        double total = 0d;
         for (int i = 0; i < items.Count; i++)
             if (items[i].location == XTapGearBlockData.LocationBag &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
-                total += Mathf.Max(0, items[i].hp);
+                total += Math.Max(0d, items[i].hp);
         return total;
     }
 
