@@ -396,16 +396,34 @@ public sealed class XTapInventory : MonoBehaviour
 
     public int GetStorageCount(int location)
     {
+        return GetStorageCount(location, null);
+    }
+
+    public int GetStorageCount(int location, Func<string, bool> includeItem)
+    {
         int count = 0;
         for (int i = 0; i < items.Count; i++)
-            if (items[i] != null && items[i].location == location)
-                count++;
+        {
+            XTapGearBlockData item = items[i];
+            if (item == null || item.location != location)
+                continue;
+
+            if (includeItem != null && !includeItem(item.id))
+                continue;
+
+            count++;
+        }
         return count;
     }
 
     public int GetStoragePageCount(int location)
     {
-        return Mathf.Max(1, Mathf.CeilToInt(GetStorageCount(location) / (float)StoragePageSize));
+        return GetStoragePageCount(location, null);
+    }
+
+    public int GetStoragePageCount(int location, Func<string, bool> includeItem)
+    {
+        return Mathf.Max(1, Mathf.CeilToInt(GetStorageCount(location, includeItem) / (float)StoragePageSize));
     }
 
     public void RenderSharedStoragePage(
@@ -415,14 +433,33 @@ public sealed class XTapInventory : MonoBehaviour
         Action<string> onPressed,
         Func<string, bool> isSelected)
     {
+        RenderSharedStoragePage(location, content, page, onPressed, isSelected, null);
+    }
+
+    public void RenderSharedStoragePage(
+        int location,
+        RectTransform content,
+        int page,
+        Action<string> onPressed,
+        Func<string, bool> isSelected,
+        Func<string, bool> includeItem)
+    {
         if (content == null) return;
 
         ClearChildren(content);
 
         List<XTapGearBlockData> filtered = new List<XTapGearBlockData>();
         for (int i = 0; i < items.Count; i++)
-            if (items[i] != null && items[i].location == location)
-                filtered.Add(items[i]);
+        {
+            XTapGearBlockData item = items[i];
+            if (item == null || item.location != location)
+                continue;
+
+            if (includeItem != null && !includeItem(item.id))
+                continue;
+
+            filtered.Add(item);
+        }
 
         int clampedPage = Mathf.Clamp(page, 0, Mathf.Max(0, Mathf.CeilToInt(filtered.Count / (float)StoragePageSize) - 1));
         int start = clampedPage * StoragePageSize;
