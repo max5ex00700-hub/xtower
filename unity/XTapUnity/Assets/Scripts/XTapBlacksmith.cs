@@ -996,17 +996,24 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Image bg = go.GetComponent<Image>();
         bg.color = color;
 
-        Text t = MakeText(go.transform, label, fontSize, TextAnchor.MiddleCenter, true);
-        t.color = new Color(.96f, .89f, .78f, 1f);
-        Anchor(t.rectTransform, .04f, .04f, .96f, .96f);
+        RectTransform accent = MakePanel(go.transform, "TypeAccent", new Color(.72f, .43f, .18f, .95f));
+        Anchor(accent, .18f, .90f, .82f, .925f);
+        accent.GetComponent<Image>().raycastTarget = false;
+
+        Text t = MakeText(go.transform, label, fontSize + 1, TextAnchor.MiddleCenter, true);
+        t.color = new Color(1f, .91f, .78f, 1f);
+        Outline outline = t.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, .90f);
+        outline.effectDistance = new Vector2(2f, -2f);
+        Anchor(t.rectTransform, .04f, .04f, .96f, .90f);
 
         Button b = go.GetComponent<Button>();
         b.targetGraphic = bg;
 
         ColorBlock cb = b.colors;
         cb.normalColor = Color.white;
-        cb.highlightedColor = new Color(1f, .88f, .70f, 1f);
-        cb.pressedColor = new Color(.66f, .48f, .36f, 1f);
+        cb.highlightedColor = new Color(1f, .92f, .78f, 1f);
+        cb.pressedColor = new Color(.62f, .43f, .30f, 1f);
         cb.selectedColor = Color.white;
         cb.fadeDuration = .06f;
         b.colors = cb;
