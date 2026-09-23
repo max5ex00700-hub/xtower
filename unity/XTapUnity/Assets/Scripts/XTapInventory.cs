@@ -811,14 +811,32 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(t.rectTransform, .04f, .05f, .96f, .95f);
     }
 
+    bool CountsTowardPlayerStats(XTapGearBlockData item)
+    {
+        if (item == null || item.location != XTapGearBlockData.LocationBag)
+            return false;
+
+        int ownerCharacterId = item.bagOwnerCharacterId;
+
+        // Player bag always counts.
+        if (ownerCharacterId == 0)
+            return true;
+
+        // A captured character's equipped bag also contributes to the player.
+        // Uncaptured/invalid character bags never contribute.
+        if (ownerCharacterId < 1 || ownerCharacterId > 10)
+            return false;
+
+        return PlayerPrefs.GetInt("xtap_captured_char_" + ownerCharacterId, 0) == 1;
+    }
+
     public double EquippedAttack
     {
         get
         {
             double total = 0d;
             for (int i = 0; i < items.Count; i++)
-                if (items[i].location == XTapGearBlockData.LocationBag &&
-                    items[i].bagOwnerCharacterId == 0)
+                if (CountsTowardPlayerStats(items[i]))
                     total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].attack));
             return total;
         }
@@ -830,8 +848,7 @@ public sealed class XTapInventory : MonoBehaviour
         {
             double total = 0d;
             for (int i = 0; i < items.Count; i++)
-                if (items[i].location == XTapGearBlockData.LocationBag &&
-                    items[i].bagOwnerCharacterId == 0)
+                if (CountsTowardPlayerStats(items[i]))
                     total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].defense));
             return total;
         }
@@ -843,8 +860,7 @@ public sealed class XTapInventory : MonoBehaviour
         {
             double total = 0d;
             for (int i = 0; i < items.Count; i++)
-                if (items[i].location == XTapGearBlockData.LocationBag &&
-                    items[i].bagOwnerCharacterId == 0)
+                if (CountsTowardPlayerStats(items[i]))
                     total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].hp));
             return total;
         }
