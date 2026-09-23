@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 
 public sealed class XTapBattleController : MonoBehaviour
 {
-    const float UiFontScale = 3.84f;
+    const float UiFontScale = 1.70f;
     const int BaseEnemyHp = 60;
     const int StagesPerFloor = 10;
     const string CurrentStepKey = "xtap_current_progress_step";
@@ -32,7 +32,13 @@ public sealed class XTapBattleController : MonoBehaviour
 
     GameObject mainOverlay;
     Text mainFloorText;
+    Text mainFloorSubText;
     Text mainStatusText;
+    Text mainGrowthText;
+    Text mainMoveText;
+    Text mainAttackText;
+    Text mainDefenseText;
+    Text mainHpText;
 
     Font koreanFont;
     Sprite ringSprite;
@@ -294,83 +300,103 @@ public sealed class XTapBattleController : MonoBehaviour
         RectTransform mainRoot = mainOverlay.GetComponent<RectTransform>();
         Anchor(mainRoot, 0, 0, 1, 1);
 
-        // The combat art remains the live background so the main screen can later
-        // follow each floor/character instead of becoming one flattened screenshot.
-        MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .20f), 0f, .72f, 1f, 1f);
-        MakePanel(mainOverlay.transform, "BottomShade", new Color(.015f, .012f, .014f, .42f), 0f, 0f, 1f, .29f);
+        // Keep the current floor character artwork alive behind readable gothic HUD panels.
+        MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .18f), 0f, .70f, 1f, 1f);
+        MakePanel(mainOverlay.transform, "BottomShade", new Color(.008f, .006f, .008f, .72f), 0f, 0f, 1f, .18f);
 
-        // X탑 logo: large blood-red X with pale stone-white 탑.
-        Text logoX = MakeOutlinedText(mainOverlay.transform, "X", 50, TextAnchor.MiddleCenter, true);
-        logoX.color = new Color(.62f, .015f, .02f, 1f);
-        Anchor(logoX.rectTransform, .020f, .842f, .165f, .995f);
+        // X탑 logo.
+        Text logoX = MakeOutlinedText(mainOverlay.transform, "X", 52, TextAnchor.MiddleCenter, true);
+        logoX.color = new Color(.72f, .015f, .02f, 1f);
+        Anchor(logoX.rectTransform, .018f, .855f, .145f, .995f);
 
-        Text logoTower = MakeOutlinedText(mainOverlay.transform, "탑", 44, TextAnchor.MiddleCenter, true);
-        logoTower.color = new Color(.93f, .91f, .87f, 1f);
-        Anchor(logoTower.rectTransform, .135f, .848f, .315f, .992f);
+        Text logoTower = MakeOutlinedText(mainOverlay.transform, "탑", 45, TextAnchor.MiddleCenter, true);
+        logoTower.color = new Color(.96f, .93f, .86f, 1f);
+        Anchor(logoTower.rectTransform, .118f, .858f, .285f, .992f);
 
-        string displayVersion = Application.version;
-        int dash = displayVersion.IndexOf('-');
-        if (dash > 0) displayVersion = displayVersion.Substring(0, dash);
-        Text version = MakeOutlinedText(mainOverlay.transform, "v " + displayVersion, 11, TextAnchor.MiddleCenter, false);
-        version.color = new Color(.82f, .78f, .74f, 1f);
-        Anchor(version.rectTransform, .170f, .808f, .360f, .848f);
-        version.resizeTextForBestFit = true;
-        version.resizeTextMinSize = 32;
-        version.resizeTextMaxSize = 46;
+        Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.025f, .020f, .020f, .92f), .775f, .940f, .985f, .990f);
+        AddFrame(codePlate.rectTransform, new Color(.68f, .48f, .24f, 1f), 3f);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1061", 13, TextAnchor.MiddleCenter, true);
+        codeText.color = new Color(.96f, .90f, .80f, 1f);
+        Anchor(codeText.rectTransform, .04f, .04f, .96f, .96f);
 
-        Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.035f, .03f, .03f, .84f), .770f, .932f, .985f, .985f);
-        AddFrame(codePlate.rectTransform, new Color(.48f, .43f, .36f, .85f), 2.5f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1061", 11, TextAnchor.MiddleCenter, false);
-        codeText.resizeTextForBestFit = true;
-        codeText.resizeTextMinSize = 32;
-        codeText.resizeTextMaxSize = 46;
-        codeText.color = new Color(.90f, .87f, .82f, 1f);
-        Anchor(codeText.rectTransform, .05f, .04f, .95f, .96f);
+        // FLOOR panel. Always shows both progress notation and explicit Korean floor/stage.
+        Image floorPanel = MakePanel(mainOverlay.transform, "FloorPanel", new Color(.025f, .020f, .018f, .92f), .028f, .705f, .405f, .850f);
+        AddFrame(floorPanel.rectTransform, new Color(.72f, .48f, .20f, 1f), 3.5f);
 
-        // Floor information sits on the left, matching the supplied gothic concept.
-        Text floorWord = MakeOutlinedText(mainOverlay.transform, "FLOOR", 18, TextAnchor.MiddleLeft, true);
-        floorWord.color = new Color(.92f, .91f, .88f, 1f);
-        Anchor(floorWord.rectTransform, .045f, .748f, .255f, .805f);
+        Text floorWord = MakeOutlinedText(floorPanel.transform, "FLOOR", 18, TextAnchor.MiddleCenter, true);
+        floorWord.color = new Color(.94f, .87f, .73f, 1f);
+        Anchor(floorWord.rectTransform, .08f, .70f, .92f, .98f);
 
-        mainFloorText = MakeOutlinedText(mainOverlay.transform, StageLabel(), 32, TextAnchor.MiddleLeft, true);
-        mainFloorText.color = new Color(.73f, .015f, .02f, 1f);
-        Anchor(mainFloorText.rectTransform, .235f, .735f, .510f, .820f);
-        mainFloorText.resizeTextForBestFit = true;
-        mainFloorText.resizeTextMinSize = 78;
-        mainFloorText.resizeTextMaxSize = 128;
+        mainFloorText = MakeOutlinedText(floorPanel.transform, StageLabel(), 34, TextAnchor.MiddleCenter, true);
+        mainFloorText.color = new Color(1f, .72f, .22f, 1f);
+        Anchor(mainFloorText.rectTransform, .08f, .28f, .92f, .72f);
 
-        mainStatusText = MakeOutlinedText(mainOverlay.transform, "그녀가 기다리고 있다...", 14, TextAnchor.MiddleLeft, false);
-        mainStatusText.color = new Color(.94f, .91f, .86f, 1f);
-        Anchor(mainStatusText.rectTransform, .045f, .685f, .730f, .748f);
-        mainStatusText.resizeTextForBestFit = true;
-        mainStatusText.resizeTextMinSize = 40;
-        mainStatusText.resizeTextMaxSize = 58;
+        mainFloorSubText = MakeOutlinedText(floorPanel.transform, "", 14, TextAnchor.MiddleCenter, true);
+        mainFloorSubText.color = new Color(.96f, .92f, .84f, 1f);
+        Anchor(mainFloorSubText.rectTransform, .08f, .02f, .92f, .30f);
 
-        // Main-screen speech bubble. This is separate from the combat reaction bubble.
+        // Player stat panel. Stats are separate rows so they never disappear into a wrapped status sentence.
+        Image statPanel = MakePanel(mainOverlay.transform, "PlayerStats", new Color(.025f, .020f, .018f, .90f), .025f, .430f, .425f, .695f);
+        AddFrame(statPanel.rectTransform, new Color(.62f, .43f, .22f, 1f), 3f);
+
+        Text playerTitle = MakeOutlinedText(statPanel.transform, "플레이어", 20, TextAnchor.MiddleLeft, true);
+        playerTitle.color = new Color(.98f, .92f, .80f, 1f);
+        Anchor(playerTitle.rectTransform, .08f, .82f, .92f, .98f);
+
+        mainGrowthText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainGrowthText.color = new Color(1f, .76f, .30f, 1f);
+        Anchor(mainGrowthText.rectTransform, .10f, .65f, .92f, .82f);
+
+        mainMoveText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainMoveText.color = new Color(.96f, .90f, .76f, 1f);
+        Anchor(mainMoveText.rectTransform, .10f, .49f, .92f, .66f);
+
+        Text gearTitle = MakeOutlinedText(statPanel.transform, "장비", 14, TextAnchor.MiddleLeft, true);
+        gearTitle.color = new Color(.80f, .78f, .72f, 1f);
+        Anchor(gearTitle.rectTransform, .10f, .37f, .92f, .50f);
+
+        mainAttackText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainAttackText.color = new Color(1f, .70f, .22f, 1f);
+        Anchor(mainAttackText.rectTransform, .10f, .24f, .92f, .38f);
+
+        mainDefenseText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainDefenseText.color = new Color(.48f, .76f, 1f, 1f);
+        Anchor(mainDefenseText.rectTransform, .10f, .12f, .92f, .26f);
+
+        mainHpText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainHpText.color = new Color(1f, .46f, .46f, 1f);
+        Anchor(mainHpText.rectTransform, .10f, .00f, .92f, .14f);
+
+        // Main-screen speech bubble.
         Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
         mainBubble.transform.SetParent(mainOverlay.transform, false);
         mainBubble.sprite = speechBubbleSprite;
-        mainBubble.color = new Color(.96f, .95f, .92f, .97f);
+        mainBubble.color = new Color(.98f, .97f, .93f, .98f);
         mainBubble.raycastTarget = false;
-        Anchor(mainBubble.rectTransform, .570f, .775f, .980f, .895f);
-        Text mainBubbleText = MakeText(mainBubble.transform, "...또 오는 거야?", 15, TextAnchor.MiddleCenter, false);
-        mainBubbleText.color = new Color(.08f, .065f, .06f, 1f);
-        Anchor(mainBubbleText.rectTransform, .06f, .18f, .95f, .92f);
+        Anchor(mainBubble.rectTransform, .570f, .765f, .980f, .895f);
+
+        Text mainBubbleText = MakeText(mainBubble.transform, "...또 오는 거야?", 17, TextAnchor.MiddleCenter, true);
+        mainBubbleText.color = new Color(.08f, .055f, .05f, 1f);
         mainBubbleText.resizeTextForBestFit = true;
-        mainBubbleText.resizeTextMinSize = 40;
-        mainBubbleText.resizeTextMaxSize = 58;
+        mainBubbleText.resizeTextMinSize = 28;
+        mainBubbleText.resizeTextMaxSize = 42;
+        Anchor(mainBubbleText.rectTransform, .06f, .18f, .95f, .92f);
+
+        mainStatusText = MakeOutlinedText(mainOverlay.transform, "", 14, TextAnchor.MiddleCenter, true);
+        mainStatusText.color = new Color(.96f, .90f, .80f, 1f);
+        Anchor(mainStatusText.rectTransform, .12f, .335f, .88f, .385f);
 
         // Large central action button.
-        Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 20);
+        Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 24);
         RectTransform fr = fight.GetComponent<RectTransform>();
-        fr.anchorMin = new Vector2(.205f, .190f);
-        fr.anchorMax = new Vector2(.795f, .305f);
+        fr.anchorMin = new Vector2(.185f, .190f);
+        fr.anchorMax = new Vector2(.815f, .315f);
         fr.offsetMin = fr.offsetMax = Vector2.zero;
         fight.onClick.AddListener(BeginBattle);
 
-        // Bottom navigation bar. Only systems already present are interactive.
-        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.012f, .011f, .012f, .985f), 0f, 0f, 1f, .165f);
-        AddFrame(navRail.rectTransform, new Color(.36f, .31f, .25f, 1f), 2f);
+        // Bottom navigation bar.
+        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.010f, .008f, .010f, .985f), 0f, 0f, 1f, .165f);
+        AddFrame(navRail.rectTransform, new Color(.52f, .36f, .20f, 1f), 2.5f);
 
         string[] icons = {"↻", "↓", "↑", "▣", "⚒", "▥"};
         string[] labels = {"다시", "↓", "↑", "배낭", "대장간", "감옥"};
@@ -385,30 +411,22 @@ public sealed class XTapBattleController : MonoBehaviour
             br.anchorMax = new Vector2(x2, .88f);
             br.offsetMin = br.offsetMax = Vector2.zero;
 
+            Image bg = b.targetGraphic as Image;
+            if (bg != null)
+                bg.color = new Color(.055f, .045f, .040f, .98f);
+
             if (i == 0)
-            {
                 b.onClick.AddListener(ReturnToMain);
-            }
             else if (i == 1)
-            {
                 b.onClick.AddListener(delegate { MoveProgress(-1); });
-            }
             else if (i == 2)
-            {
                 b.onClick.AddListener(delegate { MoveProgress(1); });
-            }
             else if (i == 3)
-            {
                 b.onClick.AddListener(OpenInventory);
-            }
             else if (i == 4)
-            {
                 b.onClick.AddListener(OpenBlacksmith);
-            }
             else if (i == 5)
-            {
                 b.onClick.AddListener(OpenJail);
-            }
         }
 
         mainOverlay.SetActive(false);
@@ -574,20 +592,35 @@ public sealed class XTapBattleController : MonoBehaviour
         if (mainFloorText != null)
             mainFloorText.text = StageLabel();
 
-        if (mainStatusText == null) return;
+        if (mainFloorSubText != null)
+            mainFloorSubText.text = TowerFloor() + "층 " + SubStage() + "구간";
 
         int growthPercent = Mathf.RoundToInt(ProgressMultiplier() * 100f);
-        string clearText = currentStep < maxUnlockedStep ? "클리어 · ↑ 이동 가능" : "도전 중";
-        string gearText = "";
+        bool canMoveUp = currentStep < maxUnlockedStep;
 
-        if (inventory != null)
-        {
-            gearText = " · 장비 공+" + XTapStatFormat.Compact(inventory.EquippedAttack) +
-                       " 방+" + XTapStatFormat.Compact(inventory.EquippedDefense) +
-                       " 체+" + XTapStatFormat.Compact(inventory.EquippedHp);
-        }
+        if (mainGrowthText != null)
+            mainGrowthText.text = "성장    " + growthPercent + "%";
 
-        mainStatusText.text = clearText + " · 성장 " + growthPercent + "%" + gearText;
+        if (mainMoveText != null)
+            mainMoveText.text = "이동    " + (canMoveUp ? "가능" : "진행 중");
+
+        double atk = inventory != null ? inventory.EquippedAttack : 0d;
+        double def = inventory != null ? inventory.EquippedDefense : 0d;
+        double hp = inventory != null ? inventory.EquippedHp : 0d;
+
+        if (mainAttackText != null)
+            mainAttackText.text = "공    +" + XTapStatFormat.Compact(atk);
+
+        if (mainDefenseText != null)
+            mainDefenseText.text = "방    +" + XTapStatFormat.Compact(def);
+
+        if (mainHpText != null)
+            mainHpText.text = "체    +" + XTapStatFormat.Compact(hp);
+
+        if (mainStatusText != null)
+            mainStatusText.text = canMoveUp
+                ? "클리어 · 위층 이동 가능"
+                : StageLabel() + " 도전 중";
     }
 
     void LoadProgress()
