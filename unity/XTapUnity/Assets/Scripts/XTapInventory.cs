@@ -1236,6 +1236,13 @@ public sealed class XTapInventory : MonoBehaviour
         XTapGearBlockData item = Find(id);
         if (item == null) return;
 
+        // A small finger movement can start Unity's drag gesture before the tap
+        // callback arrives. TapBlock re-renders the item, which can destroy the
+        // touch component before OnEndDrag gets a chance to clean the ghost.
+        // Always cancel any transient drag first so no orphan ghost survives.
+        if (!string.IsNullOrEmpty(draggingId) || dragGhost != null)
+            CancelDrag(false);
+
         selectedId = id;
 
         // Floor rewards are difficult to drag on a phone. A single tap picks the
