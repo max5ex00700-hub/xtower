@@ -582,9 +582,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (inventory != null)
         {
-            gearText = " · 장비 공+" + inventory.EquippedAttack +
-                       " 방+" + inventory.EquippedDefense +
-                       " 체+" + inventory.EquippedHp;
+            gearText = " · 장비 공+" + XTapStatFormat.Compact(inventory.EquippedAttack) +
+                       " 방+" + XTapStatFormat.Compact(inventory.EquippedDefense) +
+                       " 체+" + XTapStatFormat.Compact(inventory.EquippedHp);
         }
 
         mainStatusText.text = clearText + " · 성장 " + growthPercent + "%" + gearText;
