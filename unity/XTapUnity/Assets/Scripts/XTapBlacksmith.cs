@@ -6,7 +6,7 @@ using UnityEngine.UI;
 
 public sealed class XTapBlacksmith : MonoBehaviour
 {
-    const float UiFontScale = 1.70f;
+    const float UiFontScale = 2.15f;
     enum ForgeMode
     {
         Enhance,
