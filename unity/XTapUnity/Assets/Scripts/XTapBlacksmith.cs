@@ -447,9 +447,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
             if (material == null) continue;
 
             sacrificeCount++;
-            sacrificeAttack += Math.Max(0d, material.attack);
-            sacrificeDefense += Math.Max(0d, material.defense);
-            sacrificeHp += Math.Max(0d, material.hp);
+            sacrificeAttack = XTapStatFormat.SafeAdd(sacrificeAttack, Math.Max(0d, material.attack));
+            sacrificeDefense = XTapStatFormat.SafeAdd(sacrificeDefense, Math.Max(0d, material.defense));
+            sacrificeHp = XTapStatFormat.SafeAdd(sacrificeHp, Math.Max(0d, material.hp));
             if (sacrificeCount == 1)
                 singleSacrifice = material;
         }
@@ -546,11 +546,11 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (success)
         {
             target.enhanceLevel++;
-            target.attack += 1;
-            target.hp += 5;
+            target.attack = XTapStatFormat.SafeAdd(target.attack, 1d);
+            target.hp = XTapStatFormat.SafeAdd(target.hp, 5d);
 
             if (target.enhanceLevel % 2 == 0)
-                target.defense += 1;
+                target.defense = XTapStatFormat.SafeAdd(target.defense, 1d);
 
             inventory.CommitForgeChanges();
             resultText.text =
@@ -596,9 +596,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         if (success)
         {
-            target.attack += addAttack;
-            target.defense += addDefense;
-            target.hp += addHp;
+            target.attack = XTapStatFormat.SafeAdd(target.attack, addAttack);
+            target.defense = XTapStatFormat.SafeAdd(target.defense, addDefense);
+            target.hp = XTapStatFormat.SafeAdd(target.hp, addHp);
             inventory.CommitForgeChanges();
 
             resultText.text =
