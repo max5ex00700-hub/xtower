@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
@@ -59,6 +60,16 @@ public sealed class XTapBlacksmith : MonoBehaviour
     Button dismantleTab;
     Button executeButton;
 
+    GameObject probabilityOverlay;
+    RectTransform probabilityMachine;
+    RectTransform probabilityWheel;
+    Text probabilityTitleText;
+    Text probabilityChanceText;
+    Text probabilityRollText;
+    Text probabilityResultText;
+    bool probabilityBusy;
+    Coroutine probabilityRoutine;
+
     ForgeMode mode = ForgeMode.Enhance;
     string targetId;
     readonly List<string> materialIds = new List<string>();
@@ -91,6 +102,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     public void Close()
     {
+        if (probabilityBusy) return;
         IsOpen = false;
         ClearSelection();
         if (overlay != null) overlay.SetActive(false);
@@ -265,7 +277,55 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Anchor(executeButton.GetComponent<RectTransform>(), .595f, .020f, .955f, .078f);
         executeButton.onClick.AddListener(Execute);
 
+        BuildProbabilityMachineUi();
         SetMode(ForgeMode.Enhance);
+    }
+
+    void BuildProbabilityMachineUi()
+    {
+        probabilityOverlay = new GameObject("ForgeProbabilityOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        probabilityOverlay.transform.SetParent(overlay.transform, false);
+
+        Image dim = probabilityOverlay.GetComponent<Image>();
+        dim.color = new Color(0f, 0f, 0f, .86f);
+        dim.raycastTarget = true;
+        Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
+
+        probabilityMachine = MakePanel(probabilityOverlay.transform, "ProbabilityMachine", new Color(.035f, .020f, .014f, .99f));
+        Anchor(probabilityMachine, .10f, .255f, .90f, .745f);
+        ApplyPanelSkin(probabilityMachine, panelSkin);
+        if (panelSkin == null)
+            Frame(probabilityMachine, new Color(.76f, .45f, .18f, 1f), 5f);
+
+        probabilityTitleText = MakeText(probabilityMachine, "확률 머신", 27, TextAnchor.MiddleCenter, true);
+        probabilityTitleText.color = new Color(1f, .78f, .34f, 1f);
+        Anchor(probabilityTitleText.rectTransform, .08f, .82f, .92f, .96f);
+
+        RectTransform chanceBar = MakePanel(probabilityMachine, "ChanceBar", new Color(.07f, .045f, .030f, .96f));
+        Anchor(chanceBar, .10f, .66f, .90f, .80f);
+        ApplyPanelSkin(chanceBar, statusBarSkin);
+
+        probabilityChanceText = MakeText(chanceBar, "", 18, TextAnchor.MiddleCenter, true);
+        probabilityChanceText.color = new Color(1f, .88f, .62f, 1f);
+        Anchor(probabilityChanceText.rectTransform, .05f, .05f, .95f, .95f);
+
+        probabilityWheel = MakePanel(probabilityMachine, "NumberDrum", new Color(.025f, .020f, .018f, 1f));
+        Anchor(probabilityWheel, .20f, .31f, .80f, .64f);
+        ApplyPanelSkin(probabilityWheel, slotSkin);
+
+        probabilityRollText = MakeText(probabilityWheel, "00", 58, TextAnchor.MiddleCenter, true);
+        probabilityRollText.color = new Color(1f, .74f, .24f, 1f);
+        Anchor(probabilityRollText.rectTransform, .05f, .06f, .95f, .94f);
+
+        probabilityResultText = MakeText(probabilityMachine, "", 21, TextAnchor.MiddleCenter, true);
+        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
+        Anchor(probabilityResultText.rectTransform, .08f, .12f, .92f, .29f);
+
+        Text guide = MakeText(probabilityMachine, "00~99 중 숫자 하나가 결정됩니다", 13, TextAnchor.MiddleCenter, false);
+        guide.color = new Color(.74f, .66f, .58f, 1f);
+        Anchor(guide.rectTransform, .08f, .035f, .92f, .12f);
+
+        probabilityOverlay.SetActive(false);
     }
 
     RectTransform MakeSlotPanel(Transform parent, string name, float x1, float y1, float x2, float y2)
@@ -280,6 +340,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void SetMode(ForgeMode next)
     {
+        if (probabilityBusy) return;
         mode = next;
         ClearSelection();
         if (resultText != null) resultText.text = "블록을 선택하세요.";
@@ -555,38 +616,161 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void Execute()
     {
-        if (inventory == null) return;
+        if (inventory == null || probabilityBusy) return;
+
+        int chance;
+        if (!TryGetCurrentOperationChance(out chance))
+            return;
+
+        if (probabilityRoutine != null)
+            StopCoroutine(probabilityRoutine);
+
+        probabilityRoutine = StartCoroutine(RunProbabilityMachine(mode, chance));
+    }
+
+    bool TryGetCurrentOperationChance(out int chance)
+    {
+        chance = 0;
 
         if (mode == ForgeMode.Enhance)
-            ExecuteEnhance();
-        else if (mode == ForgeMode.Synthesis)
-            ExecuteSynthesis();
-        else
-            ExecuteDismantle();
+        {
+            XTapGearBlockData target = inventory.FindForgeItem(targetId);
+            if (target == null || materialIds.Count == 0)
+            {
+                resultText.text = "대상과 재료를 선택하세요.";
+                return false;
+            }
 
+            if (target.enhanceLevel >= 10)
+            {
+                resultText.text = "이미 +10 최대 강화입니다.";
+                return false;
+            }
+
+            chance = Mathf.Clamp(materialIds.Count * 10, 0, 100);
+            return true;
+        }
+
+        if (mode == ForgeMode.Synthesis)
+        {
+            XTapGearBlockData target = inventory.FindForgeItem(targetId);
+            if (target == null || materialIds.Count != 1)
+            {
+                resultText.text = "대상 1개와 재료 1개를 선택하세요.";
+                return false;
+            }
+
+            XTapGearBlockData material = inventory.FindForgeItem(materialIds[0]);
+            if (material == null)
+            {
+                resultText.text = "재료 블록을 찾을 수 없습니다.";
+                ClearSelection();
+                Refresh();
+                return false;
+            }
+
+            chance = 1;
+            return true;
+        }
+
+        if (materialIds.Count <= 0)
+        {
+            resultText.text = "분해할 재료를 선택하세요.";
+            return false;
+        }
+
+        chance = Mathf.Clamp(materialIds.Count * 10, 0, 100);
+        return true;
+    }
+
+    IEnumerator RunProbabilityMachine(ForgeMode operationMode, int chance)
+    {
+        probabilityBusy = true;
+        if (executeButton != null) executeButton.interactable = false;
+
+        probabilityOverlay.SetActive(true);
+        probabilityOverlay.transform.SetAsLastSibling();
+
+        string operationName = operationMode == ForgeMode.Enhance
+            ? "강화"
+            : (operationMode == ForgeMode.Synthesis ? "합성" : "분해");
+
+        probabilityTitleText.text = operationName + " 확률 머신";
+        probabilityChanceText.text = chance >= 100
+            ? "성공률 100%  ·  무조건 성공"
+            : "성공률 " + chance + "%  ·  00~" + Mathf.Max(0, chance - 1).ToString("00") + " 성공";
+        probabilityResultText.text = "판정 중...";
+        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
+
+        // Pick the real 00-99 outcome once. The animation only reveals it.
+        int finalRoll = UnityEngine.Random.Range(0, 100);
+        bool success = finalRoll < chance;
+
+        float duration = 1.85f;
+        float t = 0f;
+        int lastShown = -1;
+
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / duration);
+
+            // Fast at the start, visibly decelerating near the final result.
+            float interval = Mathf.Lerp(.025f, .18f, p * p);
+            int tick = Mathf.FloorToInt(t / Mathf.Max(.02f, interval));
+            if (tick != lastShown)
+            {
+                lastShown = tick;
+                int shown = UnityEngine.Random.Range(0, 100);
+                probabilityRollText.text = shown.ToString("00");
+                probabilityRollText.transform.localScale = Vector3.one * (1f + (1f - p) * .10f);
+            }
+
+            if (probabilityWheel != null)
+            {
+                float wobble = Mathf.Sin(Time.unscaledTime * 34f) * (1f - p) * 7f;
+                probabilityWheel.anchoredPosition = new Vector2(wobble, probabilityWheel.anchoredPosition.y);
+            }
+
+            yield return null;
+        }
+
+        if (probabilityWheel != null)
+            probabilityWheel.anchoredPosition = new Vector2(0f, probabilityWheel.anchoredPosition.y);
+
+        probabilityRollText.transform.localScale = Vector3.one;
+        probabilityRollText.text = finalRoll.ToString("00");
+        probabilityResultText.text = success ? "성공!" : "실패";
+        probabilityResultText.color = success
+            ? new Color(.58f, 1f, .58f, 1f)
+            : new Color(1f, .42f, .38f, 1f);
+
+        yield return new WaitForSecondsRealtime(.65f);
+
+        if (operationMode == ForgeMode.Enhance)
+            ResolveEnhance(success);
+        else if (operationMode == ForgeMode.Synthesis)
+            ResolveSynthesis(success);
+        else
+            ResolveDismantle(success);
+
+        probabilityOverlay.SetActive(false);
+        probabilityBusy = false;
+        probabilityRoutine = null;
         Refresh();
     }
 
-    void ExecuteEnhance()
+    void ResolveEnhance(bool success)
     {
         XTapGearBlockData target = inventory.FindForgeItem(targetId);
-
-        if (target == null || materialIds.Count == 0)
+        if (target == null)
         {
-            resultText.text = "대상과 재료를 선택하세요.";
-            return;
-        }
-
-        if (target.enhanceLevel >= 10)
-        {
-            resultText.text = "이미 +10 최대 강화입니다.";
+            resultText.text = "강화 대상을 찾을 수 없습니다.";
+            ClearSelection();
             return;
         }
 
         int materialCount = materialIds.Count;
-        int chance = Mathf.Clamp(materialCount * 10, 0, 100);
-        bool success = UnityEngine.Random.Range(0f, 100f) < chance;
-
         ConsumeMaterials();
 
         if (success)
@@ -600,10 +784,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
             inventory.CommitForgeChanges();
             resultText.text =
-                "강화 성공!  +" + target.enhanceLevel +
-                "   공 " + XTapStatFormat.Compact(target.attack) +
-                " / 방 " + XTapStatFormat.Compact(target.defense) +
-                " / 체 " + XTapStatFormat.Compact(target.hp);
+                "강화 성공!  +" + target.enhanceLevel + "   " +
+                XTapStatFormat.BlockTriplet(target.attack, target.defense, target.hp, " / ");
         }
         else
         {
@@ -614,20 +796,16 @@ public sealed class XTapBlacksmith : MonoBehaviour
         ClearSelection();
     }
 
-    void ExecuteSynthesis()
+    void ResolveSynthesis(bool success)
     {
         XTapGearBlockData target = inventory.FindForgeItem(targetId);
+        XTapGearBlockData material = materialIds.Count == 1
+            ? inventory.FindForgeItem(materialIds[0])
+            : null;
 
-        if (target == null || materialIds.Count != 1)
+        if (target == null || material == null)
         {
-            resultText.text = "대상 1개와 재료 1개를 선택하세요.";
-            return;
-        }
-
-        XTapGearBlockData material = inventory.FindForgeItem(materialIds[0]);
-        if (material == null)
-        {
-            resultText.text = "재료 블록을 찾을 수 없습니다.";
+            resultText.text = "합성 대상 또는 재료를 찾을 수 없습니다.";
             ClearSelection();
             return;
         }
@@ -637,7 +815,6 @@ public sealed class XTapBlacksmith : MonoBehaviour
         double addHp = material.hp;
         string consumedName = material.displayName;
 
-        bool success = UnityEngine.Random.Range(0f, 100f) < 1f;
         inventory.RemoveForgeItem(material.id);
 
         if (success)
@@ -660,18 +837,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
         ClearSelection();
     }
 
-    void ExecuteDismantle()
+    void ResolveDismantle(bool success)
     {
-        if (materialIds.Count <= 0)
-        {
-            resultText.text = "분해할 재료를 선택하세요.";
-            return;
-        }
-
         int count = materialIds.Count;
-        int chance = Mathf.Clamp(count * 10, 0, 100);
-        bool success = UnityEngine.Random.Range(0f, 100f) < chance;
-
         ConsumeMaterials();
 
         if (success)
