@@ -125,8 +125,16 @@ public sealed class XTapGachaMachine : MonoBehaviour
         int correction = corrections[correctionIndex];
 
         float segment = 360f / corrections.Length;
-        float startAngle = wheel.localEulerAngles.z;
-        float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + correctionIndex * segment;
+
+        // Slot 0 is authored at the top pointer, and slot indices increase clockwise.
+        // Always spin from the current wheel orientation to the ABSOLUTE target slot.
+        // This prevents visual selection from drifting away from the actual correction
+        // after the first reward spin.
+        float startAngle = NormalizeSignedAngle(wheel.localEulerAngles.z);
+        float targetAngle = -correctionIndex * segment;
+        float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
+        float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
+
         float duration = 1.85f;
         float t = 0f;
 
@@ -146,12 +154,16 @@ public sealed class XTapGachaMachine : MonoBehaviour
             yield return null;
         }
 
+        // Snap to the exact selected slot so the pointer and applied value
+        // can never disagree because of accumulated rotation or frame rounding.
+        wheel.localRotation = Quaternion.Euler(0f, 0f, targetAngle);
         machine.anchoredPosition = Vector2.zero;
         wheelCore.rectTransform.localScale = Vector3.one;
 
         yield return ChuteKick();
 
-        pendingOutcome = RollOutcome(correction);
+        // The exact value shown under the pointer is the value applied to the block.
+        pendingOutcome = RollOutcome(corrections[correctionIndex]);
         ShowOutcome(pendingOutcome);
         yield return DropReward();
 
@@ -239,9 +251,12 @@ public sealed class XTapGachaMachine : MonoBehaviour
     {
         ClearReward();
 
-        string corr = outcome.correction > 0
-            ? "+" + outcome.correction + "%"
-            : outcome.correction + "%";
+        int appliedCorrection = outcome.block != null
+            ? outcome.block.correction
+            : outcome.correction;
+        string corr = appliedCorrection > 0
+            ? "+" + appliedCorrection + "%"
+            : appliedCorrection + "%";
         correctionText.text = "보정  " + corr;
 
         if (outcome.captureAttempt)
@@ -660,6 +675,12 @@ public sealed class XTapGachaMachine : MonoBehaviour
         r.anchorMax = new Vector2(x2, y2);
         r.offsetMin = Vector2.zero;
         r.offsetMax = Vector2.zero;
+    }
+
+    static float NormalizeSignedAngle(float angle)
+    {
+        angle = Mathf.Repeat(angle + 180f, 360f) - 180f;
+        return angle;
     }
 
     sealed class Outcome
