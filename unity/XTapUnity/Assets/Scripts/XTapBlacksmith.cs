@@ -33,6 +33,17 @@ public sealed class XTapBlacksmith : MonoBehaviour
     RectTransform targetSlot;
     RectTransform materialSlot;
 
+    Texture2D skinAtlas;
+    Sprite backgroundSkin;
+    Sprite panelSkin;
+    Sprite slotSkin;
+    Sprite tabNormalSkin;
+    Sprite tabSelectedSkin;
+    Sprite buttonNeutralSkin;
+    Sprite buttonPrimarySkin;
+    Sprite listRowSkin;
+    Sprite statusBarSkin;
+
     Button enhanceTab;
     Button synthesisTab;
     Button dismantleTab;
@@ -49,6 +60,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         inventory = bag;
         onClosed = closed;
 
+        LoadVisualAssets();
         BuildUi();
         overlay.SetActive(false);
     }
@@ -78,7 +90,17 @@ public sealed class XTapBlacksmith : MonoBehaviour
         overlay.transform.SetParent(host, false);
 
         Image dim = overlay.GetComponent<Image>();
-        dim.color = new Color(.012f, .008f, .006f, .992f);
+        if (backgroundSkin != null)
+        {
+            dim.sprite = backgroundSkin;
+            dim.type = Image.Type.Simple;
+            dim.preserveAspect = false;
+            dim.color = Color.white;
+        }
+        else
+        {
+            dim.color = new Color(.012f, .008f, .006f, .992f);
+        }
         dim.raycastTarget = true;
         Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
 
@@ -87,7 +109,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Anchor(panel, 0f, 0f, 1f, 1f);
 
         Image body = panel.GetComponent<Image>();
-        body.color = new Color(.045f, .028f, .018f, 1f);
+        body.color = new Color(0f, 0f, 0f, .16f);
         body.raycastTarget = true;
 
         Text title = MakeText(panel, "대장간", 31, TextAnchor.MiddleLeft, true);
@@ -95,12 +117,16 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Anchor(title.rectTransform, .045f, .935f, .62f, .995f);
 
         Button close = MakeButton(panel, "닫기", 17, new Color(.13f, .075f, .050f, 1f));
+        ApplyButtonSkin(close, buttonNeutralSkin);
         Anchor(close.GetComponent<RectTransform>(), .80f, .945f, .955f, .990f);
         close.onClick.AddListener(Close);
 
         enhanceTab = MakeButton(panel, "강화", 19, new Color(.28f, .12f, .035f, 1f));
         synthesisTab = MakeButton(panel, "합성", 19, new Color(.09f, .07f, .065f, 1f));
         dismantleTab = MakeButton(panel, "분해", 19, new Color(.09f, .07f, .065f, 1f));
+        ApplyButtonSkin(enhanceTab, tabNormalSkin);
+        ApplyButtonSkin(synthesisTab, tabNormalSkin);
+        ApplyButtonSkin(dismantleTab, tabNormalSkin);
 
         Anchor(enhanceTab.GetComponent<RectTransform>(), .035f, .855f, .325f, .925f);
         Anchor(synthesisTab.GetComponent<RectTransform>(), .355f, .855f, .645f, .925f);
@@ -133,9 +159,13 @@ public sealed class XTapBlacksmith : MonoBehaviour
         materialSlotText.color = new Color(.92f, .87f, .80f, 1f);
         Anchor(materialSlotText.rectTransform, .08f, .10f, .92f, .72f);
 
+        RectTransform ruleBar = MakePanel(panel, "RuleBar", new Color(.04f, .03f, .025f, .92f));
+        Anchor(ruleBar, .035f, .525f, .965f, .592f);
+        ApplyPanelSkin(ruleBar, statusBarSkin);
+
         ruleText = MakeText(panel, "", 13, TextAnchor.MiddleCenter, true);
-        ruleText.color = new Color(.95f, .83f, .63f, 1f);
-        Anchor(ruleText.rectTransform, .045f, .535f, .955f, .585f);
+        ruleText.color = new Color(1f, .86f, .58f, 1f);
+        Anchor(ruleText.rectTransform, .055f, .535f, .945f, .585f);
 
         Text inventoryTitle = MakeText(panel, "소지품 · 바닥", 18, TextAnchor.MiddleLeft, true);
         inventoryTitle.color = new Color(.98f, .90f, .78f, 1f);
@@ -143,6 +173,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         RectTransform listFrame = MakePanel(panel, "ForgeItems", new Color(.020f, .018f, .018f, 1f));
         Anchor(listFrame, .035f, .165f, .965f, .490f);
+        ApplyPanelSkin(listFrame, panelSkin);
 
         GameObject scrollGo = new GameObject("ForgeScroll", typeof(RectTransform), typeof(ScrollRect));
         scrollGo.transform.SetParent(listFrame, false);
@@ -185,6 +216,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
         scroll.elasticity = .08f;
         scroll.inertia = true;
 
+        RectTransform statusBar = MakePanel(panel, "StatusBar", new Color(.04f, .03f, .025f, .92f));
+        Anchor(statusBar, .035f, .080f, .965f, .162f);
+        ApplyPanelSkin(statusBar, statusBarSkin);
+
         selectionText = MakeText(panel, "", 12, TextAnchor.MiddleLeft, true);
         selectionText.color = new Color(.92f, .84f, .72f, 1f);
         Anchor(selectionText.rectTransform, .045f, .120f, .70f, .160f);
@@ -198,6 +233,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Anchor(resultText.rectTransform, .045f, .085f, .955f, .120f);
 
         Button clear = MakeButton(panel, "초기화", 16, new Color(.095f, .075f, .065f, 1f));
+        ApplyButtonSkin(clear, buttonNeutralSkin);
         Anchor(clear.GetComponent<RectTransform>(), .045f, .020f, .405f, .078f);
         clear.onClick.AddListener(delegate
         {
@@ -207,6 +243,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         });
 
         executeButton = MakeButton(panel, "작업", 18, new Color(.38f, .16f, .045f, 1f));
+        ApplyButtonSkin(executeButton, buttonPrimarySkin);
         Anchor(executeButton.GetComponent<RectTransform>(), .595f, .020f, .955f, .078f);
         executeButton.onClick.AddListener(Execute);
 
@@ -217,7 +254,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
     {
         RectTransform slot = MakePanel(parent, name, new Color(.055f, .050f, .050f, 1f));
         Anchor(slot, x1, y1, x2, y2);
-        Frame(slot, new Color(.38f, .27f, .17f, 1f), 2f);
+        ApplyPanelSkin(slot, slotSkin);
+        if (slotSkin == null)
+            Frame(slot, new Color(.38f, .27f, .17f, 1f), 2f);
         return slot;
     }
 
@@ -256,10 +295,27 @@ public sealed class XTapBlacksmith : MonoBehaviour
     {
         if (button == null) return;
         Image image = button.targetGraphic as Image;
-        if (image != null)
+        if (image == null) return;
+
+        Sprite skin = selected ? tabSelectedSkin : tabNormalSkin;
+        if (skin != null)
+        {
+            image.sprite = skin;
+            image.type = Image.Type.Sliced;
+            image.color = Color.white;
+        }
+        else
+        {
             image.color = selected
                 ? new Color(.34f, .16f, .055f, 1f)
                 : new Color(.105f, .072f, .060f, 1f);
+        }
+
+        Text label = button.GetComponentInChildren<Text>();
+        if (label != null)
+            label.color = selected
+                ? new Color(1f, .90f, .60f, 1f)
+                : new Color(.91f, .84f, .73f, 1f);
     }
 
     void RefreshRules()
@@ -313,12 +369,18 @@ public sealed class XTapBlacksmith : MonoBehaviour
             row.transform.SetParent(listContent, false);
 
             Image bg = row.GetComponent<Image>();
+            if (listRowSkin != null)
+            {
+                bg.sprite = listRowSkin;
+                bg.type = Image.Type.Sliced;
+            }
+
             if (isTarget)
-                bg.color = new Color(.32f, .17f, .055f, 1f);
+                bg.color = new Color(1f, .72f, .30f, 1f);
             else if (isMaterial)
-                bg.color = new Color(.17f, .20f, .13f, 1f);
+                bg.color = new Color(.76f, .88f, .62f, 1f);
             else
-                bg.color = new Color(.075f, .065f, .062f, 1f);
+                bg.color = Color.white;
 
             LayoutElement le = row.GetComponent<LayoutElement>();
             le.preferredHeight = 112f;
@@ -338,7 +400,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             t.resizeTextForBestFit = true;
             t.resizeTextMinSize = 18;
             t.resizeTextMaxSize = 26;
-            Anchor(t.rectTransform, .045f, .10f, .955f, .90f);
+            Anchor(t.rectTransform, .14f, .10f, .90f, .90f);
 
             Button b = row.GetComponent<Button>();
             b.targetGraphic = bg;
@@ -655,6 +717,82 @@ public sealed class XTapBlacksmith : MonoBehaviour
             if (ids[i] == targetId) continue;
             inventory.RemoveForgeItem(ids[i]);
         }
+    }
+
+    void LoadVisualAssets()
+    {
+        try
+        {
+            TextAsset encoded = Resources.Load<TextAsset>("XTapBlacksmithUI/atlas");
+            if (encoded == null || string.IsNullOrWhiteSpace(encoded.text))
+                return;
+
+            byte[] bytes = Convert.FromBase64String(encoded.text.Trim());
+            skinAtlas = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            if (!skinAtlas.LoadImage(bytes, false))
+            {
+                Destroy(skinAtlas);
+                skinAtlas = null;
+                return;
+            }
+
+            skinAtlas.wrapMode = TextureWrapMode.Clamp;
+            skinAtlas.filterMode = FilterMode.Bilinear;
+
+            // Atlas is 256x512. Coordinates below use top-left design coordinates.
+            backgroundSkin = MakeAtlasSprite(0, 0, 144, 256, Vector4.zero);
+            panelSkin = MakeAtlasSprite(144, 0, 112, 84, new Vector4(18f, 18f, 18f, 18f));
+            slotSkin = MakeAtlasSprite(144, 84, 112, 112, new Vector4(18f, 18f, 18f, 18f));
+            tabNormalSkin = MakeAtlasSprite(0, 256, 128, 43, new Vector4(22f, 10f, 22f, 10f));
+            tabSelectedSkin = MakeAtlasSprite(128, 256, 128, 43, new Vector4(22f, 10f, 22f, 10f));
+            buttonNeutralSkin = MakeAtlasSprite(0, 299, 128, 43, new Vector4(22f, 10f, 22f, 10f));
+            buttonPrimarySkin = MakeAtlasSprite(128, 299, 128, 43, new Vector4(22f, 10f, 22f, 10f));
+            listRowSkin = MakeAtlasSprite(0, 342, 256, 64, new Vector4(26f, 12f, 26f, 12f));
+            statusBarSkin = MakeAtlasSprite(0, 406, 256, 64, new Vector4(26f, 12f, 26f, 12f));
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 대장간 UI 에셋 로드 실패: " + e.Message);
+        }
+    }
+
+    Sprite MakeAtlasSprite(int x, int yFromTop, int width, int height, Vector4 border)
+    {
+        if (skinAtlas == null) return null;
+
+        int y = skinAtlas.height - yFromTop - height;
+        Rect rect = new Rect(x, y, width, height);
+        return Sprite.Create(
+            skinAtlas,
+            rect,
+            new Vector2(.5f, .5f),
+            100f,
+            0,
+            SpriteMeshType.FullRect,
+            border
+        );
+    }
+
+    void ApplyPanelSkin(RectTransform rect, Sprite skin)
+    {
+        if (rect == null || skin == null) return;
+        Image image = rect.GetComponent<Image>();
+        if (image == null) return;
+
+        image.sprite = skin;
+        image.type = Image.Type.Sliced;
+        image.color = Color.white;
+    }
+
+    void ApplyButtonSkin(Button button, Sprite skin)
+    {
+        if (button == null || skin == null) return;
+        Image image = button.targetGraphic as Image;
+        if (image == null) return;
+
+        image.sprite = skin;
+        image.type = Image.Type.Sliced;
+        image.color = Color.white;
     }
 
     RectTransform MakePanel(Transform parent, string name, Color color)
