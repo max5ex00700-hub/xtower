@@ -888,6 +888,36 @@ public sealed class XTapInventory : MonoBehaviour
         if (IsOpen) Render();
     }
 
+    public int LoseHeldAndGroundOnDeath()
+    {
+        int removed = 0;
+
+        for (int i = items.Count - 1; i >= 0; i--)
+        {
+            XTapGearBlockData item = items[i];
+            if (item == null) continue;
+
+            if (item.location == XTapGearBlockData.LocationHeld ||
+                item.location == XTapGearBlockData.LocationGround)
+            {
+                if (selectedId == item.id)
+                    selectedId = null;
+
+                items.RemoveAt(i);
+                removed++;
+            }
+        }
+
+        heldPage = 0;
+        groundPage = 0;
+        Save();
+
+        if (IsOpen)
+            Render();
+
+        return removed;
+    }
+
     public void AddGridCellExpansion(int amount)
     {
         if (amount <= 0) return;
