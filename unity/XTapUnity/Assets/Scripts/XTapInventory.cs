@@ -39,7 +39,6 @@ public sealed class XTapInventory : MonoBehaviour
     const float MiniCell = 42f;
     const int StoragePageSize = 2;
     public const int SharedStoragePageSize = StoragePageSize;
-    public const int ForgeEquippedAndHeldLocation = -100;
     const string SaveKey = "xtap_bag_v1";
     const string ExpansionKey = "xtap_bag_extra_cells";
 
@@ -395,15 +394,6 @@ public sealed class XTapInventory : MonoBehaviour
         BuildPagedZone(parent, name, x1, y1, x2, y2, out viewport, out content, out zoneImage);
     }
 
-    bool MatchesSharedStorageLocation(XTapGearBlockData item, int location)
-    {
-        if (item == null) return false;
-        if (location == ForgeEquippedAndHeldLocation)
-            return item.location == XTapGearBlockData.LocationBag ||
-                   item.location == XTapGearBlockData.LocationHeld;
-        return item.location == location;
-    }
-
     public int GetStorageCount(int location)
     {
         return GetStorageCount(location, null);
@@ -415,7 +405,7 @@ public sealed class XTapInventory : MonoBehaviour
         for (int i = 0; i < items.Count; i++)
         {
             XTapGearBlockData item = items[i];
-            if (item == null || !MatchesSharedStorageLocation(item, location))
+            if (item == null || item.location != location)
                 continue;
 
             if (includeItem != null && !includeItem(item.id))
@@ -462,31 +452,13 @@ public sealed class XTapInventory : MonoBehaviour
         for (int i = 0; i < items.Count; i++)
         {
             XTapGearBlockData item = items[i];
-            if (item == null || !MatchesSharedStorageLocation(item, location))
+            if (item == null || item.location != location)
                 continue;
 
             if (includeItem != null && !includeItem(item.id))
                 continue;
 
             filtered.Add(item);
-        }
-
-        if (location == ForgeEquippedAndHeldLocation)
-        {
-            filtered.Sort(delegate(XTapGearBlockData a, XTapGearBlockData b)
-            {
-                int aOrder = a != null && a.location == XTapGearBlockData.LocationBag ? 0 : 1;
-                int bOrder = b != null && b.location == XTapGearBlockData.LocationBag ? 0 : 1;
-                if (aOrder != bOrder) return aOrder.CompareTo(bOrder);
-
-                int ownerCompare = (a != null ? a.bagOwnerCharacterId : 0)
-                    .CompareTo(b != null ? b.bagOwnerCharacterId : 0);
-                if (ownerCompare != 0) return ownerCompare;
-
-                string aName = a != null ? a.displayName : "";
-                string bName = b != null ? b.displayName : "";
-                return string.Compare(aName, bName, StringComparison.Ordinal);
-            });
         }
 
         int clampedPage = Mathf.Clamp(page, 0, Mathf.Max(0, Mathf.CeilToInt(filtered.Count / (float)StoragePageSize) - 1));
@@ -713,19 +685,7 @@ public sealed class XTapInventory : MonoBehaviour
         DrawShape(shapeRoot, item, MiniCell, BlockColor(item), false, false);
 
         string forgeSuffix = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
-        string forgeLocation = "";
-        if (onPressed != null)
-        {
-            if (item.location == XTapGearBlockData.LocationBag)
-                forgeLocation = item.bagOwnerCharacterId == 0
-                    ? "[플레이어 장착] "
-                    : "[캐릭터 " + item.bagOwnerCharacterId + " 장착] ";
-            else if (item.location == XTapGearBlockData.LocationHeld)
-                forgeLocation = "[소지품] ";
-            else if (item.location == XTapGearBlockData.LocationGround)
-                forgeLocation = "[바닥] ";
-        }
-        Text name = MakeText(root, forgeLocation + item.displayName + forgeSuffix, 13, TextAnchor.MiddleLeft, true);
+        Text name = MakeText(root, item.displayName + forgeSuffix, 13, TextAnchor.MiddleLeft, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
         name.resizeTextMinSize = 16;
