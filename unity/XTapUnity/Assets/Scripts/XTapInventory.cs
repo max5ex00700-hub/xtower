@@ -416,7 +416,9 @@ public sealed class XTapInventory : MonoBehaviour
         RenderPage(XTapGearBlockData.LocationHeld, heldContent, heldPage);
         RenderPage(XTapGearBlockData.LocationGround, groundContent, groundPage);
 
-        totalText.text = "공 +" + atk + "     방 +" + def + "     체 +" + hp +
+        totalText.text = "공 +" + XTapStatFormat.Compact(atk) +
+                         "     방 +" + XTapStatFormat.Compact(def) +
+                         "     체 +" + XTapStatFormat.Compact(hp) +
                          "     ·     " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸";
         heldCountText.text = "소지품   " + heldCount + "개";
         groundCountText.text = "바닥   " + groundCount + "개";
@@ -539,7 +541,9 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(name.rectTransform, .42f, .52f, .96f, .94f);
 
         Text stat = MakeText(root,
-            "공 +" + item.attack + "   방 +" + item.defense + "   체 +" + item.hp,
+            "공 +" + XTapStatFormat.Compact(item.attack) +
+            "   방 +" + XTapStatFormat.Compact(item.defense) +
+            "   체 +" + XTapStatFormat.Compact(item.hp),
             15, TextAnchor.MiddleLeft, true);
         stat.color = new Color(1f, .74f, .20f, 1f);
         stat.resizeTextForBestFit = true;
@@ -645,7 +649,11 @@ public sealed class XTapInventory : MonoBehaviour
         name.resizeTextMaxSize = 30;
         Anchor(name.rectTransform, .05f, .24f, .95f, .48f);
 
-        Text stat = MakeText(root, "공 " + item.attack + "  방 " + item.defense + "  체 " + item.hp, 14, TextAnchor.MiddleCenter, true);
+        Text stat = MakeText(root,
+            "공 " + XTapStatFormat.Compact(item.attack) +
+            "  방 " + XTapStatFormat.Compact(item.defense) +
+            "  체 " + XTapStatFormat.Compact(item.hp),
+            14, TextAnchor.MiddleCenter, true);
         stat.color = new Color(.74f, .71f, .66f, 1f);
         stat.resizeTextForBestFit = true;
         stat.resizeTextMinSize = 16;
@@ -679,7 +687,9 @@ public sealed class XTapInventory : MonoBehaviour
         string enhance = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
         Text t = MakeText(
             badgeGo.transform,
-            "공 +" + item.attack + enhance + "\n방 +" + item.defense + "   체 +" + item.hp,
+            "공 +" + XTapStatFormat.Compact(item.attack) + enhance +
+            "\n방 +" + XTapStatFormat.Compact(item.defense) +
+            "   체 +" + XTapStatFormat.Compact(item.hp),
             13,
             TextAnchor.MiddleCenter,
             true
@@ -952,7 +962,11 @@ public sealed class XTapInventory : MonoBehaviour
 
             if (showStats && i == 0)
             {
-                Text s = MakeText(cg.transform, item.attack + "/" + item.defense + "/" + item.hp, 12, TextAnchor.MiddleCenter, true);
+                Text s = MakeText(cg.transform,
+                    XTapStatFormat.Compact(item.attack) + "/" +
+                    XTapStatFormat.Compact(item.defense) + "/" +
+                    XTapStatFormat.Compact(item.hp),
+                    12, TextAnchor.MiddleCenter, true);
                 s.color = new Color(.96f, .92f, .82f, 1f);
                 s.resizeTextForBestFit = true;
                 s.resizeTextMinSize = 12;
@@ -1500,7 +1514,9 @@ public sealed class XTapInventory : MonoBehaviour
             zone + " · " + item.displayName +
             (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
             "  [" + item.cellCount + "칸 / " + corr + "]\n" +
-            "공 +" + item.attack + "   방 +" + item.defense + "   체 +" + item.hp;
+            "공 +" + XTapStatFormat.Compact(item.attack) +
+            "   방 +" + XTapStatFormat.Compact(item.defense) +
+            "   체 +" + XTapStatFormat.Compact(item.hp);
     }
 
     void NormalizeItem(XTapGearBlockData item)
