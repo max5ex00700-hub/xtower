@@ -141,6 +141,7 @@ public sealed class XTapBattleController : MonoBehaviour
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
+        XTapUiSkin.EnsureLoaded();
 
         BuildBattleOnlyUi();
         BuildMainUi();
@@ -314,14 +315,14 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(logoTower.rectTransform, .118f, .858f, .285f, .992f);
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.025f, .020f, .020f, .92f), .775f, .940f, .985f, .990f);
-        AddFrame(codePlate.rectTransform, new Color(.68f, .48f, .24f, 1f), 3f);
+        ApplyGothicPanel(codePlate, XTapUiSkin.ButtonNeutral, new Color(.92f, .86f, .78f, 1f));
         Text codeText = MakeOutlinedText(codePlate.transform, "코드 1062", 13, TextAnchor.MiddleCenter, true);
         codeText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(codeText.rectTransform, .04f, .04f, .96f, .96f);
 
         // FLOOR panel. Always shows both progress notation and explicit Korean floor/stage.
         Image floorPanel = MakePanel(mainOverlay.transform, "FloorPanel", new Color(.025f, .020f, .018f, .92f), .028f, .705f, .405f, .850f);
-        AddFrame(floorPanel.rectTransform, new Color(.72f, .48f, .20f, 1f), 3.5f);
+        ApplyGothicPanel(floorPanel, XTapUiSkin.Panel, Color.white);
 
         Text floorWord = MakeOutlinedText(floorPanel.transform, "FLOOR", 18, TextAnchor.MiddleCenter, true);
         floorWord.color = new Color(.94f, .87f, .73f, 1f);
@@ -337,7 +338,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         // Player stat panel. Stats are separate rows so they never disappear into a wrapped status sentence.
         Image statPanel = MakePanel(mainOverlay.transform, "PlayerStats", new Color(.025f, .020f, .018f, .90f), .025f, .430f, .425f, .695f);
-        AddFrame(statPanel.rectTransform, new Color(.62f, .43f, .22f, 1f), 3f);
+        ApplyGothicPanel(statPanel, XTapUiSkin.Panel, Color.white);
 
         Text playerTitle = MakeOutlinedText(statPanel.transform, "플레이어", 20, TextAnchor.MiddleLeft, true);
         playerTitle.color = new Color(.98f, .92f, .80f, 1f);
@@ -396,7 +397,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         // Bottom navigation bar.
         Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.010f, .008f, .010f, .985f), 0f, 0f, 1f, .165f);
-        AddFrame(navRail.rectTransform, new Color(.52f, .36f, .20f, 1f), 2.5f);
+        ApplyGothicPanel(navRail, XTapUiSkin.StatusBar, new Color(.82f, .78f, .72f, 1f));
 
         string[] icons = {"↻", "↓", "↑", "▣", "⚒", "▥"};
         string[] labels = {"다시", "↓", "↑", "배낭", "대장간", "감옥"};
@@ -410,10 +411,6 @@ public sealed class XTapBattleController : MonoBehaviour
             br.anchorMin = new Vector2(x1, .10f);
             br.anchorMax = new Vector2(x2, .88f);
             br.offsetMin = br.offsetMax = Vector2.zero;
-
-            Image bg = b.targetGraphic as Image;
-            if (bg != null)
-                bg.color = new Color(.055f, .045f, .040f, .98f);
 
             if (i == 0)
                 b.onClick.AddListener(ReturnToMain);
@@ -440,6 +437,22 @@ public sealed class XTapBattleController : MonoBehaviour
         panel.raycastTarget = false;
         Anchor(panel.rectTransform, x1, y1, x2, y2);
         return panel;
+    }
+
+    void ApplyGothicPanel(Image image, Sprite sprite, Color tint)
+    {
+        if (image == null) return;
+
+        if (sprite != null)
+        {
+            image.sprite = sprite;
+            image.type = Image.Type.Sliced;
+            image.color = tint;
+        }
+        else
+        {
+            AddFrame(image.rectTransform, new Color(.62f, .43f, .22f, 1f), 3f);
+        }
     }
 
     Text MakeOutlinedText(Transform parent, string value, int size, TextAnchor alignment, bool bold)
@@ -470,13 +483,21 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image outer = go.GetComponent<Image>();
-        outer.sprite = CreateBloodButtonSprite(512, 160);
-        outer.type = Image.Type.Sliced;
-        outer.color = Color.white;
-        AddFrame(outer.rectTransform, new Color(.76f, .08f, .055f, 1f), 5f);
+        if (XTapUiSkin.ButtonPrimary != null)
+        {
+            outer.sprite = XTapUiSkin.ButtonPrimary;
+            outer.type = Image.Type.Sliced;
+            outer.color = new Color(.90f, .30f, .24f, 1f);
+        }
+        else
+        {
+            outer.sprite = CreateBloodButtonSprite(512, 160);
+            outer.type = Image.Type.Sliced;
+            outer.color = Color.white;
+        }
 
-        Image inner = MakePanel(go.transform, "Inset", new Color(.16f, .012f, .016f, .18f), .025f, .07f, .975f, .93f);
-        AddFrame(inner.rectTransform, new Color(.58f, .12f, .09f, .92f), 2f);
+        Image inner = MakePanel(go.transform, "Inset", new Color(.14f, .008f, .012f, .34f), .025f, .07f, .975f, .93f);
+        ApplyGothicPanel(inner, XTapUiSkin.StatusBar, new Color(.54f, .20f, .16f, .82f));
 
         Text text = MakeOutlinedText(inner.transform, label, fontSize, TextAnchor.MiddleCenter, true);
         text.color = new Color(.96f, .92f, .84f, 1f);
@@ -500,8 +521,17 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image bg = go.GetComponent<Image>();
-        bg.color = new Color(.055f, .052f, .052f, .94f);
-        AddFrame(bg.rectTransform, new Color(.47f, .40f, .32f, .95f), 2f);
+        if (XTapUiSkin.ButtonNeutral != null)
+        {
+            bg.sprite = XTapUiSkin.ButtonNeutral;
+            bg.type = Image.Type.Sliced;
+            bg.color = new Color(.90f, .86f, .80f, 1f);
+        }
+        else
+        {
+            bg.color = new Color(.055f, .052f, .052f, .94f);
+            AddFrame(bg.rectTransform, new Color(.47f, .40f, .32f, .95f), 2f);
+        }
 
         Text iconText = MakeOutlinedText(go.transform, icon, 18, TextAnchor.MiddleCenter, true);
         iconText.color = new Color(.78f, .76f, .71f, 1f);
