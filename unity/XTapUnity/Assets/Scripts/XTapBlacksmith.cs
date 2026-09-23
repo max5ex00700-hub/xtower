@@ -269,7 +269,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (mode == ForgeMode.Enhance)
             ruleText.text = "제물 1개당 성공률 +10%  ·  성공 시 공+1 / 체+5 / 짝수 강화 방+1";
         else if (mode == ForgeMode.Synthesis)
-            ruleText.text = "대상 1개 + 제물 1개  ·  성공률 1%  ·  성공 시 재료 능력 흡수";
+            ruleText.text = "대상 1개 + 제물 1개  ·  성공률 1%  ·  성공 시 제물 능력 흡수";
         else
             ruleText.text = "제물 최대 10개  ·  1개당 10%  ·  성공 시 플레이어 가방 +1칸";
     }
@@ -412,6 +412,14 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         if (targetSlot != null)
             targetSlot.gameObject.SetActive(mode != ForgeMode.Dismantle);
+
+        if (materialSlot != null)
+        {
+            if (mode == ForgeMode.Dismantle)
+                Anchor(materialSlot, .18f, .595f, .82f, .805f);
+            else
+                Anchor(materialSlot, .535f, .595f, .945f, .805f);
+        }
 
         if (targetSlotText != null)
         {
