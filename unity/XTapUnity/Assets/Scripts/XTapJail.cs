@@ -278,9 +278,15 @@ public sealed class XTapJail : MonoBehaviour
         Image bg = go.GetComponent<Image>();
         bg.color = color;
 
-        Text t = MakeText(go.transform, label, fontSize, TextAnchor.MiddleCenter, true);
-        t.color = new Color(.92f, .94f, .98f, 1f);
-        Anchor(t.rectTransform, .04f, .04f, .96f, .96f);
+        RectTransform accent = MakePanel(go.transform, "TypeAccent", new Color(.38f, .56f, .82f, .90f));
+        Anchor(accent, .18f, .90f, .82f, .925f);
+
+        Text t = MakeText(go.transform, label, fontSize + 1, TextAnchor.MiddleCenter, true);
+        t.color = new Color(.94f, .96f, 1f, 1f);
+        Outline outline = t.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, .88f);
+        outline.effectDistance = new Vector2(2f, -2f);
+        Anchor(t.rectTransform, .04f, .04f, .96f, .90f);
 
         Button b = go.GetComponent<Button>();
         b.targetGraphic = bg;
@@ -288,7 +294,7 @@ public sealed class XTapJail : MonoBehaviour
         ColorBlock cb = b.colors;
         cb.normalColor = Color.white;
         cb.highlightedColor = new Color(.84f, .90f, 1f, 1f);
-        cb.pressedColor = new Color(.56f, .65f, .78f, 1f);
+        cb.pressedColor = new Color(.52f, .62f, .78f, 1f);
         cb.selectedColor = Color.white;
         cb.fadeDuration = .06f;
         b.colors = cb;
