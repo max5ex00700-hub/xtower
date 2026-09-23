@@ -558,11 +558,9 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(name.rectTransform, .42f, .52f, .96f, .94f);
 
         Text stat = MakeText(root,
-            "공 +" + XTapStatFormat.Compact(item.attack) +
-            "   방 +" + XTapStatFormat.Compact(item.defense) +
-            "   체 +" + XTapStatFormat.Compact(item.hp),
+            XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "   "),
             15, TextAnchor.MiddleLeft, true);
-        stat.color = new Color(1f, .74f, .20f, 1f);
+        stat.color = Color.white;
         stat.resizeTextForBestFit = true;
         stat.resizeTextMinSize = 18;
         stat.resizeTextMaxSize = 28;
@@ -667,11 +665,9 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(name.rectTransform, .05f, .24f, .95f, .48f);
 
         Text stat = MakeText(root,
-            "공 " + XTapStatFormat.Compact(item.attack) +
-            "  방 " + XTapStatFormat.Compact(item.defense) +
-            "  체 " + XTapStatFormat.Compact(item.hp),
+            XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "   "),
             14, TextAnchor.MiddleCenter, true);
-        stat.color = new Color(.74f, .71f, .66f, 1f);
+        stat.color = Color.white;
         stat.resizeTextForBestFit = true;
         stat.resizeTextMinSize = 16;
         stat.resizeTextMaxSize = 28;
@@ -701,17 +697,15 @@ public sealed class XTapInventory : MonoBehaviour
         );
         br.anchoredPosition = new Vector2(5f, -5f);
 
-        string enhance = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
+        string statSeparator = root.sizeDelta.x <= CellSize * 1.05f ? "\n" : "   ";
         Text t = MakeText(
             badgeGo.transform,
-            "공 +" + XTapStatFormat.Compact(item.attack) + enhance +
-            "\n방 +" + XTapStatFormat.Compact(item.defense) +
-            "   체 +" + XTapStatFormat.Compact(item.hp),
+            XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, statSeparator),
             13,
             TextAnchor.MiddleCenter,
             true
         );
-        t.color = new Color(1f, .82f, .32f, 1f);
+        t.color = Color.white;
         t.resizeTextForBestFit = true;
         t.resizeTextMinSize = 16;
         t.resizeTextMaxSize = 24;
@@ -1564,9 +1558,7 @@ public sealed class XTapInventory : MonoBehaviour
             zone + " · " + item.displayName +
             (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
             "  [" + item.cellCount + "칸 / " + corr + "]\n" +
-            "공 +" + XTapStatFormat.Compact(item.attack) +
-            "   방 +" + XTapStatFormat.Compact(item.defense) +
-            "   체 +" + XTapStatFormat.Compact(item.hp);
+            XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "     ");
     }
 
     void NormalizeItem(XTapGearBlockData item)
@@ -1772,6 +1764,7 @@ public sealed class XTapInventory : MonoBehaviour
         t.fontSize = Mathf.RoundToInt(size * UiFontScale);
         t.alignment = align;
         t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+        t.supportRichText = true;
         t.horizontalOverflow = HorizontalWrapMode.Wrap;
         t.verticalOverflow = VerticalWrapMode.Truncate;
         t.raycastTarget = false;
