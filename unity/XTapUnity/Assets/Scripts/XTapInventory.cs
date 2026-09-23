@@ -38,6 +38,7 @@ public sealed class XTapInventory : MonoBehaviour
     const float CellSize = 118f;
     const float MiniCell = 42f;
     const int StoragePageSize = 2;
+    public const int SharedStoragePageSize = StoragePageSize;
     const string SaveKey = "xtap_bag_v1";
     const string ExpansionKey = "xtap_bag_extra_cells";
 
@@ -379,6 +380,74 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(content, 0f, 0f, 1f, 1f);
     }
 
+    public void BuildSharedStorageZone(
+        Transform parent,
+        string name,
+        float x1,
+        float y1,
+        float x2,
+        float y2,
+        out RectTransform viewport,
+        out RectTransform content)
+    {
+        Image zoneImage;
+        BuildPagedZone(parent, name, x1, y1, x2, y2, out viewport, out content, out zoneImage);
+    }
+
+    public int GetStorageCount(int location)
+    {
+        int count = 0;
+        for (int i = 0; i < items.Count; i++)
+            if (items[i] != null && items[i].location == location)
+                count++;
+        return count;
+    }
+
+    public int GetStoragePageCount(int location)
+    {
+        return Mathf.Max(1, Mathf.CeilToInt(GetStorageCount(location) / (float)StoragePageSize));
+    }
+
+    public void RenderSharedStoragePage(
+        int location,
+        RectTransform content,
+        int page,
+        Action<string> onPressed,
+        Func<string, bool> isSelected)
+    {
+        if (content == null) return;
+
+        ClearChildren(content);
+
+        List<XTapGearBlockData> filtered = new List<XTapGearBlockData>();
+        for (int i = 0; i < items.Count; i++)
+            if (items[i] != null && items[i].location == location)
+                filtered.Add(items[i]);
+
+        int clampedPage = Mathf.Clamp(page, 0, Mathf.Max(0, Mathf.CeilToInt(filtered.Count / (float)StoragePageSize) - 1));
+        int start = clampedPage * StoragePageSize;
+
+        if (start >= filtered.Count)
+        {
+            Text empty = MakeText(content, "(없음)", 18, TextAnchor.MiddleCenter, false);
+            empty.color = new Color(.48f, .46f, .45f, 1f);
+            Anchor(empty.rectTransform, 0f, 0f, 1f, 1f);
+            return;
+        }
+
+        float gap = 14f;
+        float zoneWidth = Mathf.Max(900f, ((RectTransform)content.parent).rect.width);
+        float cardWidth = (zoneWidth - gap) * .5f;
+        int shown = 0;
+
+        for (int i = start; i < filtered.Count && shown < StoragePageSize; i++, shown++)
+        {
+            float x = shown == 0 ? 0f : cardWidth + gap;
+            bool selected = isSelected != null && isSelected(filtered[i].id);
+            CreatePageItemView(filtered[i], content, x, cardWidth, onPressed, selected);
+        }
+    }
+
     void Render()
     {
         RebuildGridCells();
@@ -506,6 +575,17 @@ public sealed class XTapInventory : MonoBehaviour
 
     void CreatePageItemView(XTapGearBlockData item, RectTransform content, float x, float width)
     {
+        CreatePageItemView(item, content, x, width, null, selectedId == item.id);
+    }
+
+    void CreatePageItemView(
+        XTapGearBlockData item,
+        RectTransform content,
+        float x,
+        float width,
+        Action<string> onPressed,
+        bool selected)
+    {
         List<Vector2Int> cells = GetCells(item);
         int maxX = 0;
         int maxY = 0;
@@ -520,13 +600,12 @@ public sealed class XTapInventory : MonoBehaviour
             typeof(RectTransform),
             typeof(CanvasRenderer),
             typeof(Image),
-            typeof(CanvasGroup),
-            typeof(XTapBagItemTouch)
+            typeof(CanvasGroup)
         );
         go.transform.SetParent(content, false);
 
         Image bg = go.GetComponent<Image>();
-        bg.color = selectedId == item.id
+        bg.color = selected
             ? new Color(.17f, .145f, .11f, .98f)
             : new Color(.055f, .053f, .060f, .98f);
         bg.raycastTarget = true;
@@ -537,7 +616,18 @@ public sealed class XTapInventory : MonoBehaviour
         root.sizeDelta = new Vector2(width, Mathf.Max(170f, ((RectTransform)content.parent).rect.height - 8f));
         root.anchoredPosition = new Vector2(x, 0f);
 
-        SetupTouch(go, item.id);
+        if (onPressed == null)
+        {
+            XTapBagItemTouch touch = go.AddComponent<XTapBagItemTouch>();
+            touch.owner = this;
+            touch.itemId = item.id;
+        }
+        else
+        {
+            XTapStorageSelectTouch touch = go.AddComponent<XTapStorageSelectTouch>();
+            touch.itemId = item.id;
+            touch.onPressed = onPressed;
+        }
 
         float shapeWidth = (maxX + 1) * MiniCell;
         float shapeHeight = (maxY + 1) * MiniCell;
@@ -1809,6 +1899,17 @@ public sealed class XTapInventory : MonoBehaviour
         r.anchorMax = new Vector2(x2, y2);
         r.offsetMin = Vector2.zero;
         r.offsetMax = Vector2.zero;
+    }
+}
+
+public sealed class XTapStorageSelectTouch : MonoBehaviour, IPointerClickHandler
+{
+    public string itemId;
+    public Action<string> onPressed;
+
+    public void OnPointerClick(PointerEventData eventData)
+    {
+        if (onPressed != null) onPressed(itemId);
     }
 }
 
