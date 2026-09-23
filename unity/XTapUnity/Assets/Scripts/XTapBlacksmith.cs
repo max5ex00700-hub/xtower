@@ -414,7 +414,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (ruleText == null) return;
 
         if (mode == ForgeMode.Enhance)
-            ruleText.text = "제물 1개당 성공률 +10%  ·  성공 시 공+1 / 체+5 / 짝수 강화 방+1";
+            ruleText.text = "+1~+10 안전 강화 · 기본 공/방/체 단계당 +10%  ·  +11~+20 성공률 10% / 실패 시 대상 파괴";
         else if (mode == ForgeMode.Synthesis)
             ruleText.text = "대상 1개 + 제물 1개  ·  성공률 1%  ·  성공 시 제물 능력 흡수";
         else
@@ -621,10 +621,15 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         if (mode == ForgeMode.Enhance)
         {
-            int chance = Mathf.Clamp(sacrificeCount * 10, 0, 100);
-            selectionText.text = sacrificeCount + "/10 제물";
-            chanceText.text = "성공률 " + chance + "%";
-            executeButton.interactable = target != null && sacrificeCount > 0 && target.enhanceLevel < 10;
+            bool destructive = target != null && target.enhanceLevel >= 10;
+            int chance = destructive ? 10 : Mathf.Clamp(sacrificeCount * 10, 0, 100);
+            selectionText.text = destructive
+                ? "파괴 강화  +" + (target.enhanceLevel + 1) + "  ·  제물 " + sacrificeCount + "개"
+                : "안전 강화  +" + (target != null ? target.enhanceLevel + 1 : 1) + "  ·  제물 " + sacrificeCount + "/10";
+            chanceText.text = destructive
+                ? "성공률 10%  ·  실패 시 대상 파괴"
+                : "성공률 " + chance + "%  ·  실패 시 대상 유지";
+            executeButton.interactable = target != null && sacrificeCount > 0 && target.enhanceLevel < 20;
         }
         else if (mode == ForgeMode.Synthesis)
         {
@@ -674,13 +679,15 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 return false;
             }
 
-            if (target.enhanceLevel >= 10)
+            if (target.enhanceLevel >= 20)
             {
-                resultText.text = "이미 +10 최대 강화입니다.";
+                resultText.text = "이미 +20 최대 강화입니다.";
                 return false;
             }
 
-            chance = Mathf.Clamp(materialIds.Count * 10, 0, 100);
+            chance = target.enhanceLevel >= 10
+                ? 10
+                : Mathf.Clamp(materialIds.Count * 10, 0, 100);
             return true;
         }
 
@@ -804,26 +811,33 @@ public sealed class XTapBlacksmith : MonoBehaviour
         }
 
         int materialCount = materialIds.Count;
+        bool destructive = target.enhanceLevel >= 10;
+        inventory.EnsureEnhancementBaseStats(target);
         ConsumeMaterials();
 
         if (success)
         {
             target.enhanceLevel++;
-            target.attack = XTapStatFormat.SafeAdd(target.attack, 1d);
-            target.hp = XTapStatFormat.SafeAdd(target.hp, 5d);
-
-            if (target.enhanceLevel % 2 == 0)
-                target.defense = XTapStatFormat.SafeAdd(target.defense, 1d);
-
+            inventory.RecalculateEnhancedStats(target);
             inventory.CommitForgeChanges();
             resultText.text =
                 "강화 성공!  +" + target.enhanceLevel + "   " +
                 XTapStatFormat.BlockTriplet(target.attack, target.defense, target.hp, " / ");
         }
+        else if (destructive)
+        {
+            string destroyedName = target.displayName;
+            inventory.RemoveForgeItem(target.id);
+            inventory.CommitForgeChanges();
+            resultText.text =
+                "강화 실패. " + destroyedName + "이(가) 파괴되었습니다.  제물 " +
+                materialCount + "개 소모";
+        }
         else
         {
             inventory.CommitForgeChanges();
-            resultText.text = "강화 실패. 재료 " + materialCount + "개가 소모됐습니다.";
+            resultText.text =
+                "강화 실패. 대상은 유지됩니다.  제물 " + materialCount + "개 소모";
         }
 
         ClearSelection();
@@ -852,14 +866,12 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         if (success)
         {
-            target.attack = XTapStatFormat.SafeAdd(target.attack, addAttack);
-            target.defense = XTapStatFormat.SafeAdd(target.defense, addDefense);
-            target.hp = XTapStatFormat.SafeAdd(target.hp, addHp);
+            inventory.AddSynthesisStats(target, addAttack, addDefense, addHp);
             inventory.CommitForgeChanges();
 
             resultText.text =
-                "합성 성공!  " + consumedName + " 능력을 흡수했습니다.  " +
-                XTapStatFormat.BlockTriplet(addAttack, addDefense, addHp, " / ");
+                "합성 성공!  " + consumedName + " 능력을 흡수했습니다.  합성 후 " +
+                XTapStatFormat.BlockTriplet(target.attack, target.defense, target.hp, " / ");
         }
         else
         {

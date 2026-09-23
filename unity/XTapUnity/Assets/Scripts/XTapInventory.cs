@@ -28,6 +28,16 @@ public sealed class XTapGearBlockData
     public int location = LocationBag;
     public int bagOwnerCharacterId;
     public int enhanceLevel;
+
+    // Enhancement uses the original gear stats as its fixed base.
+    // Synthesis bonuses are stored separately so later enhancement does not re-scale them.
+    public bool enhancementBaseInitialized;
+    public double baseAttack;
+    public double baseDefense;
+    public double baseHp;
+    public double synthesisAttack;
+    public double synthesisDefense;
+    public double synthesisHp;
 }
 
 public sealed class XTapInventory : MonoBehaviour
@@ -1724,7 +1734,9 @@ public sealed class XTapInventory : MonoBehaviour
         if (item == null) return;
 
         RecoverMissingBlockStats(item);
-        item.enhanceLevel = Mathf.Clamp(item.enhanceLevel, 0, 10);
+        item.enhanceLevel = Mathf.Clamp(item.enhanceLevel, 0, 20);
+        EnsureEnhancementBaseStats(item);
+        RecalculateEnhancedStats(item);
         item.rotation = ((item.rotation % 4) + 4) % 4;
 
         if (item.location < XTapGearBlockData.LocationBag || item.location > XTapGearBlockData.LocationGround)
@@ -1754,6 +1766,55 @@ public sealed class XTapInventory : MonoBehaviour
             item.gridX = -1;
             item.gridY = -1;
         }
+    }
+
+    public void EnsureEnhancementBaseStats(XTapGearBlockData item)
+    {
+        if (item == null || item.enhancementBaseInitialized) return;
+
+        double multiplier = 1d + Mathf.Clamp(item.enhanceLevel, 0, 20) * .10d;
+        if (multiplier <= 0d) multiplier = 1d;
+
+        // Existing saves did not persist original base values.
+        // Infer a base that preserves the currently displayed effective stats.
+        item.baseAttack = Math.Max(0d, item.attack / multiplier);
+        item.baseDefense = Math.Max(0d, item.defense / multiplier);
+        item.baseHp = Math.Max(0d, item.hp / multiplier);
+        item.synthesisAttack = 0d;
+        item.synthesisDefense = 0d;
+        item.synthesisHp = 0d;
+        item.enhancementBaseInitialized = true;
+    }
+
+    public void RecalculateEnhancedStats(XTapGearBlockData item)
+    {
+        if (item == null) return;
+        EnsureEnhancementBaseStats(item);
+
+        double multiplier = 1d + Mathf.Clamp(item.enhanceLevel, 0, 20) * .10d;
+        item.attack = XTapStatFormat.SafeAdd(
+            Math.Max(0d, item.baseAttack * multiplier),
+            Math.Max(0d, item.synthesisAttack)
+        );
+        item.defense = XTapStatFormat.SafeAdd(
+            Math.Max(0d, item.baseDefense * multiplier),
+            Math.Max(0d, item.synthesisDefense)
+        );
+        item.hp = XTapStatFormat.SafeAdd(
+            Math.Max(0d, item.baseHp * multiplier),
+            Math.Max(0d, item.synthesisHp)
+        );
+    }
+
+    public void AddSynthesisStats(XTapGearBlockData item, double attack, double defense, double hp)
+    {
+        if (item == null) return;
+        EnsureEnhancementBaseStats(item);
+
+        item.synthesisAttack = XTapStatFormat.SafeAdd(item.synthesisAttack, Math.Max(0d, attack));
+        item.synthesisDefense = XTapStatFormat.SafeAdd(item.synthesisDefense, Math.Max(0d, defense));
+        item.synthesisHp = XTapStatFormat.SafeAdd(item.synthesisHp, Math.Max(0d, hp));
+        RecalculateEnhancedStats(item);
     }
 
     void RecoverMissingBlockStats(XTapGearBlockData item)
