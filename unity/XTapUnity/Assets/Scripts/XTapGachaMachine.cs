@@ -246,7 +246,10 @@ public sealed class XTapGachaMachine : MonoBehaviour
         XTapGearBlockData r = outcome.block;
         title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "BLOCK GEAR";
         nameText.text = r.displayName + "  ·  " + r.cellCount + "칸";
-        statsText.text = "공격 +" + r.attack + "     방어 +" + r.defense + "     체력 +" + r.hp;
+        statsText.text =
+            "공격 +" + XTapStatFormat.Compact(r.attack) +
+            "     방어 +" + XTapStatFormat.Compact(r.defense) +
+            "     체력 +" + XTapStatFormat.Compact(r.hp);
         DrawBlock(r);
     }
 
