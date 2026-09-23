@@ -623,7 +623,7 @@ public sealed class XTapBattleController : MonoBehaviour
             mainFloorText.text = StageLabel();
 
         if (mainFloorSubText != null)
-            mainFloorSubText.text = TowerFloor() + "층 " + SubStage() + "구간";
+            mainFloorSubText.text = "현재 " + TowerFloor() + "층  ·  " + SubStage() + "구간";
 
         int growthPercent = Mathf.RoundToInt(ProgressMultiplier() * 100f);
         bool canMoveUp = currentStep < maxUnlockedStep;
@@ -648,9 +648,7 @@ public sealed class XTapBattleController : MonoBehaviour
             mainHpText.text = "체    +" + XTapStatFormat.Compact(hp);
 
         if (mainStatusText != null)
-            mainStatusText.text = canMoveUp
-                ? "클리어 · 위층 이동 가능"
-                : StageLabel() + " 도전 중";
+            mainStatusText.text = StageLabel() + " 도전 중";
     }
 
     void LoadProgress()
@@ -828,11 +826,18 @@ public sealed class XTapBattleController : MonoBehaviour
             var cap = assets.GetSprite("assets/f" + CurrentVisualFloor() + "_cap.jpg");
             if (cap != null) SetSprite(cap);
 
-            if (currentStep >= maxUnlockedStep)
-            {
-                maxUnlockedStep = currentStep + 1;
-                SaveProgress();
-            }
+            // Winning advances the player's actual current progress.
+            // Previously we only unlocked the next step, leaving currentStep unchanged,
+            // so FLOOR appeared frozen until the user manually pressed ↑.
+            int clearedStep = currentStep;
+            int nextStep = clearedStep + 1;
+
+            if (nextStep > maxUnlockedStep)
+                maxUnlockedStep = nextStep;
+
+            currentStep = nextStep;
+            SaveProgress();
+            RefreshMainProgressUi();
 
             ShowBubble("…끝났어.", 30f);
             Play("assets/win.wav");
