@@ -38,6 +38,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     GameObject mainOverlay;
     RectTransform mainInfoDrawer;
+    RectTransform mainInfoTabRect;
     Text mainInfoTabText;
     Coroutine mainInfoDrawerRoutine;
     bool mainInfoDrawerOpen;
@@ -381,9 +382,10 @@ public sealed class XTapBattleController : MonoBehaviour
         Image tabBg = tabGo.GetComponent<Image>();
         tabBg.color = new Color(.035f, .030f, .028f, .94f);
         ApplyGothicPanel(tabBg, XTapMainSkin.NavButton, Color.white);
-        Anchor(tabBg.rectTransform, 0f, .525f, .070f, .690f);
+        mainInfoTabRect = tabBg.rectTransform;
+        Anchor(mainInfoTabRect, 0f, .535f, .052f, .670f);
 
-        mainInfoTabText = MakeOutlinedText(tabGo.transform, "›", 24, TextAnchor.MiddleCenter, true);
+        mainInfoTabText = MakeOutlinedText(tabGo.transform, "›", 26, TextAnchor.MiddleCenter, true);
         mainInfoTabText.color = new Color(1f, .82f, .42f, 1f);
         Anchor(mainInfoTabText.rectTransform, .05f, .05f, .95f, .95f);
 
@@ -460,6 +462,14 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (mainInfoTabText != null)
             mainInfoTabText.text = open ? "‹" : "›";
+
+        if (mainInfoTabRect != null)
+        {
+            if (open)
+                Anchor(mainInfoTabRect, .445f, .535f, .500f, .670f);
+            else
+                Anchor(mainInfoTabRect, 0f, .535f, .052f, .670f);
+        }
 
         if (mainInfoDrawer == null)
             return;
@@ -568,32 +578,29 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image outer = go.GetComponent<Image>();
-        if (XTapMainSkin.FightButton != null)
-        {
-            outer.sprite = XTapMainSkin.FightButton;
-            outer.type = Image.Type.Sliced;
-            outer.color = Color.white;
-        }
-        else
-        {
-            outer.sprite = CreateBloodButtonSprite(512, 160);
-            outer.type = Image.Type.Sliced;
-            outer.color = Color.white;
-        }
+        outer.color = new Color(.20f, .008f, .012f, .98f);
+        AddFrame(outer.rectTransform, new Color(.82f, .38f, .12f, 1f), 3f);
 
-        Image inner = MakePanel(go.transform, "Inset", new Color(.14f, .008f, .012f, .34f), .025f, .07f, .975f, .93f);
-        ApplyGothicPanel(inner, XTapMainSkin.BottomRail, new Color(1f, 1f, 1f, .46f));
+        Image inner = MakePanel(go.transform, "Inset", new Color(.10f, .006f, .008f, .80f), .018f, .08f, .982f, .92f);
+        AddFrame(inner.rectTransform, new Color(.55f, .18f, .10f, .95f), 2f);
 
-        Text text = MakeOutlinedText(inner.transform, label, fontSize, TextAnchor.MiddleCenter, true);
-        text.color = new Color(.96f, .92f, .84f, 1f);
-        Anchor(text.rectTransform, .03f, .03f, .97f, .97f);
+        Text kicker = MakeOutlinedText(inner.transform, "BATTLE", 10, TextAnchor.MiddleCenter, true);
+        kicker.color = new Color(.82f, .58f, .34f, 1f);
+        Anchor(kicker.rectTransform, .08f, .68f, .92f, .92f);
+
+        Text text = MakeOutlinedText(inner.transform, label, fontSize + 3, TextAnchor.MiddleCenter, true);
+        text.color = new Color(1f, .94f, .84f, 1f);
+        Anchor(text.rectTransform, .03f, .12f, .97f, .72f);
+
+        Image accent = MakePanel(inner.transform, "TypeAccent", new Color(.80f, .08f, .035f, 1f), .26f, .08f, .74f, .10f);
+        accent.raycastTarget = false;
 
         Button button = go.GetComponent<Button>();
         button.targetGraphic = outer;
         ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, .92f, .90f, 1f);
-        colors.pressedColor = new Color(.72f, .58f, .58f, 1f);
+        colors.highlightedColor = new Color(1f, .92f, .86f, 1f);
+        colors.pressedColor = new Color(.72f, .48f, .44f, 1f);
         colors.selectedColor = Color.white;
         colors.fadeDuration = .06f;
         button.colors = colors;
@@ -606,32 +613,26 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image bg = go.GetComponent<Image>();
-        if (XTapMainSkin.NavButton != null)
-        {
-            bg.sprite = XTapMainSkin.NavButton;
-            bg.type = Image.Type.Sliced;
-            bg.color = Color.white;
-        }
-        else
-        {
-            bg.color = new Color(.055f, .052f, .052f, .94f);
-            AddFrame(bg.rectTransform, new Color(.47f, .40f, .32f, .95f), 2f);
-        }
+        bg.color = new Color(.030f, .026f, .026f, .96f);
+        AddFrame(bg.rectTransform, new Color(.42f, .32f, .22f, .95f), 2f);
 
-        Text iconText = MakeOutlinedText(go.transform, icon, 18, TextAnchor.MiddleCenter, true);
-        iconText.color = new Color(1f, .84f, .48f, 1f);
-        Anchor(iconText.rectTransform, .08f, .43f, .92f, .86f);
+        Image topAccent = MakePanel(go.transform, "TypeTopAccent", new Color(.72f, .49f, .24f, .95f), .18f, .915f, .82f, .93f);
+        topAccent.raycastTarget = false;
 
-        Text labelText = MakeOutlinedText(go.transform, label, 11, TextAnchor.MiddleCenter, true);
-        labelText.color = new Color(.98f, .92f, .82f, 1f);
-        Anchor(labelText.rectTransform, .05f, .10f, .95f, .43f);
+        Text iconText = MakeOutlinedText(go.transform, icon, 20, TextAnchor.MiddleCenter, true);
+        iconText.color = new Color(1f, .78f, .36f, 1f);
+        Anchor(iconText.rectTransform, .08f, .46f, .92f, .86f);
+
+        Text labelText = MakeOutlinedText(go.transform, label, 13, TextAnchor.MiddleCenter, true);
+        labelText.color = new Color(.98f, .93f, .84f, 1f);
+        Anchor(labelText.rectTransform, .04f, .10f, .96f, .45f);
 
         Button button = go.GetComponent<Button>();
         button.targetGraphic = bg;
         ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, .93f, .85f, 1f);
-        colors.pressedColor = new Color(.68f, .60f, .56f, 1f);
+        colors.highlightedColor = new Color(1f, .93f, .82f, 1f);
+        colors.pressedColor = new Color(.62f, .50f, .42f, 1f);
         colors.selectedColor = Color.white;
         colors.fadeDuration = .06f;
         button.colors = colors;
