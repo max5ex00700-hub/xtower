@@ -471,6 +471,24 @@ public sealed class XTapInventory : MonoBehaviour
             filtered.Add(item);
         }
 
+        if (location == ForgeEquippedAndHeldLocation)
+        {
+            filtered.Sort(delegate(XTapGearBlockData a, XTapGearBlockData b)
+            {
+                int aOrder = a != null && a.location == XTapGearBlockData.LocationBag ? 0 : 1;
+                int bOrder = b != null && b.location == XTapGearBlockData.LocationBag ? 0 : 1;
+                if (aOrder != bOrder) return aOrder.CompareTo(bOrder);
+
+                int ownerCompare = (a != null ? a.bagOwnerCharacterId : 0)
+                    .CompareTo(b != null ? b.bagOwnerCharacterId : 0);
+                if (ownerCompare != 0) return ownerCompare;
+
+                string aName = a != null ? a.displayName : "";
+                string bName = b != null ? b.displayName : "";
+                return string.Compare(aName, bName, StringComparison.Ordinal);
+            });
+        }
+
         int clampedPage = Mathf.Clamp(page, 0, Mathf.Max(0, Mathf.CeilToInt(filtered.Count / (float)StoragePageSize) - 1));
         int start = clampedPage * StoragePageSize;
 

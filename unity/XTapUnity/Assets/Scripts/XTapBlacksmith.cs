@@ -423,7 +423,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void RefreshSharedStorage()
     {
-        int heldCount = inventory.GetStorageCount(XTapInventory.ForgeEquippedAndHeldLocation, IsForgeListVisible);
+        int equippedCount = inventory.GetStorageCount(XTapGearBlockData.LocationBag, IsForgeListVisible);
+        int carriedCount = inventory.GetStorageCount(XTapGearBlockData.LocationHeld, IsForgeListVisible);
+        int heldCount = equippedCount + carriedCount;
         int groundCount = inventory.GetStorageCount(XTapGearBlockData.LocationGround, IsForgeListVisible);
         int heldPages = inventory.GetStoragePageCount(XTapInventory.ForgeEquippedAndHeldLocation, IsForgeListVisible);
         int groundPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationGround, IsForgeListVisible);
@@ -431,7 +433,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         heldPage = Mathf.Clamp(heldPage, 0, heldPages - 1);
         groundPage = Mathf.Clamp(groundPage, 0, groundPages - 1);
 
-        if (heldCountText != null) heldCountText.text = "장착/소지품    " + heldCount + "개";
+        if (heldCountText != null)
+            heldCountText.text = "장착 " + equippedCount + "개  /  소지품 " + carriedCount + "개";
         if (groundCountText != null) groundCountText.text = "바닥    " + groundCount + "개";
         if (heldPageText != null) heldPageText.text = heldCount == 0 ? "0 / 0" : (heldPage + 1) + " / " + heldPages;
         if (groundPageText != null) groundPageText.text = groundCount == 0 ? "0 / 0" : (groundPage + 1) + " / " + groundPages;
