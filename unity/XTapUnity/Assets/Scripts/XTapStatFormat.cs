@@ -81,6 +81,17 @@ public static class XTapStatFormat
         return (negative ? "-" : "") + number + Suffix(unit);
     }
 
+    public static string BlockTriplet(double attack, double defense, double hp, string separator)
+    {
+        if (separator == null) separator = "   ";
+
+        return "<color=#FFB347>" + Compact(attack) + "</color>" +
+               separator +
+               "<color=#5DBBFF>" + Compact(defense) + "</color>" +
+               separator +
+               "<color=#FF6666>" + Compact(hp) + "</color>";
+    }
+
     static string Suffix(int unit)
     {
         if (unit <= 0) return "";
