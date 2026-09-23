@@ -6,15 +6,24 @@ public static class XTapStatFormat
 {
     public static string Compact(int value)
     {
-        return Compact((long)value);
+        return Compact((double)value);
     }
 
     public static string Compact(long value)
     {
-        if (value == 0) return "0";
+        return Compact((double)value);
+    }
 
-        bool negative = value < 0;
-        double scaled = Math.Abs((double)value);
+    public static string Compact(double value)
+    {
+        if (double.IsNaN(value)) return "0";
+        if (value == 0d) return "0";
+
+        if (double.IsPositiveInfinity(value)) value = double.MaxValue;
+        if (double.IsNegativeInfinity(value)) value = -double.MaxValue;
+
+        bool negative = value < 0d;
+        double scaled = Math.Abs(value);
         int unit = 0;
 
         while (scaled >= 1000d)
