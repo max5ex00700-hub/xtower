@@ -40,13 +40,10 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainFloorText;
     Text mainFloorSubText;
     Text mainStatusText;
-    Text mainGrowthText;
     Text mainMoveText;
     Text mainAttackText;
     Text mainDefenseText;
     Text mainHpText;
-    Text battlePlayerStatText;
-    Text battleEnemyStatText;
 
     Font koreanFont;
     Sprite ringSprite;
@@ -304,17 +301,8 @@ public sealed class XTapBattleController : MonoBehaviour
         bubbleText.resizeTextMaxSize = 62;
         Anchor(bubbleText.rectTransform, .08f, .22f, .92f, .91f);
 
-        Image playerStatPanel = MakePanel(root, "BattlePlayerStats", new Color(.03f, .025f, .022f, .94f), .018f, .910f, .492f, .982f);
-        ApplyGothicPanel(playerStatPanel, XTapMainSkin.UtilityButton, Color.white);
-        battlePlayerStatText = MakeOutlinedText(playerStatPanel.transform, "", 12, TextAnchor.MiddleCenter, true);
-        battlePlayerStatText.color = new Color(.96f, .91f, .82f, 1f);
-        Anchor(battlePlayerStatText.rectTransform, .04f, .08f, .96f, .92f);
-
-        Image enemyStatPanel = MakePanel(root, "BattleEnemyStats", new Color(.03f, .025f, .022f, .94f), .508f, .910f, .982f, .982f);
-        ApplyGothicPanel(enemyStatPanel, XTapMainSkin.UtilityButton, Color.white);
-        battleEnemyStatText = MakeOutlinedText(enemyStatPanel.transform, "", 12, TextAnchor.MiddleCenter, true);
-        battleEnemyStatText.color = new Color(1f, .76f, .58f, 1f);
-        Anchor(battleEnemyStatText.rectTransform, .04f, .08f, .96f, .92f);
+        // Battle HUD intentionally shows no HP/ATK/DEF values.
+        // Enemy capabilities must be learned by fighting, not by reading a stat panel.
     }
 
 
@@ -352,7 +340,7 @@ public sealed class XTapBattleController : MonoBehaviour
         floorWord.color = new Color(.94f, .87f, .73f, 1f);
         Anchor(floorWord.rectTransform, .08f, .70f, .92f, .98f);
 
-        mainFloorText = MakeOutlinedText(floorPanel.transform, StageLabel(), 34, TextAnchor.MiddleCenter, true);
+        mainFloorText = MakeOutlinedText(floorPanel.transform, TowerFloor().ToString(), 34, TextAnchor.MiddleCenter, true);
         mainFloorText.color = new Color(1f, .72f, .22f, 1f);
         Anchor(mainFloorText.rectTransform, .08f, .28f, .92f, .72f);
 
@@ -368,29 +356,25 @@ public sealed class XTapBattleController : MonoBehaviour
         playerTitle.color = new Color(.98f, .92f, .80f, 1f);
         Anchor(playerTitle.rectTransform, .08f, .82f, .92f, .98f);
 
-        mainGrowthText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
-        mainGrowthText.color = new Color(1f, .76f, .30f, 1f);
-        Anchor(mainGrowthText.rectTransform, .10f, .65f, .92f, .82f);
-
         mainMoveText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
         mainMoveText.color = new Color(.96f, .90f, .76f, 1f);
-        Anchor(mainMoveText.rectTransform, .10f, .49f, .92f, .66f);
+        Anchor(mainMoveText.rectTransform, .10f, .62f, .92f, .79f);
 
-        Text gearTitle = MakeOutlinedText(statPanel.transform, "총 능력", 14, TextAnchor.MiddleLeft, true);
+        Text gearTitle = MakeOutlinedText(statPanel.transform, "현재 능력", 14, TextAnchor.MiddleLeft, true);
         gearTitle.color = new Color(.80f, .78f, .72f, 1f);
-        Anchor(gearTitle.rectTransform, .10f, .37f, .92f, .50f);
+        Anchor(gearTitle.rectTransform, .10f, .47f, .92f, .61f);
 
         mainAttackText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
         mainAttackText.color = new Color(1f, .70f, .22f, 1f);
-        Anchor(mainAttackText.rectTransform, .10f, .24f, .92f, .38f);
+        Anchor(mainAttackText.rectTransform, .10f, .32f, .92f, .48f);
 
         mainDefenseText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
         mainDefenseText.color = new Color(.48f, .76f, 1f, 1f);
-        Anchor(mainDefenseText.rectTransform, .10f, .12f, .92f, .26f);
+        Anchor(mainDefenseText.rectTransform, .10f, .16f, .92f, .33f);
 
         mainHpText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
         mainHpText.color = new Color(1f, .46f, .46f, 1f);
-        Anchor(mainHpText.rectTransform, .10f, .00f, .92f, .14f);
+        Anchor(mainHpText.rectTransform, .10f, .00f, .92f, .17f);
 
         // Main-screen speech bubble.
         Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
@@ -406,10 +390,6 @@ public sealed class XTapBattleController : MonoBehaviour
         mainBubbleText.resizeTextMinSize = 28;
         mainBubbleText.resizeTextMaxSize = 42;
         Anchor(mainBubbleText.rectTransform, .06f, .18f, .95f, .92f);
-
-        mainStatusText = MakeOutlinedText(mainOverlay.transform, "", 14, TextAnchor.MiddleCenter, true);
-        mainStatusText.color = new Color(.96f, .90f, .80f, 1f);
-        Anchor(mainStatusText.rectTransform, .12f, .335f, .88f, .385f);
 
         // Large central action button.
         Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 24);
@@ -644,16 +624,12 @@ public sealed class XTapBattleController : MonoBehaviour
     void RefreshMainProgressUi()
     {
         if (mainFloorText != null)
-            mainFloorText.text = StageLabel();
+            mainFloorText.text = TowerFloor().ToString();
 
         if (mainFloorSubText != null)
-            mainFloorSubText.text = "현재 " + TowerFloor() + "층  ·  " + SubStage() + "구간";
+            mainFloorSubText.text = SubStage() + "구간";
 
-        double growthPercent = SafeMultiply(ProgressMultiplier(), 100d);
         bool canMoveUp = currentStep < maxUnlockedStep;
-
-        if (mainGrowthText != null)
-            mainGrowthText.text = "적 능력    " + XTapStatFormat.Compact(growthPercent) + "%";
 
         if (mainMoveText != null)
             mainMoveText.text = "이동    " + (canMoveUp ? "가능" : "진행 중");
@@ -670,9 +646,6 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (mainHpText != null)
             mainHpText.text = "체    " + XTapStatFormat.Compact(hp);
-
-        if (mainStatusText != null)
-            mainStatusText.text = StageLabel() + " 도전 중";
     }
 
     void LoadProgress()
@@ -991,21 +964,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void RefreshBattleStatUi()
     {
-        if (battlePlayerStatText != null)
-        {
-            battlePlayerStatText.text =
-                "유저  체 " + XTapStatFormat.Compact(playerHp) + "/" + XTapStatFormat.Compact(playerMaxHp) +
-                "  공 " + XTapStatFormat.Compact(CurrentPlayerAttack()) +
-                "  방 " + XTapStatFormat.Compact(CurrentPlayerDefense());
-        }
-
-        if (battleEnemyStatText != null)
-        {
-            battleEnemyStatText.text =
-                "적  체 " + XTapStatFormat.Compact(enemyHp) + "/" + XTapStatFormat.Compact(enemyMaxHp) +
-                "  공 " + XTapStatFormat.Compact(enemyAttack) +
-                "  방 " + XTapStatFormat.Compact(enemyDefense);
-        }
+        // Intentionally empty. Combat values are hidden from the battle screen.
     }
 
     int ZoneOf(Vector2 screen)
