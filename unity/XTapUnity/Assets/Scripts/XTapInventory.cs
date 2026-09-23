@@ -112,6 +112,7 @@ public sealed class XTapInventory : MonoBehaviour
         host = parent;
         font = uiFont;
         onClosed = closed;
+        XTapUiSkin.EnsureLoaded();
         Load();
         BuildUi();
         overlay.SetActive(false);
@@ -237,7 +238,7 @@ public sealed class XTapInventory : MonoBehaviour
 
         RectTransform statBar = Panel(panel, "BagStatBar", new Color(.035f, .032f, .030f, 1f));
         Anchor(statBar, .025f, .895f, .975f, .948f);
-        Frame(statBar, new Color(.64f, .45f, .23f, 1f), 3f);
+        ApplyPanelSkin(statBar, XTapUiSkin.StatusBar, new Color(.90f, .84f, .72f, 1f));
 
         totalText = MakeText(panel, "", 16, TextAnchor.MiddleCenter, true);
         totalText.color = new Color(1f, .82f, .42f, 1f);
@@ -258,7 +259,7 @@ public sealed class XTapInventory : MonoBehaviour
         Image viewportBg = viewportGo.GetComponent<Image>();
         viewportBg.color = new Color(.035f, .045f, .060f, 1f);
         viewportBg.raycastTarget = true;
-        Frame(gridViewport, new Color(.46f, .34f, .20f, 1f), 3f);
+        ApplyImageSkin(viewportBg, XTapUiSkin.Panel, new Color(.76f, .80f, .88f, 1f));
 
         gridRoot = new GameObject("BagGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         gridRoot.SetParent(gridViewport, false);
@@ -345,6 +346,7 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(detailText.rectTransform, .04f, .052f, .96f, .088f);
 
         tidyButton = MakeButton(panel, "자동 정리", 15);
+        ApplyButtonSkin(tidyButton, XTapUiSkin.ButtonPrimary, new Color(.95f, .78f, .42f, 1f));
         Anchor(tidyButton.GetComponent<RectTransform>(), .03f, .010f, .97f, .050f);
         tidyButton.onClick.AddListener(TidyBag);
     }
@@ -369,7 +371,7 @@ public sealed class XTapInventory : MonoBehaviour
         zoneImage = vp.GetComponent<Image>();
         zoneImage.color = BaseZoneColor();
         zoneImage.raycastTarget = true;
-        Frame(viewport, new Color(.38f, .30f, .22f, 1f), 2.5f);
+        ApplyImageSkin(zoneImage, XTapUiSkin.Panel, new Color(.82f, .78f, .72f, 1f));
 
         GameObject contentGo = new GameObject(name + "Content", typeof(RectTransform));
         contentGo.transform.SetParent(vp.transform, false);
@@ -844,13 +846,15 @@ public sealed class XTapInventory : MonoBehaviour
             Image img = go.GetComponent<Image>();
             img.color = BaseCellColor();
             img.raycastTarget = false;
+            ApplyImageSkin(img, XTapUiSkin.Slot, new Color(.72f, .84f, 1f, 1f));
 
             RectTransform r = img.rectTransform;
             r.anchorMin = r.anchorMax = new Vector2(0f, 1f);
             r.pivot = new Vector2(0f, 1f);
             r.sizeDelta = new Vector2(CellSize - 4f, CellSize - 4f);
             r.anchoredPosition = new Vector2(x * CellSize + 2f, -(y * CellSize + 2f));
-            Frame(r, new Color(.30f, .43f, .60f, 1f), 3f);
+            if (XTapUiSkin.Slot == null)
+                Frame(r, new Color(.30f, .43f, .60f, 1f), 3f);
 
             gridCells.Add(img);
         }
@@ -1652,7 +1656,16 @@ public sealed class XTapInventory : MonoBehaviour
 
         Image bg = go.GetComponent<Image>();
         bg.color = new Color(.11f, .10f, .10f, 1f);
-        Frame(bg.rectTransform, new Color(.52f, .43f, .30f, 1f), 2f);
+        if (XTapUiSkin.ButtonNeutral != null)
+        {
+            bg.sprite = XTapUiSkin.ButtonNeutral;
+            bg.type = Image.Type.Sliced;
+            bg.color = new Color(.92f, .88f, .80f, 1f);
+        }
+        else
+        {
+            Frame(bg.rectTransform, new Color(.52f, .43f, .30f, 1f), 2f);
+        }
 
         Text t = MakeText(go.transform, label, fontSize, TextAnchor.MiddleCenter, true);
         t.color = new Color(.95f, .90f, .80f, 1f);
@@ -1677,7 +1690,18 @@ public sealed class XTapInventory : MonoBehaviour
 
         Image bg = button.targetGraphic as Image;
         if (bg != null)
-            bg.color = new Color(.18f, .12f, .055f, 1f);
+        {
+            if (XTapUiSkin.TabSelected != null)
+            {
+                bg.sprite = XTapUiSkin.TabSelected;
+                bg.type = Image.Type.Sliced;
+                bg.color = new Color(1f, .86f, .52f, 1f);
+            }
+            else
+            {
+                bg.color = new Color(.18f, .12f, .055f, 1f);
+            }
+        }
 
         Text label = button.GetComponentInChildren<Text>();
         if (label != null)
@@ -1685,6 +1709,26 @@ public sealed class XTapInventory : MonoBehaviour
             label.color = new Color(1f, .82f, .38f, 1f);
             label.fontStyle = FontStyle.Bold;
         }
+    }
+
+    void ApplyImageSkin(Image image, Sprite sprite, Color tint)
+    {
+        if (image == null || sprite == null) return;
+        image.sprite = sprite;
+        image.type = Image.Type.Sliced;
+        image.color = tint;
+    }
+
+    void ApplyPanelSkin(RectTransform rect, Sprite sprite, Color tint)
+    {
+        if (rect == null) return;
+        ApplyImageSkin(rect.GetComponent<Image>(), sprite, tint);
+    }
+
+    void ApplyButtonSkin(Button button, Sprite sprite, Color tint)
+    {
+        if (button == null) return;
+        ApplyImageSkin(button.targetGraphic as Image, sprite, tint);
     }
 
     Text MakeText(Transform parent, string value, int size, TextAnchor align, bool bold)
