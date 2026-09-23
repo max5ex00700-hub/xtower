@@ -653,7 +653,7 @@ public sealed class XTapBattleController : MonoBehaviour
         bool canMoveUp = currentStep < maxUnlockedStep;
 
         if (mainGrowthText != null)
-            mainGrowthText.text = "성장    " + XTapStatFormat.Compact(growthPercent) + "%";
+            mainGrowthText.text = "적 능력    " + XTapStatFormat.Compact(growthPercent) + "%";
 
         if (mainMoveText != null)
             mainMoveText.text = "이동    " + (canMoveUp ? "가능" : "진행 중");
@@ -930,7 +930,7 @@ public sealed class XTapBattleController : MonoBehaviour
             yield return new WaitForSecondsRealtime(.45f);
 
             if (gachaMachine != null)
-                gachaMachine.PlayReward(clearedCharacterId);
+                gachaMachine.PlayReward(clearedCharacterId, clearedStep);
 
             busy = false;
             yield break;
