@@ -326,7 +326,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             string prefix = isTarget ? "[대상] " : (isMaterial ? "[제물] " : "");
             string enhance = item.enhanceLevel > 0 ? " +" + item.enhanceLevel : "";
             string line1 = prefix + "[" + LocationName(item) + "] " + item.displayName + enhance;
-            string line2 = "공 " + item.attack + "   방 " + item.defense + "   체 " + item.hp;
+            string line2 = "공 +" + item.attack + "   방 +" + item.defense + "   체 +" + item.hp;
 
             Text t = MakeText(row.transform, line1 + "\n" + line2, 14, TextAnchor.MiddleLeft, isTarget || isMaterial);
             t.color = isTarget
@@ -425,38 +425,74 @@ public sealed class XTapBlacksmith : MonoBehaviour
         {
             targetSlotText.text = target == null
                 ? "+"
-                : target.displayName + "\n공 " + target.attack + "  방 " + target.defense + "  체 " + target.hp;
+                : target.displayName +
+                  (target.enhanceLevel > 0 ? "  +" + target.enhanceLevel : "") +
+                  "\n공 +" + target.attack + "   방 +" + target.defense + "   체 +" + target.hp;
+        }
+
+        int sacrificeAttack = 0;
+        int sacrificeDefense = 0;
+        int sacrificeHp = 0;
+        int sacrificeCount = 0;
+        XTapGearBlockData singleSacrifice = null;
+
+        for (int i = 0; i < materialIds.Count; i++)
+        {
+            XTapGearBlockData material = inventory.FindForgeItem(materialIds[i]);
+            if (material == null) continue;
+
+            sacrificeCount++;
+            sacrificeAttack += Mathf.Max(0, material.attack);
+            sacrificeDefense += Mathf.Max(0, material.defense);
+            sacrificeHp += Mathf.Max(0, material.hp);
+            if (sacrificeCount == 1)
+                singleSacrifice = material;
         }
 
         if (materialSlotText != null)
         {
-            if (materialIds.Count == 0)
+            if (sacrificeCount == 0)
+            {
                 materialSlotText.text = "+";
-            else if (materialIds.Count == 1)
-                materialSlotText.text = ItemName(materialIds[0]);
+            }
+            else if (sacrificeCount == 1 && singleSacrifice != null)
+            {
+                materialSlotText.text =
+                    singleSacrifice.displayName +
+                    (singleSacrifice.enhanceLevel > 0 ? "  +" + singleSacrifice.enhanceLevel : "") +
+                    "\n공 +" + singleSacrifice.attack +
+                    "   방 +" + singleSacrifice.defense +
+                    "   체 +" + singleSacrifice.hp;
+            }
             else
-                materialSlotText.text = "제물 " + materialIds.Count + "개";
+            {
+                materialSlotText.text =
+                    "제물 " + sacrificeCount + "개" +
+                    "\n합계  공 +" + sacrificeAttack +
+                    "   방 +" + sacrificeDefense +
+                    "   체 +" + sacrificeHp;
+            }
         }
 
         if (mode == ForgeMode.Enhance)
         {
-            int chance = Mathf.Clamp(materialIds.Count * 10, 0, 100);
-            selectionText.text = materialIds.Count + "/10 제물";
+            int chance = Mathf.Clamp(sacrificeCount * 10, 0, 100);
+            selectionText.text = sacrificeCount + "/10 제물";
             chanceText.text = "성공률 " + chance + "%";
-            executeButton.interactable = target != null && materialIds.Count > 0 && target.enhanceLevel < 10;
+            executeButton.interactable = target != null && sacrificeCount > 0 && target.enhanceLevel < 10;
         }
         else if (mode == ForgeMode.Synthesis)
         {
-            selectionText.text = materialIds.Count == 1 ? "대상 + 제물 준비" : "대상 + 제물 1개";
+            selectionText.text = sacrificeCount == 1 ? "대상 + 제물 준비" : "대상 + 제물 1개";
             chanceText.text = "성공률 1%";
-            executeButton.interactable = target != null && materialIds.Count == 1;
+            executeButton.interactable = target != null && sacrificeCount == 1;
         }
         else
         {
-            int chance = Mathf.Clamp(materialIds.Count * 10, 0, 100);
-            selectionText.text = "제물 " + materialIds.Count + "/10";
+            int chance = Mathf.Clamp(sacrificeCount * 10, 0, 100);
+            selectionText.text = "제물 " + sacrificeCount + "/10";
             chanceText.text = "가방 +1칸  " + chance + "%";
-            executeButton.interactable = materialIds.Count > 0;
+            executeButton.interactable = sacrificeCount > 0;
         }
     }
 
