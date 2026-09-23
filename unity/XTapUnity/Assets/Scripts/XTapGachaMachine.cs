@@ -325,7 +325,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
             rt.sizeDelta = new Vector2(cell - 3f, cell - 3f);
             rt.anchoredPosition = new Vector2(
                 (p.x - minX + .5f) * cell - width * .5f,
-                (p.y - minY + .5f) * cell - height * .5f
+                height * .5f - (p.y - minY + .5f) * cell
             );
 
             GameObject inner = new GameObject("Inset", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
@@ -498,7 +498,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
     {
         if (rewardRoot == null) return;
         for (int i = rewardRoot.childCount - 1; i >= 0; i--)
-            Destroy(rewardRoot.GetChild(i).gameObject);
+        {
+            GameObject child = rewardRoot.GetChild(i).gameObject;
+            child.SetActive(false);
+            Destroy(child);
+        }
     }
 
     void BuildUi()
