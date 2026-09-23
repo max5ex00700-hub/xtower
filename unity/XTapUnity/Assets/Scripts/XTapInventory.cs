@@ -32,7 +32,7 @@ public sealed class XTapGearBlockData
 
 public sealed class XTapInventory : MonoBehaviour
 {
-    const float UiFontScale = 1.70f;
+    const float UiFontScale = 2.15f;
     const int GridW = 8;
     const int BaseGridCells = 24;
     const float CellSize = 118f;
