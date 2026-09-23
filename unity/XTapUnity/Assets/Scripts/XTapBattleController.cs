@@ -141,7 +141,7 @@ public sealed class XTapBattleController : MonoBehaviour
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
-        XTapUiSkin.EnsureLoaded();
+        XTapMainSkin.EnsureLoaded();
 
         BuildBattleOnlyUi();
         BuildMainUi();
@@ -315,14 +315,14 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(logoTower.rectTransform, .118f, .858f, .285f, .992f);
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.025f, .020f, .020f, .92f), .775f, .940f, .985f, .990f);
-        ApplyGothicPanel(codePlate, XTapUiSkin.ButtonNeutral, new Color(.92f, .86f, .78f, 1f));
+        ApplyGothicPanel(codePlate, XTapMainSkin.UtilityButton, Color.white);
         Text codeText = MakeOutlinedText(codePlate.transform, "코드 1063", 13, TextAnchor.MiddleCenter, true);
         codeText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(codeText.rectTransform, .04f, .04f, .96f, .96f);
 
         // FLOOR panel. Always shows both progress notation and explicit Korean floor/stage.
         Image floorPanel = MakePanel(mainOverlay.transform, "FloorPanel", new Color(.025f, .020f, .018f, .92f), .028f, .705f, .405f, .850f);
-        ApplyGothicPanel(floorPanel, XTapUiSkin.Panel, Color.white);
+        ApplyGothicPanel(floorPanel, XTapMainSkin.FloorPanel, Color.white);
 
         Text floorWord = MakeOutlinedText(floorPanel.transform, "FLOOR", 18, TextAnchor.MiddleCenter, true);
         floorWord.color = new Color(.94f, .87f, .73f, 1f);
@@ -338,7 +338,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         // Player stat panel. Stats are separate rows so they never disappear into a wrapped status sentence.
         Image statPanel = MakePanel(mainOverlay.transform, "PlayerStats", new Color(.025f, .020f, .018f, .90f), .025f, .430f, .425f, .695f);
-        ApplyGothicPanel(statPanel, XTapUiSkin.Panel, Color.white);
+        ApplyGothicPanel(statPanel, XTapMainSkin.PlayerPanel, Color.white);
 
         Text playerTitle = MakeOutlinedText(statPanel.transform, "플레이어", 20, TextAnchor.MiddleLeft, true);
         playerTitle.color = new Color(.98f, .92f, .80f, 1f);
@@ -397,7 +397,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         // Bottom navigation bar.
         Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.010f, .008f, .010f, .985f), 0f, 0f, 1f, .165f);
-        ApplyGothicPanel(navRail, XTapUiSkin.StatusBar, new Color(.82f, .78f, .72f, 1f));
+        ApplyGothicPanel(navRail, XTapMainSkin.BottomRail, Color.white);
 
         string[] icons = {"↻", "↓", "↑", "▣", "⚒", "▥"};
         string[] labels = {"다시", "↓", "↑", "배낭", "대장간", "감옥"};
@@ -483,11 +483,11 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image outer = go.GetComponent<Image>();
-        if (XTapUiSkin.ButtonPrimary != null)
+        if (XTapMainSkin.FightButton != null)
         {
-            outer.sprite = XTapUiSkin.ButtonPrimary;
+            outer.sprite = XTapMainSkin.FightButton;
             outer.type = Image.Type.Sliced;
-            outer.color = new Color(.90f, .30f, .24f, 1f);
+            outer.color = Color.white;
         }
         else
         {
@@ -497,7 +497,7 @@ public sealed class XTapBattleController : MonoBehaviour
         }
 
         Image inner = MakePanel(go.transform, "Inset", new Color(.14f, .008f, .012f, .34f), .025f, .07f, .975f, .93f);
-        ApplyGothicPanel(inner, XTapUiSkin.StatusBar, new Color(.54f, .20f, .16f, .82f));
+        ApplyGothicPanel(inner, XTapMainSkin.BottomRail, new Color(1f, 1f, 1f, .46f));
 
         Text text = MakeOutlinedText(inner.transform, label, fontSize, TextAnchor.MiddleCenter, true);
         text.color = new Color(.96f, .92f, .84f, 1f);
@@ -521,11 +521,11 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image bg = go.GetComponent<Image>();
-        if (XTapUiSkin.ButtonNeutral != null)
+        if (XTapMainSkin.NavButton != null)
         {
-            bg.sprite = XTapUiSkin.ButtonNeutral;
+            bg.sprite = XTapMainSkin.NavButton;
             bg.type = Image.Type.Sliced;
-            bg.color = new Color(.90f, .86f, .80f, 1f);
+            bg.color = Color.white;
         }
         else
         {
@@ -534,12 +534,12 @@ public sealed class XTapBattleController : MonoBehaviour
         }
 
         Text iconText = MakeOutlinedText(go.transform, icon, 18, TextAnchor.MiddleCenter, true);
-        iconText.color = new Color(.78f, .76f, .71f, 1f);
-        Anchor(iconText.rectTransform, .05f, .39f, .95f, .91f);
+        iconText.color = new Color(1f, .84f, .48f, 1f);
+        Anchor(iconText.rectTransform, .08f, .43f, .92f, .86f);
 
-        Text labelText = MakeOutlinedText(go.transform, label, 11, TextAnchor.MiddleCenter, false);
-        labelText.color = new Color(.91f, .88f, .81f, 1f);
-        Anchor(labelText.rectTransform, .03f, .06f, .97f, .40f);
+        Text labelText = MakeOutlinedText(go.transform, label, 11, TextAnchor.MiddleCenter, true);
+        labelText.color = new Color(.98f, .92f, .82f, 1f);
+        Anchor(labelText.rectTransform, .05f, .10f, .95f, .43f);
 
         Button button = go.GetComponent<Button>();
         button.targetGraphic = bg;
