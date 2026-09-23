@@ -823,12 +823,12 @@ public sealed class XTapBattleController : MonoBehaviour
             won = true;
             fightCount++;
             HideWeakPoint();
+
+            int clearedCharacterId = CurrentCharacterId();
             var cap = assets.GetSprite("assets/f" + CurrentVisualFloor() + "_cap.jpg");
             if (cap != null) SetSprite(cap);
 
             // Winning advances the player's actual current progress.
-            // Previously we only unlocked the next step, leaving currentStep unchanged,
-            // so FLOOR appeared frozen until the user manually pressed ↑.
             int clearedStep = currentStep;
             int nextStep = clearedStep + 1;
 
@@ -844,7 +844,7 @@ public sealed class XTapBattleController : MonoBehaviour
             yield return new WaitForSecondsRealtime(.45f);
 
             if (gachaMachine != null)
-                gachaMachine.PlayReward(CurrentCharacterId());
+                gachaMachine.PlayReward(clearedCharacterId);
 
             busy = false;
             yield break;
