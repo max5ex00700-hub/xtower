@@ -223,17 +223,25 @@ public sealed class XTapInventory : MonoBehaviour
         body.color = new Color(.025f, .024f, .028f, 1f);
         body.raycastTarget = true;
 
-        bagTitleText = MakeText(panel, "플레이어", 25, TextAnchor.MiddleLeft, true);
+        bagTitleText = MakeText(panel, "플레이어 가방", 25, TextAnchor.MiddleLeft, true);
         bagTitleText.color = new Color(.98f, .91f, .76f, 1f);
-        Anchor(bagTitleText.rectTransform, .035f, .950f, .67f, .995f);
+        Anchor(bagTitleText.rectTransform, .035f, .950f, .55f, .995f);
+
+        bagCountText = MakeText(panel, "", 17, TextAnchor.MiddleLeft, true);
+        bagCountText.color = new Color(1f, .72f, .26f, 1f);
+        Anchor(bagCountText.rectTransform, .48f, .950f, .74f, .995f);
 
         Button closeTop = MakeButton(panel, "닫기", 16);
         Anchor(closeTop.GetComponent<RectTransform>(), .78f, .952f, .965f, .993f);
         closeTop.onClick.AddListener(Close);
 
-        totalText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
-        totalText.color = new Color(1f, .76f, .28f, 1f);
-        Anchor(totalText.rectTransform, .035f, .902f, .965f, .948f);
+        RectTransform statBar = Panel(panel, "BagStatBar", new Color(.035f, .032f, .030f, 1f));
+        Anchor(statBar, .025f, .895f, .975f, .948f);
+        Frame(statBar, new Color(.64f, .45f, .23f, 1f), 3f);
+
+        totalText = MakeText(panel, "", 16, TextAnchor.MiddleCenter, true);
+        totalText.color = new Color(1f, .82f, .42f, 1f);
+        Anchor(totalText.rectTransform, .045f, .900f, .955f, .944f);
 
         GameObject viewportGo = new GameObject(
             "BagGridViewport",
@@ -248,8 +256,9 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(gridViewport, .02f, .400f, .98f, .900f);
 
         Image viewportBg = viewportGo.GetComponent<Image>();
-        viewportBg.color = new Color(.018f, .019f, .023f, 1f);
+        viewportBg.color = new Color(.035f, .045f, .060f, 1f);
         viewportBg.raycastTarget = true;
+        Frame(gridViewport, new Color(.46f, .34f, .20f, 1f), 3f);
 
         gridRoot = new GameObject("BagGrid", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         gridRoot.SetParent(gridViewport, false);
@@ -259,7 +268,7 @@ public sealed class XTapInventory : MonoBehaviour
         gridRoot.sizeDelta = new Vector2(GridW * CellSize, ActiveGridRows * CellSize);
 
         Image gridBg = gridRoot.GetComponent<Image>();
-        gridBg.color = new Color(.025f, .025f, .030f, 1f);
+        gridBg.color = new Color(.055f, .070f, .095f, 1f);
         gridBg.raycastTarget = true;
 
         gridScroll = viewportGo.GetComponent<ScrollRect>();
@@ -277,20 +286,22 @@ public sealed class XTapInventory : MonoBehaviour
         Anchor(gridCellRoot, 0f, 0f, 1f, 1f);
         RebuildGridCells();
 
-        heldCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
-        heldCountText.color = new Color(.94f, .87f, .73f, 1f);
-        Anchor(heldCountText.rectTransform, .035f, .360f, .40f, .398f);
+        heldCountText = MakeText(panel, "", 17, TextAnchor.MiddleLeft, true);
+        heldCountText.color = new Color(.98f, .91f, .78f, 1f);
+        Anchor(heldCountText.rectTransform, .035f, .355f, .50f, .402f);
 
-        heldPageText = MakeText(panel, "", 13, TextAnchor.MiddleCenter, true);
-        heldPageText.color = new Color(.72f, .70f, .66f, 1f);
-        Anchor(heldPageText.rectTransform, .60f, .360f, .74f, .398f);
-
-        heldPrevButton = MakeButton(panel, "◀", 13);
-        Anchor(heldPrevButton.GetComponent<RectTransform>(), .755f, .362f, .845f, .396f);
+        heldPrevButton = MakeButton(panel, "◀", 18);
+        StylePagerButton(heldPrevButton);
+        Anchor(heldPrevButton.GetComponent<RectTransform>(), .635f, .355f, .735f, .402f);
         heldPrevButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationHeld, -1));
 
-        heldNextButton = MakeButton(panel, "▶", 13);
-        Anchor(heldNextButton.GetComponent<RectTransform>(), .855f, .362f, .945f, .396f);
+        heldPageText = MakeText(panel, "", 17, TextAnchor.MiddleCenter, true);
+        heldPageText.color = new Color(1f, .84f, .50f, 1f);
+        Anchor(heldPageText.rectTransform, .740f, .355f, .855f, .402f);
+
+        heldNextButton = MakeButton(panel, "▶", 18);
+        StylePagerButton(heldNextButton);
+        Anchor(heldNextButton.GetComponent<RectTransform>(), .860f, .355f, .960f, .402f);
         heldNextButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationHeld, 1));
 
         BuildPagedZone(
@@ -302,20 +313,22 @@ public sealed class XTapInventory : MonoBehaviour
             out heldZoneImage
         );
 
-        groundCountText = MakeText(panel, "", 15, TextAnchor.MiddleLeft, true);
-        groundCountText.color = new Color(.94f, .87f, .73f, 1f);
-        Anchor(groundCountText.rectTransform, .035f, .205f, .40f, .243f);
+        groundCountText = MakeText(panel, "", 17, TextAnchor.MiddleLeft, true);
+        groundCountText.color = new Color(.98f, .91f, .78f, 1f);
+        Anchor(groundCountText.rectTransform, .035f, .200f, .50f, .247f);
 
-        groundPageText = MakeText(panel, "", 13, TextAnchor.MiddleCenter, true);
-        groundPageText.color = new Color(.72f, .70f, .66f, 1f);
-        Anchor(groundPageText.rectTransform, .60f, .205f, .74f, .243f);
-
-        groundPrevButton = MakeButton(panel, "◀", 13);
-        Anchor(groundPrevButton.GetComponent<RectTransform>(), .755f, .207f, .845f, .241f);
+        groundPrevButton = MakeButton(panel, "◀", 18);
+        StylePagerButton(groundPrevButton);
+        Anchor(groundPrevButton.GetComponent<RectTransform>(), .635f, .200f, .735f, .247f);
         groundPrevButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationGround, -1));
 
-        groundNextButton = MakeButton(panel, "▶", 13);
-        Anchor(groundNextButton.GetComponent<RectTransform>(), .855f, .207f, .945f, .241f);
+        groundPageText = MakeText(panel, "", 17, TextAnchor.MiddleCenter, true);
+        groundPageText.color = new Color(1f, .84f, .50f, 1f);
+        Anchor(groundPageText.rectTransform, .740f, .200f, .855f, .247f);
+
+        groundNextButton = MakeButton(panel, "▶", 18);
+        StylePagerButton(groundNextButton);
+        Anchor(groundNextButton.GetComponent<RectTransform>(), .860f, .200f, .960f, .247f);
         groundNextButton.onClick.AddListener(() => ChangeStoragePage(XTapGearBlockData.LocationGround, 1));
 
         BuildPagedZone(
@@ -356,6 +369,7 @@ public sealed class XTapInventory : MonoBehaviour
         zoneImage = vp.GetComponent<Image>();
         zoneImage.color = BaseZoneColor();
         zoneImage.raycastTarget = true;
+        Frame(viewport, new Color(.38f, .30f, .22f, 1f), 2.5f);
 
         GameObject contentGo = new GameObject(name + "Content", typeof(RectTransform));
         contentGo.transform.SetParent(vp.transform, false);
@@ -373,8 +387,8 @@ public sealed class XTapInventory : MonoBehaviour
         if (bagTitleText != null)
         {
             bagTitleText.text = activeBagOwnerCharacterId == 0
-                ? "플레이어"
-                : "캐릭터 " + activeBagOwnerCharacterId;
+                ? "플레이어 가방"
+                : "캐릭터 " + activeBagOwnerCharacterId + " 가방";
         }
 
         int bagCount = 0;
@@ -416,12 +430,13 @@ public sealed class XTapInventory : MonoBehaviour
         RenderPage(XTapGearBlockData.LocationHeld, heldContent, heldPage);
         RenderPage(XTapGearBlockData.LocationGround, groundContent, groundPage);
 
-        totalText.text = "공 +" + XTapStatFormat.Compact(atk) +
-                         "     방 +" + XTapStatFormat.Compact(def) +
-                         "     체 +" + XTapStatFormat.Compact(hp) +
-                         "     ·     " + OccupiedCellCount() + "/" + ActiveGridCapacity + "칸";
-        heldCountText.text = "소지품   " + heldCount + "개";
-        groundCountText.text = "바닥   " + groundCount + "개";
+        totalText.text = "공격력 +" + XTapStatFormat.Compact(atk) +
+                         "     방어력 +" + XTapStatFormat.Compact(def) +
+                         "     체력 +" + XTapStatFormat.Compact(hp);
+        if (bagCountText != null)
+            bagCountText.text = OccupiedCellCount() + " / " + ActiveGridCapacity + "칸";
+        heldCountText.text = "소지품    " + heldCount + "개";
+        groundCountText.text = "바닥    " + groundCount + "개";
 
         heldPageText.text = heldCount == 0 ? "0 / 0" : (heldPage + 1) + " / " + heldPages;
         groundPageText.text = groundCount == 0 ? "0 / 0" : (groundPage + 1) + " / " + groundPages;
@@ -835,6 +850,7 @@ public sealed class XTapInventory : MonoBehaviour
             r.pivot = new Vector2(0f, 1f);
             r.sizeDelta = new Vector2(CellSize - 4f, CellSize - 4f);
             r.anchoredPosition = new Vector2(x * CellSize + 2f, -(y * CellSize + 2f));
+            Frame(r, new Color(.30f, .43f, .60f, 1f), 3f);
 
             gridCells.Add(img);
         }
@@ -1453,12 +1469,12 @@ public sealed class XTapInventory : MonoBehaviour
 
     Color BaseCellColor()
     {
-        return new Color(.075f, .075f, .085f, 1f);
+        return new Color(.115f, .145f, .195f, 1f);
     }
 
     Color BaseZoneColor()
     {
-        return new Color(.052f, .050f, .055f, 1f);
+        return new Color(.070f, .067f, .072f, 1f);
     }
 
     void ScreenToCell(Vector2 screen, out int x, out int y)
@@ -1649,9 +1665,26 @@ public sealed class XTapInventory : MonoBehaviour
         cb.normalColor = Color.white;
         cb.highlightedColor = new Color(1f, .94f, .84f, 1f);
         cb.pressedColor = new Color(.70f, .62f, .55f, 1f);
+        cb.disabledColor = new Color(.62f, .52f, .38f, .88f);
         b.colors = cb;
 
         return b;
+    }
+
+    void StylePagerButton(Button button)
+    {
+        if (button == null) return;
+
+        Image bg = button.targetGraphic as Image;
+        if (bg != null)
+            bg.color = new Color(.18f, .12f, .055f, 1f);
+
+        Text label = button.GetComponentInChildren<Text>();
+        if (label != null)
+        {
+            label.color = new Color(1f, .82f, .38f, 1f);
+            label.fontStyle = FontStyle.Bold;
+        }
     }
 
     Text MakeText(Transform parent, string value, int size, TextAnchor align, bool bold)
