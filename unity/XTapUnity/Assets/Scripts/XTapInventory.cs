@@ -523,7 +523,11 @@ public sealed class XTapInventory : MonoBehaviour
     void DestroyItemViews()
     {
         foreach (var kv in itemViews)
-            if (kv.Value != null) Destroy(kv.Value.gameObject);
+        {
+            if (kv.Value == null) continue;
+            kv.Value.gameObject.SetActive(false);
+            Destroy(kv.Value.gameObject);
+        }
         itemViews.Clear();
     }
 
@@ -531,7 +535,11 @@ public sealed class XTapInventory : MonoBehaviour
     {
         if (root == null) return;
         for (int i = root.childCount - 1; i >= 0; i--)
-            Destroy(root.GetChild(i).gameObject);
+        {
+            GameObject child = root.GetChild(i).gameObject;
+            child.SetActive(false);
+            Destroy(child);
+        }
     }
 
     void ChangeStoragePage(int location, int delta)
@@ -914,7 +922,11 @@ public sealed class XTapInventory : MonoBehaviour
         if (gridRoot == null || gridCellRoot == null) return;
 
         for (int i = gridCellRoot.childCount - 1; i >= 0; i--)
-            Destroy(gridCellRoot.GetChild(i).gameObject);
+        {
+            GameObject oldCell = gridCellRoot.GetChild(i).gameObject;
+            oldCell.SetActive(false);
+            Destroy(oldCell);
+        }
 
         gridCells.Clear();
 
@@ -1069,8 +1081,7 @@ public sealed class XTapInventory : MonoBehaviour
         }
 
         float width = (maxX + 1) * cellSize;
-        float height = (maxY + 1) * cellSize;
-        Vector2 origin = centered ? new Vector2(-width * .5f, -height) : Vector2.zero;
+        Vector2 origin = centered ? new Vector2(-width * .5f, 0f) : Vector2.zero;
 
         for (int i = 0; i < cells.Count; i++)
         {
@@ -1083,10 +1094,10 @@ public sealed class XTapInventory : MonoBehaviour
             ci.raycastTarget = false;
 
             RectTransform cr = ci.rectTransform;
-            cr.anchorMin = cr.anchorMax = centered ? new Vector2(.5f, 1f) : Vector2.zero;
-            cr.pivot = Vector2.zero;
+            cr.anchorMin = cr.anchorMax = centered ? new Vector2(.5f, 1f) : new Vector2(0f, 1f);
+            cr.pivot = new Vector2(0f, 1f);
             cr.sizeDelta = new Vector2(cellSize - 5f, cellSize - 5f);
-            cr.anchoredPosition = origin + new Vector2(p.x * cellSize + 2.5f, p.y * cellSize + 2.5f);
+            cr.anchoredPosition = origin + new Vector2(p.x * cellSize + 2.5f, -(p.y * cellSize + 2.5f));
 
             GameObject inset = new GameObject("Inset", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
             inset.transform.SetParent(cg.transform, false);
@@ -1199,7 +1210,7 @@ public sealed class XTapInventory : MonoBehaviour
             previewY = cy - dragOffsetY;
 
             HighlightPlacement(item, previewX, previewY);
-            PositionGhostAtPointer(screen);
+            PositionGhostAtGridOrigin(item, previewX, previewY);
             return;
         }
 
@@ -1319,22 +1330,25 @@ public sealed class XTapInventory : MonoBehaviour
         dragGhost = new GameObject("DropGhost", typeof(RectTransform), typeof(CanvasGroup)).GetComponent<RectTransform>();
         dragGhost.SetParent(overlay.transform, false);
         dragGhost.anchorMin = dragGhost.anchorMax = new Vector2(.5f, .5f);
-        dragGhost.pivot = Vector2.zero;
-        dragGhost.sizeDelta = new Vector2((maxX + 1) * MiniCell, (maxY + 1) * MiniCell);
+        dragGhost.pivot = new Vector2(0f, 1f);
+        dragGhost.sizeDelta = new Vector2((maxX + 1) * CellSize, (maxY + 1) * CellSize);
 
         dragGhostGroup = dragGhost.GetComponent<CanvasGroup>();
         dragGhostGroup.alpha = .74f;
         dragGhostGroup.blocksRaycasts = false;
         dragGhostGroup.interactable = false;
 
-        DrawShape(dragGhost, item, MiniCell, BlockColor(item), false, false);
+        DrawGridShape(dragGhost, item, CellSize, BlockColor(item));
         dragGhost.SetAsLastSibling();
     }
 
     void DestroyDragGhost()
     {
         if (dragGhost != null)
+        {
+            dragGhost.gameObject.SetActive(false);
             Destroy(dragGhost.gameObject);
+        }
 
         dragGhost = null;
         dragGhostGroup = null;
@@ -1346,7 +1360,7 @@ public sealed class XTapInventory : MonoBehaviour
 
         Vector3 gridLocal = new Vector3(
             gridRoot.rect.xMin + gridX * CellSize,
-            gridRoot.rect.yMin + gridY * CellSize,
+            gridRoot.rect.yMax - gridY * CellSize,
             0f
         );
         Vector3 world = gridRoot.TransformPoint(gridLocal);
@@ -1361,8 +1375,8 @@ public sealed class XTapInventory : MonoBehaviour
         Vector2 local;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(overlayRect, screen, null, out local);
         dragGhost.anchoredPosition = local - new Vector2(
-            dragOffsetX * MiniCell + MiniCell * .5f,
-            dragOffsetY * MiniCell + MiniCell * .5f
+            dragOffsetX * CellSize + CellSize * .5f,
+            -(dragOffsetY * CellSize + CellSize * .5f)
         );
     }
 
