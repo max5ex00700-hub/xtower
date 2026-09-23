@@ -22,7 +22,18 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     GameObject overlay;
     RectTransform panel;
-    RectTransform listContent;
+    RectTransform heldContent;
+    RectTransform groundContent;
+    Text heldCountText;
+    Text groundCountText;
+    Text heldPageText;
+    Text groundPageText;
+    Button heldPrevButton;
+    Button heldNextButton;
+    Button groundPrevButton;
+    Button groundNextButton;
+    int heldPage;
+    int groundPage;
 
     Text ruleText;
     Text selectionText;
@@ -41,7 +52,6 @@ public sealed class XTapBlacksmith : MonoBehaviour
     Sprite tabSelectedSkin;
     Sprite buttonNeutralSkin;
     Sprite buttonPrimarySkin;
-    Sprite listRowSkin;
     Sprite statusBarSkin;
 
     Button enhanceTab;
@@ -60,6 +70,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         inventory = bag;
         onClosed = closed;
 
+        XTapUiSkin.EnsureLoaded();
         LoadVisualAssets();
         BuildUi();
         overlay.SetActive(false);
@@ -73,6 +84,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
         ClearSelection();
+        heldPage = 0;
+        groundPage = 0;
         Refresh();
     }
 
@@ -167,54 +180,59 @@ public sealed class XTapBlacksmith : MonoBehaviour
         ruleText.color = new Color(1f, .86f, .58f, 1f);
         Anchor(ruleText.rectTransform, .055f, .535f, .945f, .585f);
 
-        Text inventoryTitle = MakeText(panel, "소지품 · 바닥", 18, TextAnchor.MiddleLeft, true);
-        inventoryTitle.color = new Color(.98f, .90f, .78f, 1f);
-        Anchor(inventoryTitle.rectTransform, .045f, .490f, .55f, .535f);
+        heldCountText = MakeText(panel, "", 17, TextAnchor.MiddleLeft, true);
+        heldCountText.color = new Color(.98f, .91f, .78f, 1f);
+        Anchor(heldCountText.rectTransform, .045f, .445f, .50f, .492f);
 
-        RectTransform listFrame = MakePanel(panel, "ForgeItems", new Color(.020f, .018f, .018f, 1f));
-        Anchor(listFrame, .035f, .165f, .965f, .490f);
-        ApplyPanelSkin(listFrame, panelSkin);
+        heldPrevButton = MakeButton(panel, "◀", 18, new Color(.09f, .07f, .06f, 1f));
+        ApplyButtonSkin(heldPrevButton, buttonNeutralSkin);
+        Anchor(heldPrevButton.GetComponent<RectTransform>(), .635f, .445f, .735f, .492f);
+        heldPrevButton.onClick.AddListener(delegate { ChangeStoragePage(XTapGearBlockData.LocationHeld, -1); });
 
-        GameObject scrollGo = new GameObject("ForgeScroll", typeof(RectTransform), typeof(ScrollRect));
-        scrollGo.transform.SetParent(listFrame, false);
-        RectTransform scrollRectTransform = scrollGo.GetComponent<RectTransform>();
-        Anchor(scrollRectTransform, .012f, .012f, .988f, .988f);
+        heldPageText = MakeText(panel, "", 17, TextAnchor.MiddleCenter, true);
+        heldPageText.color = new Color(1f, .84f, .50f, 1f);
+        Anchor(heldPageText.rectTransform, .740f, .445f, .855f, .492f);
 
-        GameObject viewportGo = new GameObject("Viewport", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(RectMask2D));
-        viewportGo.transform.SetParent(scrollGo.transform, false);
-        RectTransform viewport = viewportGo.GetComponent<RectTransform>();
-        Anchor(viewport, 0f, 0f, 1f, 1f);
-        viewportGo.GetComponent<Image>().color = new Color(0f, 0f, 0f, .01f);
+        heldNextButton = MakeButton(panel, "▶", 18, new Color(.09f, .07f, .06f, 1f));
+        ApplyButtonSkin(heldNextButton, buttonNeutralSkin);
+        Anchor(heldNextButton.GetComponent<RectTransform>(), .860f, .445f, .960f, .492f);
+        heldNextButton.onClick.AddListener(delegate { ChangeStoragePage(XTapGearBlockData.LocationHeld, 1); });
 
-        GameObject contentGo = new GameObject("Content", typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
-        contentGo.transform.SetParent(viewport, false);
-        listContent = contentGo.GetComponent<RectTransform>();
-        listContent.anchorMin = new Vector2(0f, 1f);
-        listContent.anchorMax = new Vector2(1f, 1f);
-        listContent.pivot = new Vector2(.5f, 1f);
-        listContent.offsetMin = Vector2.zero;
-        listContent.offsetMax = Vector2.zero;
+        RectTransform heldViewport;
+        inventory.BuildSharedStorageZone(
+            panel,
+            "ForgeHeldZone",
+            .035f, .335f, .965f, .445f,
+            out heldViewport,
+            out heldContent
+        );
 
-        VerticalLayoutGroup layout = contentGo.GetComponent<VerticalLayoutGroup>();
-        layout.padding = new RectOffset(10, 10, 10, 10);
-        layout.spacing = 8f;
-        layout.childControlHeight = false;
-        layout.childControlWidth = true;
-        layout.childForceExpandHeight = false;
-        layout.childForceExpandWidth = true;
+        groundCountText = MakeText(panel, "", 17, TextAnchor.MiddleLeft, true);
+        groundCountText.color = new Color(.98f, .91f, .78f, 1f);
+        Anchor(groundCountText.rectTransform, .045f, .290f, .50f, .337f);
 
-        ContentSizeFitter fitter = contentGo.GetComponent<ContentSizeFitter>();
-        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        fitter.horizontalFit = ContentSizeFitter.FitMode.Unconstrained;
+        groundPrevButton = MakeButton(panel, "◀", 18, new Color(.09f, .07f, .06f, 1f));
+        ApplyButtonSkin(groundPrevButton, buttonNeutralSkin);
+        Anchor(groundPrevButton.GetComponent<RectTransform>(), .635f, .290f, .735f, .337f);
+        groundPrevButton.onClick.AddListener(delegate { ChangeStoragePage(XTapGearBlockData.LocationGround, -1); });
 
-        ScrollRect scroll = scrollGo.GetComponent<ScrollRect>();
-        scroll.viewport = viewport;
-        scroll.content = listContent;
-        scroll.horizontal = false;
-        scroll.vertical = true;
-        scroll.movementType = ScrollRect.MovementType.Elastic;
-        scroll.elasticity = .08f;
-        scroll.inertia = true;
+        groundPageText = MakeText(panel, "", 17, TextAnchor.MiddleCenter, true);
+        groundPageText.color = new Color(1f, .84f, .50f, 1f);
+        Anchor(groundPageText.rectTransform, .740f, .290f, .855f, .337f);
+
+        groundNextButton = MakeButton(panel, "▶", 18, new Color(.09f, .07f, .06f, 1f));
+        ApplyButtonSkin(groundNextButton, buttonNeutralSkin);
+        Anchor(groundNextButton.GetComponent<RectTransform>(), .860f, .290f, .960f, .337f);
+        groundNextButton.onClick.AddListener(delegate { ChangeStoragePage(XTapGearBlockData.LocationGround, 1); });
+
+        RectTransform groundViewport;
+        inventory.BuildSharedStorageZone(
+            panel,
+            "ForgeGroundZone",
+            .035f, .180f, .965f, .290f,
+            out groundViewport,
+            out groundContent
+        );
 
         RectTransform statusBar = MakePanel(panel, "StatusBar", new Color(.04f, .03f, .025f, .92f));
         Anchor(statusBar, .035f, .080f, .965f, .162f);
@@ -280,7 +298,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         RefreshTabs();
         RefreshRules();
-        RebuildItemList();
+        RefreshSharedStorage();
         RefreshSelectionInfo();
     }
 
@@ -330,80 +348,55 @@ public sealed class XTapBlacksmith : MonoBehaviour
             ruleText.text = "제물 최대 10개  ·  1개당 10%  ·  성공 시 플레이어 가방 +1칸";
     }
 
-    void RebuildItemList()
+    void RefreshSharedStorage()
     {
-        for (int i = listContent.childCount - 1; i >= 0; i--)
-            Destroy(listContent.GetChild(i).gameObject);
+        int heldCount = inventory.GetStorageCount(XTapGearBlockData.LocationHeld);
+        int groundCount = inventory.GetStorageCount(XTapGearBlockData.LocationGround);
+        int heldPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationHeld);
+        int groundPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationGround);
 
-        List<XTapGearBlockData> allItems = inventory.GetForgeItems();
-        List<XTapGearBlockData> items = new List<XTapGearBlockData>();
+        heldPage = Mathf.Clamp(heldPage, 0, heldPages - 1);
+        groundPage = Mathf.Clamp(groundPage, 0, groundPages - 1);
 
-        for (int i = 0; i < allItems.Count; i++)
-        {
-            XTapGearBlockData item = allItems[i];
-            if (item == null) continue;
-            if (item.location == XTapGearBlockData.LocationHeld ||
-                item.location == XTapGearBlockData.LocationGround)
-                items.Add(item);
-        }
+        if (heldCountText != null) heldCountText.text = "소지품    " + heldCount + "개";
+        if (groundCountText != null) groundCountText.text = "바닥    " + groundCount + "개";
+        if (heldPageText != null) heldPageText.text = heldCount == 0 ? "0 / 0" : (heldPage + 1) + " / " + heldPages;
+        if (groundPageText != null) groundPageText.text = groundCount == 0 ? "0 / 0" : (groundPage + 1) + " / " + groundPages;
 
-        if (items.Count == 0)
-        {
-            Text empty = MakeText(listContent, "사용할 블록이 없습니다.", 21, TextAnchor.MiddleCenter, false);
-            empty.color = new Color(.55f, .50f, .47f, 1f);
-            LayoutElement le = empty.gameObject.AddComponent<LayoutElement>();
-            le.preferredHeight = 170f;
-            return;
-        }
+        if (heldPrevButton != null) heldPrevButton.interactable = heldPage > 0;
+        if (heldNextButton != null) heldNextButton.interactable = heldCount > 0 && heldPage < heldPages - 1;
+        if (groundPrevButton != null) groundPrevButton.interactable = groundPage > 0;
+        if (groundNextButton != null) groundNextButton.interactable = groundCount > 0 && groundPage < groundPages - 1;
 
-        for (int i = 0; i < items.Count; i++)
-        {
-            XTapGearBlockData item = items[i];
-            if (item == null || string.IsNullOrEmpty(item.id)) continue;
+        inventory.RenderSharedStoragePage(
+            XTapGearBlockData.LocationHeld,
+            heldContent,
+            heldPage,
+            OnItemPressed,
+            IsForgeSelected
+        );
+        inventory.RenderSharedStoragePage(
+            XTapGearBlockData.LocationGround,
+            groundContent,
+            groundPage,
+            OnItemPressed,
+            IsForgeSelected
+        );
+    }
 
-            string id = item.id;
-            bool isTarget = targetId == id;
-            bool isMaterial = materialIds.Contains(id);
+    bool IsForgeSelected(string id)
+    {
+        return targetId == id || materialIds.Contains(id);
+    }
 
-            GameObject row = new GameObject("ForgeItem_" + id, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button), typeof(LayoutElement));
-            row.transform.SetParent(listContent, false);
+    void ChangeStoragePage(int location, int delta)
+    {
+        if (location == XTapGearBlockData.LocationHeld)
+            heldPage = Mathf.Max(0, heldPage + delta);
+        else if (location == XTapGearBlockData.LocationGround)
+            groundPage = Mathf.Max(0, groundPage + delta);
 
-            Image bg = row.GetComponent<Image>();
-            if (listRowSkin != null)
-            {
-                bg.sprite = listRowSkin;
-                bg.type = Image.Type.Sliced;
-            }
-
-            if (isTarget)
-                bg.color = new Color(1f, .72f, .30f, 1f);
-            else if (isMaterial)
-                bg.color = new Color(.76f, .88f, .62f, 1f);
-            else
-                bg.color = Color.white;
-
-            LayoutElement le = row.GetComponent<LayoutElement>();
-            le.preferredHeight = 112f;
-
-            string prefix = isTarget ? "[대상] " : (isMaterial ? "[제물] " : "");
-            string enhance = item.enhanceLevel > 0 ? " +" + item.enhanceLevel : "";
-            string line1 = prefix + "[" + LocationName(item) + "] " + item.displayName + enhance;
-            string line2 = XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "   ");
-
-            Text t = MakeText(row.transform, line1 + "\n" + line2, 14, TextAnchor.MiddleLeft, isTarget || isMaterial);
-            t.color = isTarget
-                ? new Color(1f, .78f, .34f, 1f)
-                : (isMaterial ? new Color(.80f, .90f, .66f, 1f) : new Color(.91f, .87f, .81f, 1f));
-            t.resizeTextForBestFit = true;
-            t.resizeTextMinSize = 18;
-            t.resizeTextMaxSize = 26;
-            Anchor(t.rectTransform, .14f, .10f, .90f, .90f);
-
-            Button b = row.GetComponent<Button>();
-            b.targetGraphic = bg;
-            string capturedId = id;
-            b.onClick.AddListener(delegate { OnItemPressed(capturedId); });
-        }
+        RefreshSharedStorage();
     }
 
     string LocationName(XTapGearBlockData item)
@@ -736,7 +729,6 @@ public sealed class XTapBlacksmith : MonoBehaviour
             tabSelectedSkin = MakeAtlasSprite(128, 256, 128, 43, new Vector4(22f, 10f, 22f, 10f));
             buttonNeutralSkin = MakeAtlasSprite(0, 299, 128, 43, new Vector4(22f, 10f, 22f, 10f));
             buttonPrimarySkin = MakeAtlasSprite(128, 299, 128, 43, new Vector4(22f, 10f, 22f, 10f));
-            listRowSkin = MakeAtlasSprite(0, 342, 256, 64, new Vector4(26f, 12f, 26f, 12f));
             statusBarSkin = MakeAtlasSprite(0, 406, 256, 64, new Vector4(26f, 12f, 26f, 12f));
         }
         catch (Exception e)
