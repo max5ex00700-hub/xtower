@@ -30,6 +30,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
     Coroutine playRoutine;
     Outcome pendingOutcome;
     int activeCharacterId = 1;
+    int activeProgressStep;
 
     readonly int[] corrections = {-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50};
     readonly int[] allowedSizes = {1, 2, 3, 4, 5, 6, 9, 12};
@@ -71,18 +72,24 @@ public sealed class XTapGachaMachine : MonoBehaviour
         CloseAndCollect();
     }
 
-    public void PlayReward(int characterId)
+    public void PlayReward(int characterId, int progressStep)
     {
         if (host == null || overlay == null) return;
         activeCharacterId = Mathf.Max(1, characterId);
+        activeProgressStep = Mathf.Max(0, progressStep);
 
         if (playRoutine != null) StopCoroutine(playRoutine);
         playRoutine = StartCoroutine(PlayRoutine());
     }
 
+    public void PlayReward(int characterId)
+    {
+        PlayReward(characterId, 0);
+    }
+
     public void PlayReward()
     {
-        PlayReward(1);
+        PlayReward(1, 0);
     }
 
     IEnumerator PlayRoutine()
@@ -189,8 +196,15 @@ public sealed class XTapGachaMachine : MonoBehaviour
         int cells = allowedSizes[sizeIndex];
         int budget = baseBudgets[sizeIndex];
 
-        float multiplier = 1f + correction / 100f;
-        int total = Mathf.Max(3, Mathf.RoundToInt(budget * multiplier));
+        // Block power grows by +5% for each tower progress step.
+        // 1-1 = 100%, 1-2 = 105%, ... 1-10 = 145%, 2-1 = 150%.
+        double blockGrowthMultiplier = 1d + activeProgressStep * .05d;
+
+        // Roulette values are correction percentages, not raw stat values.
+        // Example: +20% multiplies the progressed block budget by 1.20.
+        double correctionMultiplier = 1d + correction / 100d;
+        double progressedBudget = budget * blockGrowthMultiplier;
+        int total = Mathf.Max(3, Mathf.RoundToInt((float)(progressedBudget * correctionMultiplier)));
 
         float a = UnityEngine.Random.Range(.15f, .70f);
         float d = UnityEngine.Random.Range(.10f, .65f);
@@ -542,7 +556,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
             sr.sizeDelta = new Vector2(86f, 64f);
             sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 176f;
 
-            string label = corrections[i] > 0 ? "+" + corrections[i] : corrections[i].ToString();
+            string label = (corrections[i] > 0 ? "+" + corrections[i] : corrections[i].ToString()) + "%";
             Text lt = MakeText(slot.transform, label, 12, TextAnchor.MiddleCenter, true);
             lt.color = Color.white;
             Anchor(lt.rectTransform, 0f, 0f, 1f, 1f);
