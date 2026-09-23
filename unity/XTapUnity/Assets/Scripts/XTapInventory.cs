@@ -393,9 +393,9 @@ public sealed class XTapInventory : MonoBehaviour
                 item.bagOwnerCharacterId == activeBagOwnerCharacterId)
             {
                 bagCount++;
-                atk += item.attack;
-                def += item.defense;
-                hp += item.hp;
+                atk = XTapStatFormat.SafeAdd(atk, item.attack);
+                def = XTapStatFormat.SafeAdd(def, item.defense);
+                hp = XTapStatFormat.SafeAdd(hp, item.hp);
                 CreateGridItemView(item);
             }
             else if (item.location == XTapGearBlockData.LocationHeld)
@@ -709,7 +709,7 @@ public sealed class XTapInventory : MonoBehaviour
             for (int i = 0; i < items.Count; i++)
                 if (items[i].location == XTapGearBlockData.LocationBag &&
                     items[i].bagOwnerCharacterId == 0)
-                    total += Math.Max(0d, items[i].attack);
+                    total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].attack));
             return total;
         }
     }
@@ -722,7 +722,7 @@ public sealed class XTapInventory : MonoBehaviour
             for (int i = 0; i < items.Count; i++)
                 if (items[i].location == XTapGearBlockData.LocationBag &&
                     items[i].bagOwnerCharacterId == 0)
-                    total += Math.Max(0d, items[i].defense);
+                    total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].defense));
             return total;
         }
     }
@@ -735,7 +735,7 @@ public sealed class XTapInventory : MonoBehaviour
             for (int i = 0; i < items.Count; i++)
                 if (items[i].location == XTapGearBlockData.LocationBag &&
                     items[i].bagOwnerCharacterId == 0)
-                    total += Math.Max(0d, items[i].hp);
+                    total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].hp));
             return total;
         }
     }
@@ -746,7 +746,7 @@ public sealed class XTapInventory : MonoBehaviour
         for (int i = 0; i < items.Count; i++)
             if (items[i].location == XTapGearBlockData.LocationBag &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
-                total += Math.Max(0d, items[i].attack);
+                total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].attack));
         return total;
     }
 
@@ -756,7 +756,7 @@ public sealed class XTapInventory : MonoBehaviour
         for (int i = 0; i < items.Count; i++)
             if (items[i].location == XTapGearBlockData.LocationBag &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
-                total += Math.Max(0d, items[i].defense);
+                total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].defense));
         return total;
     }
 
@@ -766,7 +766,7 @@ public sealed class XTapInventory : MonoBehaviour
         for (int i = 0; i < items.Count; i++)
             if (items[i].location == XTapGearBlockData.LocationBag &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
-                total += Math.Max(0d, items[i].hp);
+                total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].hp));
         return total;
     }
 
