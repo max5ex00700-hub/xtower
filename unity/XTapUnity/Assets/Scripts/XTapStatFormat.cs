@@ -4,6 +4,27 @@ using System.Text;
 
 public static class XTapStatFormat
 {
+    public static double SafeAdd(double a, double b)
+    {
+        if (double.IsNaN(a)) a = 0d;
+        if (double.IsNaN(b)) b = 0d;
+
+        if (a >= double.MaxValue || b >= double.MaxValue)
+            return double.MaxValue;
+
+        if (a <= -double.MaxValue || b <= -double.MaxValue)
+            return -double.MaxValue;
+
+        double result = a + b;
+
+        if (double.IsPositiveInfinity(result))
+            return double.MaxValue;
+        if (double.IsNegativeInfinity(result))
+            return -double.MaxValue;
+
+        return result;
+    }
+
     public static string Compact(int value)
     {
         return Compact((double)value);
