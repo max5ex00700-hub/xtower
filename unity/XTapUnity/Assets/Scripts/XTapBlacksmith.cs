@@ -161,12 +161,24 @@ public sealed class XTapBlacksmith : MonoBehaviour
         synthesisTab.onClick.AddListener(delegate { SetMode(ForgeMode.Synthesis); });
         dismantleTab.onClick.AddListener(delegate { SetMode(ForgeMode.Dismantle); });
 
-        Text slotGuide = MakeText(panel, "소지품/바닥 블록을 선택해 슬롯에 넣으세요", 13, TextAnchor.MiddleCenter, false);
+        Text slotGuide = MakeText(panel, "선택하면 목록이 당겨집니다 · 위 슬롯을 누르면 선택 해제", 13, TextAnchor.MiddleCenter, false);
         slotGuide.color = new Color(.82f, .72f, .60f, 1f);
         Anchor(slotGuide.rectTransform, .05f, .815f, .95f, .850f);
 
         targetSlot = MakeSlotPanel(panel, "TargetSlot", .055f, .595f, .465f, .805f);
         materialSlot = MakeSlotPanel(panel, "MaterialSlot", .535f, .595f, .945f, .805f);
+
+        Image targetSlotImage = targetSlot.GetComponent<Image>();
+        targetSlotImage.raycastTarget = true;
+        Button targetSlotButton = targetSlot.gameObject.AddComponent<Button>();
+        targetSlotButton.targetGraphic = targetSlotImage;
+        targetSlotButton.onClick.AddListener(ClearTargetSelection);
+
+        Image materialSlotImage = materialSlot.GetComponent<Image>();
+        materialSlotImage.raycastTarget = true;
+        Button materialSlotButton = materialSlot.gameObject.AddComponent<Button>();
+        materialSlotButton.targetGraphic = materialSlotImage;
+        materialSlotButton.onClick.AddListener(ClearMaterialSelection);
 
         Text targetLabel = MakeText(targetSlot, "대상", 18, TextAnchor.UpperCenter, true);
         targetLabel.color = new Color(1f, .80f, .42f, 1f);
@@ -411,10 +423,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void RefreshSharedStorage()
     {
-        int heldCount = inventory.GetStorageCount(XTapGearBlockData.LocationHeld);
-        int groundCount = inventory.GetStorageCount(XTapGearBlockData.LocationGround);
-        int heldPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationHeld);
-        int groundPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationGround);
+        int heldCount = inventory.GetStorageCount(XTapGearBlockData.LocationHeld, IsForgeListVisible);
+        int groundCount = inventory.GetStorageCount(XTapGearBlockData.LocationGround, IsForgeListVisible);
+        int heldPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationHeld, IsForgeListVisible);
+        int groundPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationGround, IsForgeListVisible);
 
         heldPage = Mathf.Clamp(heldPage, 0, heldPages - 1);
         groundPage = Mathf.Clamp(groundPage, 0, groundPages - 1);
@@ -434,20 +446,41 @@ public sealed class XTapBlacksmith : MonoBehaviour
             heldContent,
             heldPage,
             OnItemPressed,
-            IsForgeSelected
+            IsForgeSelected,
+            IsForgeListVisible
         );
         inventory.RenderSharedStoragePage(
             XTapGearBlockData.LocationGround,
             groundContent,
             groundPage,
             OnItemPressed,
-            IsForgeSelected
+            IsForgeSelected,
+            IsForgeListVisible
         );
     }
 
     bool IsForgeSelected(string id)
     {
         return targetId == id || materialIds.Contains(id);
+    }
+
+    bool IsForgeListVisible(string id)
+    {
+        return !IsForgeSelected(id);
+    }
+
+    void ClearTargetSelection()
+    {
+        if (probabilityBusy || string.IsNullOrEmpty(targetId)) return;
+        targetId = null;
+        Refresh();
+    }
+
+    void ClearMaterialSelection()
+    {
+        if (probabilityBusy || materialIds.Count == 0) return;
+        materialIds.Clear();
+        Refresh();
     }
 
     void ChangeStoragePage(int location, int delta)
