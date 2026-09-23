@@ -1237,6 +1237,24 @@ public sealed class XTapInventory : MonoBehaviour
         if (item == null) return;
 
         selectedId = id;
+
+        // Floor rewards are difficult to drag on a phone. A single tap picks the
+        // compatible block up into carried inventory. Drag-and-drop remains available.
+        if (item.location == XTapGearBlockData.LocationGround)
+        {
+            if (!IsCompatibleWithBagOwner(item, activeBagOwnerCharacterId))
+                return;
+
+            item.location = XTapGearBlockData.LocationHeld;
+            item.bagOwnerCharacterId = 0;
+            item.gridX = -1;
+            item.gridY = -1;
+
+            Save();
+            Render();
+            return;
+        }
+
         int next = (item.rotation + 1) % 4;
 
         if (item.location == XTapGearBlockData.LocationBag)
