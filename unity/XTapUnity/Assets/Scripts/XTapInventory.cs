@@ -1870,6 +1870,53 @@ public sealed class XTapInventory : MonoBehaviour
         return b;
     }
 
+    void StylePagerButton(Button button)
+    {
+        if (button == null) return;
+
+        Image bg = button.targetGraphic as Image;
+        if (bg != null)
+        {
+            if (XTapUiSkin.TabSelected != null)
+            {
+                bg.sprite = XTapUiSkin.TabSelected;
+                bg.type = Image.Type.Sliced;
+                bg.color = new Color(1f, .86f, .52f, 1f);
+            }
+            else
+            {
+                bg.color = new Color(.18f, .12f, .055f, 1f);
+            }
+        }
+
+        Text label = button.GetComponentInChildren<Text>();
+        if (label != null)
+        {
+            label.color = new Color(1f, .82f, .38f, 1f);
+            label.fontStyle = FontStyle.Bold;
+        }
+    }
+
+    void ApplyImageSkin(Image image, Sprite sprite, Color tint)
+    {
+        if (image == null || sprite == null) return;
+        image.sprite = sprite;
+        image.type = Image.Type.Sliced;
+        image.color = tint;
+    }
+
+    void ApplyPanelSkin(RectTransform rect, Sprite sprite, Color tint)
+    {
+        if (rect == null) return;
+        ApplyImageSkin(rect.GetComponent<Image>(), sprite, tint);
+    }
+
+    void ApplyButtonSkin(Button button, Sprite sprite, Color tint)
+    {
+        if (button == null) return;
+        ApplyImageSkin(button.targetGraphic as Image, sprite, tint);
+    }
+
     Text MakeText(Transform parent, string value, int size, TextAnchor align, bool bold)
     {
         GameObject go = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(Text));
