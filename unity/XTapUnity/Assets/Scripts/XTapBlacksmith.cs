@@ -416,7 +416,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (mode == ForgeMode.Enhance)
             ruleText.text = "+1~+10 안전 강화 · 블록 고유 공/방/체 단계당 +10%  ·  +11~+20 성공률 10% / 실패 시 대상 파괴";
         else if (mode == ForgeMode.Synthesis)
-            ruleText.text = "대상 1개 + 제물 1개  ·  성공률 1%  ·  성공 시 제물 능력 흡수";
+            ruleText.text = "대상 블록 + 제물 블록  ·  성공률 1%  ·  제물의 강화 포함 현재 공/방/체 전부 합산";
         else
             ruleText.text = "제물 최대 10개  ·  1개당 10%  ·  성공 시 플레이어 가방 +1칸";
     }
@@ -866,7 +866,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         if (success)
         {
-            inventory.AddSynthesisStats(target, addAttack, addDefense, addHp);
+            inventory.MergeSynthesisStats(target, addAttack, addDefense, addHp);
             inventory.CommitForgeChanges();
 
             resultText.text =

@@ -1813,14 +1813,32 @@ public sealed class XTapInventory : MonoBehaviour
         );
     }
 
-    public void AddSynthesisStats(XTapGearBlockData item, double attack, double defense, double hp)
+    public void MergeSynthesisStats(XTapGearBlockData item, double attack, double defense, double hp)
     {
         if (item == null) return;
         EnsureEnhancementBaseStats(item);
+        RecalculateEnhancedStats(item);
 
-        item.synthesisAttack = XTapStatFormat.SafeAdd(item.synthesisAttack, Math.Max(0d, attack));
-        item.synthesisDefense = XTapStatFormat.SafeAdd(item.synthesisDefense, Math.Max(0d, defense));
-        item.synthesisHp = XTapStatFormat.SafeAdd(item.synthesisHp, Math.Max(0d, hp));
+        // Synthesis is block + block. Use the material's current effective stats,
+        // including all enhancement gains, and add them to the target's current
+        // effective stats. Bake the combined result back into the target block so
+        // future enhancement treats the merged block as one whole block.
+        double mergedAttack = XTapStatFormat.SafeAdd(item.attack, Math.Max(0d, attack));
+        double mergedDefense = XTapStatFormat.SafeAdd(item.defense, Math.Max(0d, defense));
+        double mergedHp = XTapStatFormat.SafeAdd(item.hp, Math.Max(0d, hp));
+
+        double multiplier = 1d + Mathf.Clamp(item.enhanceLevel, 0, 20) * .10d;
+        if (multiplier <= 0d) multiplier = 1d;
+
+        item.baseAttack = Math.Max(0d, mergedAttack / multiplier);
+        item.baseDefense = Math.Max(0d, mergedDefense / multiplier);
+        item.baseHp = Math.Max(0d, mergedHp / multiplier);
+
+        item.synthesisAttack = 0d;
+        item.synthesisDefense = 0d;
+        item.synthesisHp = 0d;
+        item.enhancementBaseInitialized = true;
+
         RecalculateEnhancedStats(item);
     }
 
