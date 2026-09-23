@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public static class XTapMainSkin
@@ -26,7 +27,37 @@ public static class XTapMainSkin
         if (attempted) return;
         attempted = true;
 
-        atlas = Resources.Load<Texture2D>("XTapMainUI/main_atlas");
+        // Runtime-safe path: decode the same atlas from a TextAsset instead of
+        // depending on Unity's PNG importer/meta state in Cloud Build.
+        try
+        {
+            TextAsset encoded = Resources.Load<TextAsset>("XTapMainUI/main_atlas_runtime");
+            if (encoded != null && !string.IsNullOrWhiteSpace(encoded.text))
+            {
+                byte[] bytes = Convert.FromBase64String(encoded.text.Trim());
+                atlas = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+
+                if (!atlas.LoadImage(bytes, false))
+                {
+                    UnityEngine.Object.Destroy(atlas);
+                    atlas = null;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 메인 UI 런타임 아틀라스 로드 실패: " + e.Message);
+            if (atlas != null)
+            {
+                UnityEngine.Object.Destroy(atlas);
+                atlas = null;
+            }
+        }
+
+        // Fallback for editor/local projects that already import the PNG correctly.
+        if (atlas == null)
+            atlas = Resources.Load<Texture2D>("XTapMainUI/main_atlas");
+
         if (atlas == null)
         {
             Debug.LogWarning("X탑 메인 UI 아틀라스를 불러오지 못했습니다.");
