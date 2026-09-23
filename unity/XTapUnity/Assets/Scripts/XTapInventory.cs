@@ -1835,21 +1835,27 @@ public sealed class XTapInventory : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image bg = go.GetComponent<Image>();
-        bg.color = new Color(.11f, .10f, .10f, 1f);
+        bg.color = new Color(.065f, .055f, .050f, 1f);
         if (XTapUiSkin.ButtonNeutral != null)
         {
             bg.sprite = XTapUiSkin.ButtonNeutral;
             bg.type = Image.Type.Sliced;
-            bg.color = new Color(.92f, .88f, .80f, 1f);
+            bg.color = new Color(.92f, .86f, .74f, 1f);
         }
         else
         {
             Frame(bg.rectTransform, new Color(.52f, .43f, .30f, 1f), 2f);
         }
 
-        Text t = MakeText(go.transform, label, fontSize, TextAnchor.MiddleCenter, true);
-        t.color = new Color(.95f, .90f, .80f, 1f);
-        Anchor(t.rectTransform, .04f, .04f, .96f, .96f);
+        RectTransform accent = Panel(go.transform, "TypeAccent", new Color(.72f, .48f, .22f, .95f));
+        Anchor(accent, .18f, .90f, .82f, .925f);
+
+        Text t = MakeText(go.transform, label, fontSize + 1, TextAnchor.MiddleCenter, true);
+        t.color = new Color(.98f, .92f, .80f, 1f);
+        Outline outline = t.gameObject.AddComponent<Outline>();
+        outline.effectColor = new Color(0f, 0f, 0f, .88f);
+        outline.effectDistance = new Vector2(2f, -2f);
+        Anchor(t.rectTransform, .04f, .04f, .96f, .90f);
 
         Button b = go.GetComponent<Button>();
         b.targetGraphic = bg;
@@ -1857,58 +1863,11 @@ public sealed class XTapInventory : MonoBehaviour
         ColorBlock cb = b.colors;
         cb.normalColor = Color.white;
         cb.highlightedColor = new Color(1f, .94f, .84f, 1f);
-        cb.pressedColor = new Color(.70f, .62f, .55f, 1f);
-        cb.disabledColor = new Color(.62f, .52f, .38f, .88f);
+        cb.pressedColor = new Color(.68f, .56f, .46f, 1f);
+        cb.disabledColor = new Color(.55f, .45f, .34f, .80f);
         b.colors = cb;
 
         return b;
-    }
-
-    void StylePagerButton(Button button)
-    {
-        if (button == null) return;
-
-        Image bg = button.targetGraphic as Image;
-        if (bg != null)
-        {
-            if (XTapUiSkin.TabSelected != null)
-            {
-                bg.sprite = XTapUiSkin.TabSelected;
-                bg.type = Image.Type.Sliced;
-                bg.color = new Color(1f, .86f, .52f, 1f);
-            }
-            else
-            {
-                bg.color = new Color(.18f, .12f, .055f, 1f);
-            }
-        }
-
-        Text label = button.GetComponentInChildren<Text>();
-        if (label != null)
-        {
-            label.color = new Color(1f, .82f, .38f, 1f);
-            label.fontStyle = FontStyle.Bold;
-        }
-    }
-
-    void ApplyImageSkin(Image image, Sprite sprite, Color tint)
-    {
-        if (image == null || sprite == null) return;
-        image.sprite = sprite;
-        image.type = Image.Type.Sliced;
-        image.color = tint;
-    }
-
-    void ApplyPanelSkin(RectTransform rect, Sprite sprite, Color tint)
-    {
-        if (rect == null) return;
-        ApplyImageSkin(rect.GetComponent<Image>(), sprite, tint);
-    }
-
-    void ApplyButtonSkin(Button button, Sprite sprite, Color tint)
-    {
-        if (button == null) return;
-        ApplyImageSkin(button.targetGraphic as Image, sprite, tint);
     }
 
     Text MakeText(Transform parent, string value, int size, TextAnchor align, bool bold)
