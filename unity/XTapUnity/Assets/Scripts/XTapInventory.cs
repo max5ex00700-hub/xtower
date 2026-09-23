@@ -656,7 +656,8 @@ public sealed class XTapInventory : MonoBehaviour
         stat.resizeTextMaxSize = 28;
         Anchor(stat.rectTransform, .38f, .08f, .98f, .52f);
 
-        itemViews[item.id] = root;
+        if (onPressed == null)
+            itemViews[item.id] = root;
     }
 
     void CreateGridItemView(XTapGearBlockData item)
