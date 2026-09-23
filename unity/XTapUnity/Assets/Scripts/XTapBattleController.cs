@@ -1474,22 +1474,74 @@ public sealed class XTapBattleController : MonoBehaviour
             if (installed != null && installed.Length > 0)
             {
                 var preferred = new List<string>();
-                string[] keys = {"Noto","Samsung","Malgun","Nanum","Droid","Arial"};
-                for (int k = 0; k < keys.Length; k++)
+
+                // Avoid Noto Color Emoji and other symbol-only fonts. They can
+                // render Hangul through fallback while silently dropping digits
+                // in legacy Unity UI Text on some Samsung/Android devices.
+                string[] priorityKeys =
+                {
+                    "Noto Sans CJK KR",
+                    "Noto Sans KR",
+                    "SamsungOneKorean",
+                    "SamsungOne",
+                    "Droid Sans Fallback",
+                    "Malgun Gothic",
+                    "NanumGothic",
+                    "Roboto"
+                };
+
+                for (int k = 0; k < priorityKeys.Length; k++)
+                {
                     for (int i = 0; i < installed.Length; i++)
-                        if (installed[i].IndexOf(keys[k], StringComparison.OrdinalIgnoreCase) >= 0 && !preferred.Contains(installed[i]))
-                            preferred.Add(installed[i]);
+                    {
+                        string name = installed[i];
+                        if (string.IsNullOrEmpty(name)) continue;
+                        if (name.IndexOf("Emoji", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                        if (name.IndexOf("Color", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                        if (name.IndexOf(priorityKeys[k], StringComparison.OrdinalIgnoreCase) >= 0 &&
+                            !preferred.Contains(name))
+                            preferred.Add(name);
+                    }
+                }
 
+                // Keep sane non-emoji fallbacks after the preferred Korean/Latin fonts.
                 for (int i = 0; i < installed.Length; i++)
-                    if (!preferred.Contains(installed[i])) preferred.Add(installed[i]);
+                {
+                    string name = installed[i];
+                    if (string.IsNullOrEmpty(name)) continue;
+                    if (name.IndexOf("Emoji", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                    if (name.IndexOf("Color", StringComparison.OrdinalIgnoreCase) >= 0) continue;
+                    if (!preferred.Contains(name))
+                        preferred.Add(name);
+                }
 
-                Font f = Font.CreateDynamicFontFromOSFont(preferred.ToArray(), 64);
-                if (f != null) return f;
+                if (preferred.Count > 0)
+                {
+                    Font f = Font.CreateDynamicFontFromOSFont(preferred.ToArray(), 64);
+                    if (f != null)
+                    {
+                        // Pre-warm every glyph family used by the HUD so digits never
+                        // disappear while Hangul and symbols still render.
+                        const string required =
+                            "0123456789+-/%.,:()[] " +
+                            "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
+                            "플레이어가방소지품바닥공격력방어력체력성장이동장비층구간칸개코드강화합성분해감옥대장간";
+                        f.RequestCharactersInTexture(required, 64, FontStyle.Normal);
+                        f.RequestCharactersInTexture(required, 64, FontStyle.Bold);
+                        return f;
+                    }
+                }
             }
         }
-        catch { }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 폰트 초기화 실패: " + e.Message);
+        }
 
-        return Resources.GetBuiltinResource<Font>("Arial.ttf");
+        Font fallback = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        if (fallback != null)
+            fallback.RequestCharactersInTexture("0123456789+-/%.,:()[]ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 64, FontStyle.Normal);
+        return fallback;
     }
 
     Text MakeText(Transform parent, string value, int size, TextAnchor anchor, bool bold)
