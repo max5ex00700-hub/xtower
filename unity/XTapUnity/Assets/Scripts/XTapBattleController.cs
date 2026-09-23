@@ -8,7 +8,13 @@ using UnityEngine.EventSystems;
 public sealed class XTapBattleController : MonoBehaviour
 {
     const float UiFontScale = 1.70f;
-    const int BaseEnemyHp = 60;
+    const double BasePlayerHp = 100d;
+    const double BasePlayerAttack = 5d;
+    const double BasePlayerDefense = 1d;
+    const double BaseEnemyHp = 100d;
+    const double BaseEnemyAttack = 3d;
+    const double BaseEnemyDefense = 1d;
+    const float CharacterDodgeChance = .20f;
     const int StagesPerFloor = 10;
     const string CurrentStepKey = "xtap_current_progress_step";
     const string MaxUnlockedStepKey = "xtap_max_unlocked_progress_step";
@@ -39,6 +45,8 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainAttackText;
     Text mainDefenseText;
     Text mainHpText;
+    Text battlePlayerStatText;
+    Text battleEnemyStatText;
 
     Font koreanFont;
     Sprite ringSprite;
@@ -55,8 +63,12 @@ public sealed class XTapBattleController : MonoBehaviour
 
     int currentStep;
     int maxUnlockedStep;
-    int enemyMaxHp = BaseEnemyHp;
-    int enemyHp = BaseEnemyHp;
+    double enemyMaxHp = BaseEnemyHp;
+    double enemyHp = BaseEnemyHp;
+    double enemyAttack = BaseEnemyAttack;
+    double enemyDefense = BaseEnemyDefense;
+    double playerMaxHp = BasePlayerHp;
+    double playerHp = BasePlayerHp;
     int hitCount;
     int fightCount;
     bool busy;
@@ -291,6 +303,18 @@ public sealed class XTapBattleController : MonoBehaviour
         bubbleText.resizeTextMinSize = 46;
         bubbleText.resizeTextMaxSize = 62;
         Anchor(bubbleText.rectTransform, .08f, .22f, .92f, .91f);
+
+        Image playerStatPanel = MakePanel(root, "BattlePlayerStats", new Color(.03f, .025f, .022f, .94f), .018f, .910f, .492f, .982f);
+        ApplyGothicPanel(playerStatPanel, XTapMainSkin.UtilityButton, Color.white);
+        battlePlayerStatText = MakeOutlinedText(playerStatPanel.transform, "", 12, TextAnchor.MiddleCenter, true);
+        battlePlayerStatText.color = new Color(.96f, .91f, .82f, 1f);
+        Anchor(battlePlayerStatText.rectTransform, .04f, .08f, .96f, .92f);
+
+        Image enemyStatPanel = MakePanel(root, "BattleEnemyStats", new Color(.03f, .025f, .022f, .94f), .508f, .910f, .982f, .982f);
+        ApplyGothicPanel(enemyStatPanel, XTapMainSkin.UtilityButton, Color.white);
+        battleEnemyStatText = MakeOutlinedText(enemyStatPanel.transform, "", 12, TextAnchor.MiddleCenter, true);
+        battleEnemyStatText.color = new Color(1f, .76f, .58f, 1f);
+        Anchor(battleEnemyStatText.rectTransform, .04f, .08f, .96f, .92f);
     }
 
 
@@ -352,7 +376,7 @@ public sealed class XTapBattleController : MonoBehaviour
         mainMoveText.color = new Color(.96f, .90f, .76f, 1f);
         Anchor(mainMoveText.rectTransform, .10f, .49f, .92f, .66f);
 
-        Text gearTitle = MakeOutlinedText(statPanel.transform, "장비", 14, TextAnchor.MiddleLeft, true);
+        Text gearTitle = MakeOutlinedText(statPanel.transform, "총 능력", 14, TextAnchor.MiddleLeft, true);
         gearTitle.color = new Color(.80f, .78f, .72f, 1f);
         Anchor(gearTitle.rectTransform, .10f, .37f, .92f, .50f);
 
@@ -625,27 +649,27 @@ public sealed class XTapBattleController : MonoBehaviour
         if (mainFloorSubText != null)
             mainFloorSubText.text = "현재 " + TowerFloor() + "층  ·  " + SubStage() + "구간";
 
-        int growthPercent = Mathf.RoundToInt(ProgressMultiplier() * 100f);
+        double growthPercent = SafeMultiply(ProgressMultiplier(), 100d);
         bool canMoveUp = currentStep < maxUnlockedStep;
 
         if (mainGrowthText != null)
-            mainGrowthText.text = "성장    " + growthPercent + "%";
+            mainGrowthText.text = "성장    " + XTapStatFormat.Compact(growthPercent) + "%";
 
         if (mainMoveText != null)
             mainMoveText.text = "이동    " + (canMoveUp ? "가능" : "진행 중");
 
-        double atk = inventory != null ? inventory.EquippedAttack : 0d;
-        double def = inventory != null ? inventory.EquippedDefense : 0d;
-        double hp = inventory != null ? inventory.EquippedHp : 0d;
+        double atk = CurrentPlayerAttack();
+        double def = CurrentPlayerDefense();
+        double hp = CurrentPlayerMaxHp();
 
         if (mainAttackText != null)
-            mainAttackText.text = "공    +" + XTapStatFormat.Compact(atk);
+            mainAttackText.text = "공    " + XTapStatFormat.Compact(atk);
 
         if (mainDefenseText != null)
-            mainDefenseText.text = "방    +" + XTapStatFormat.Compact(def);
+            mainDefenseText.text = "방    " + XTapStatFormat.Compact(def);
 
         if (mainHpText != null)
-            mainHpText.text = "체    +" + XTapStatFormat.Compact(hp);
+            mainHpText.text = "체    " + XTapStatFormat.Compact(hp);
 
         if (mainStatusText != null)
             mainStatusText.text = StageLabel() + " 도전 중";
@@ -682,15 +706,60 @@ public sealed class XTapBattleController : MonoBehaviour
         return TowerFloor() + "-" + SubStage();
     }
 
-    float ProgressMultiplier()
+    double ProgressMultiplier()
     {
-        // 1-1=100%, 1-2=105% ... 1-10=145%, 2-1=150%.
-        return 1f + currentStep * .05f;
+        // Existing balance:
+        // 1-1=100%, 1-2=110% ... 1-9=180%, 1-10=200%.
+        // Every new floor starts at 3x the previous floor's 1-10 value,
+        // so floor start multipliers are 1, 6, 36, 216 ...
+        double floorStart = Math.Pow(6d, Math.Max(0, TowerFloor() - 1));
+        if (double.IsInfinity(floorStart) || floorStart >= double.MaxValue)
+            return double.MaxValue;
+
+        int sub = SubStage();
+        double subMultiplier = sub >= 10 ? 2d : 1d + (sub - 1) * .10d;
+        return SafeMultiply(floorStart, subMultiplier);
     }
 
-    int CurrentEnemyMaxHp()
+    double CurrentEnemyMaxHp()
     {
-        return Mathf.Max(1, Mathf.RoundToInt(BaseEnemyHp * ProgressMultiplier()));
+        return Math.Max(1d, SafeMultiply(BaseEnemyHp, ProgressMultiplier()));
+    }
+
+    double CurrentEnemyAttack()
+    {
+        return Math.Max(1d, SafeMultiply(BaseEnemyAttack, ProgressMultiplier()));
+    }
+
+    double CurrentEnemyDefense()
+    {
+        return Math.Max(0d, SafeMultiply(BaseEnemyDefense, ProgressMultiplier()));
+    }
+
+    double CurrentPlayerAttack()
+    {
+        return XTapStatFormat.SafeAdd(BasePlayerAttack, inventory != null ? inventory.EquippedAttack : 0d);
+    }
+
+    double CurrentPlayerDefense()
+    {
+        return XTapStatFormat.SafeAdd(BasePlayerDefense, inventory != null ? inventory.EquippedDefense : 0d);
+    }
+
+    double CurrentPlayerMaxHp()
+    {
+        return XTapStatFormat.SafeAdd(BasePlayerHp, inventory != null ? inventory.EquippedHp : 0d);
+    }
+
+    double SafeMultiply(double a, double b)
+    {
+        if (double.IsNaN(a) || double.IsNaN(b)) return 0d;
+        if (a == 0d || b == 0d) return 0d;
+
+        double result = a * b;
+        if (double.IsPositiveInfinity(result)) return double.MaxValue;
+        if (double.IsNegativeInfinity(result)) return -double.MaxValue;
+        return result;
     }
 
     int CurrentCharacterId()
@@ -723,6 +792,12 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         enemyMaxHp = CurrentEnemyMaxHp();
         enemyHp = enemyMaxHp;
+        enemyAttack = CurrentEnemyAttack();
+        enemyDefense = CurrentEnemyDefense();
+
+        playerMaxHp = CurrentPlayerMaxHp();
+        playerHp = playerMaxHp;
+
         hitCount = 0;
         won = false;
         busy = false;
@@ -731,6 +806,7 @@ public sealed class XTapBattleController : MonoBehaviour
         ResetJelly();
         HideBubble();
         SetStageOrFallback(0);
+        RefreshBattleStatUi();
     }
 
     void ProcessGesture(Vector2 start, Vector2 end, float duration)
@@ -765,7 +841,7 @@ public sealed class XTapBattleController : MonoBehaviour
             new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height), impact
         ) <= Mathf.Max(58f, Screen.width * .06f);
 
-        bool dodged = !weakHit && UnityEngine.Random.value < .17f;
+        bool dodged = !weakHit && UnityEngine.Random.value < CharacterDodgeChance;
 
         if (dodged)
         {
@@ -780,6 +856,13 @@ public sealed class XTapBattleController : MonoBehaviour
             yield return CharacterRecoil(impact, false, true);
             yield return new WaitForSecondsRealtime(.10f);
             SetStageOrFallback(Stage());
+
+            if (ApplyEnemyCounterAttack())
+            {
+                busy = false;
+                yield break;
+            }
+
             busy = false;
             yield break;
         }
@@ -787,9 +870,12 @@ public sealed class XTapBattleController : MonoBehaviour
         string prefix = PrefixFor(zone, swipe, swipeDelta);
         SetActionSprite(prefix);
 
-        int damage = weakHit ? 18 : (swipe ? 8 : 5);
-        enemyHp = Mathf.Max(0, enemyHp - damage);
+        double attackMultiplier = weakHit ? 3.6d : (swipe ? 1.6d : 1d);
+        double rawAttack = SafeMultiply(CurrentPlayerAttack(), attackMultiplier);
+        double damage = Math.Max(1d, Math.Floor(rawAttack - enemyDefense));
+        enemyHp = Math.Max(0d, enemyHp - damage);
         hitCount++;
+        RefreshBattleStatUi();
 
         StartJellyImpact(impact, weakHit, swipe, swipeDelta);
 
@@ -810,7 +896,7 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble(RandomLine(zoneTalk[zone]), 1.05f);
             VibrateTouch(false);
             PlayCombatImpact(prefix, swipe, false);
-            if (enemyHp <= Mathf.RoundToInt(enemyMaxHp * .25f) && UnityEngine.Random.value < .45f)
+            if (enemyHp <= enemyMaxHp * .25d && UnityEngine.Random.value < .45f)
                 PlayRandomVoice(lowHpVoices, .72f);
             else
                 PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .78f : .66f);
@@ -850,6 +936,12 @@ public sealed class XTapBattleController : MonoBehaviour
             yield break;
         }
 
+        if (ApplyEnemyCounterAttack())
+        {
+            busy = false;
+            yield break;
+        }
+
         SetStageOrFallback(Stage());
 
         if (!weakActive && hitCount >= 4)
@@ -859,6 +951,61 @@ public sealed class XTapBattleController : MonoBehaviour
         }
 
         busy = false;
+    }
+
+    bool ApplyEnemyCounterAttack()
+    {
+        double damage = Math.Max(1d, Math.Floor(enemyAttack - CurrentPlayerDefense()));
+        playerHp = Math.Max(0d, playerHp - damage);
+        RefreshBattleStatUi();
+
+        if (playerHp > 0d)
+            return false;
+
+        HandlePlayerDeath();
+        return true;
+    }
+
+    void HandlePlayerDeath()
+    {
+        HideWeakPoint();
+
+        int lost = inventory != null ? inventory.LoseHeldAndGroundOnDeath() : 0;
+
+        currentStep = Mathf.Max(0, currentStep - 1);
+        maxUnlockedStep = Mathf.Min(maxUnlockedStep, currentStep);
+        SaveProgress();
+
+        ResetFight();
+        RefreshMainProgressUi();
+
+        if (mainStatusText != null)
+            mainStatusText.text = "사망 · 소지품/바닥 " + lost + "개 소실 · " + StageLabel() + "로 후퇴";
+
+        if (mainOverlay != null)
+        {
+            mainOverlay.SetActive(true);
+            mainOverlay.transform.SetAsLastSibling();
+        }
+    }
+
+    void RefreshBattleStatUi()
+    {
+        if (battlePlayerStatText != null)
+        {
+            battlePlayerStatText.text =
+                "유저  체 " + XTapStatFormat.Compact(playerHp) + "/" + XTapStatFormat.Compact(playerMaxHp) +
+                "  공 " + XTapStatFormat.Compact(CurrentPlayerAttack()) +
+                "  방 " + XTapStatFormat.Compact(CurrentPlayerDefense());
+        }
+
+        if (battleEnemyStatText != null)
+        {
+            battleEnemyStatText.text =
+                "적  체 " + XTapStatFormat.Compact(enemyHp) + "/" + XTapStatFormat.Compact(enemyMaxHp) +
+                "  공 " + XTapStatFormat.Compact(enemyAttack) +
+                "  방 " + XTapStatFormat.Compact(enemyDefense);
+        }
     }
 
     int ZoneOf(Vector2 screen)
@@ -890,11 +1037,11 @@ public sealed class XTapBattleController : MonoBehaviour
 
     int Stage()
     {
-        float q = enemyHp / (float)Mathf.Max(1, enemyMaxHp);
-        if (q <= 0f) return 4;
-        if (q <= .25f) return 3;
-        if (q <= .50f) return 2;
-        if (q <= .75f) return 1;
+        double q = enemyHp / Math.Max(1d, enemyMaxHp);
+        if (q <= 0d) return 4;
+        if (q <= .25d) return 3;
+        if (q <= .50d) return 2;
+        if (q <= .75d) return 1;
         return 0;
     }
 
