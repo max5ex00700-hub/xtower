@@ -29,8 +29,10 @@ public sealed class XTapGearBlockData
     public int bagOwnerCharacterId;
     public int enhanceLevel;
 
-    // Enhancement uses the original gear stats as its fixed base.
-    // Synthesis bonuses are stored separately so later enhancement does not re-scale them.
+    // Persisted field names use "base" for save compatibility, but semantically these
+    // are the block's intrinsic/genuine stats fixed when that block is generated
+    // (including its roulette correction). Synthesis bonuses are separate and are
+    // never included in the +10% per enhancement-level calculation.
     public bool enhancementBaseInitialized;
     public double baseAttack;
     public double baseDefense;
@@ -182,6 +184,11 @@ public sealed class XTapInventory : MonoBehaviour
         item.gridX = -1;
         item.gridY = -1;
         item.rotation = ((item.rotation % 4) + 4) % 4;
+
+        // Lock this block's generated stats as its intrinsic stats before it can
+        // receive enhancement or synthesis changes.
+        EnsureEnhancementBaseStats(item);
+        RecalculateEnhancedStats(item);
 
         items.Add(item);
         selectedId = item.id;
@@ -1775,8 +1782,8 @@ public sealed class XTapInventory : MonoBehaviour
         double multiplier = 1d + Mathf.Clamp(item.enhanceLevel, 0, 20) * .10d;
         if (multiplier <= 0d) multiplier = 1d;
 
-        // Existing saves did not persist original base values.
-        // Infer a base that preserves the currently displayed effective stats.
+        // Existing saves did not persist the block's intrinsic generated values.
+        // Infer intrinsic values that preserve the currently displayed effective stats.
         item.baseAttack = Math.Max(0d, item.attack / multiplier);
         item.baseDefense = Math.Max(0d, item.defense / multiplier);
         item.baseHp = Math.Max(0d, item.hp / multiplier);

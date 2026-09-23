@@ -414,7 +414,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (ruleText == null) return;
 
         if (mode == ForgeMode.Enhance)
-            ruleText.text = "+1~+10 안전 강화 · 기본 공/방/체 단계당 +10%  ·  +11~+20 성공률 10% / 실패 시 대상 파괴";
+            ruleText.text = "+1~+10 안전 강화 · 블록 고유 공/방/체 단계당 +10%  ·  +11~+20 성공률 10% / 실패 시 대상 파괴";
         else if (mode == ForgeMode.Synthesis)
             ruleText.text = "대상 1개 + 제물 1개  ·  성공률 1%  ·  성공 시 제물 능력 흡수";
         else
