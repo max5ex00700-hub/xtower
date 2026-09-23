@@ -1,0 +1,77 @@
+using System;
+using System.Globalization;
+using System.Text;
+
+public static class XTapStatFormat
+{
+    public static string Compact(int value)
+    {
+        return Compact((long)value);
+    }
+
+    public static string Compact(long value)
+    {
+        if (value == 0) return "0";
+
+        bool negative = value < 0;
+        double scaled = Math.Abs((double)value);
+        int unit = 0;
+
+        while (scaled >= 1000d)
+        {
+            scaled /= 1000d;
+            unit++;
+        }
+
+        double display;
+        string pattern;
+
+        if (unit == 0)
+        {
+            display = Math.Floor(scaled);
+            pattern = "0";
+        }
+        else if (scaled >= 100d)
+        {
+            display = Math.Floor(scaled);
+            pattern = "0";
+        }
+        else if (scaled >= 10d)
+        {
+            display = Math.Floor(scaled * 10d) / 10d;
+            pattern = "0.#";
+        }
+        else
+        {
+            display = Math.Floor(scaled * 100d) / 100d;
+            pattern = "0.##";
+        }
+
+        string number = display.ToString(pattern, CultureInfo.InvariantCulture);
+        return (negative ? "-" : "") + number + Suffix(unit);
+    }
+
+    static string Suffix(int unit)
+    {
+        if (unit <= 0) return "";
+        if (unit == 1) return "k";
+        if (unit == 2) return "m";
+
+        // unit 3 = a, 4 = b ... 28 = z, 29 = aa, 30 = ab ...
+        return AlphaSuffix(unit - 2);
+    }
+
+    static string AlphaSuffix(int index)
+    {
+        StringBuilder sb = new StringBuilder();
+
+        while (index > 0)
+        {
+            index--;
+            sb.Insert(0, (char)('a' + (index % 26)));
+            index /= 26;
+        }
+
+        return sb.ToString();
+    }
+}
