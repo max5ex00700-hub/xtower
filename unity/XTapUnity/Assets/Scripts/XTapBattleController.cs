@@ -315,7 +315,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.025f, .020f, .020f, .92f), .775f, .940f, .985f, .990f);
         AddFrame(codePlate.rectTransform, new Color(.68f, .48f, .24f, 1f), 3f);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1061", 13, TextAnchor.MiddleCenter, true);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1062", 13, TextAnchor.MiddleCenter, true);
         codeText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(codeText.rectTransform, .04f, .04f, .96f, .96f);
 
