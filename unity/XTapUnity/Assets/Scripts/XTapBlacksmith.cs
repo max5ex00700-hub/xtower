@@ -388,10 +388,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             string prefix = isTarget ? "[대상] " : (isMaterial ? "[제물] " : "");
             string enhance = item.enhanceLevel > 0 ? " +" + item.enhanceLevel : "";
             string line1 = prefix + "[" + LocationName(item) + "] " + item.displayName + enhance;
-            string line2 =
-                "공 +" + XTapStatFormat.Compact(item.attack) +
-                "   방 +" + XTapStatFormat.Compact(item.defense) +
-                "   체 +" + XTapStatFormat.Compact(item.hp);
+            string line2 = XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "   ");
 
             Text t = MakeText(row.transform, line1 + "\n" + line2, 14, TextAnchor.MiddleLeft, isTarget || isMaterial);
             t.color = isTarget
@@ -492,9 +489,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 ? "+"
                 : target.displayName +
                   (target.enhanceLevel > 0 ? "  +" + target.enhanceLevel : "") +
-                  "\n공 +" + XTapStatFormat.Compact(target.attack) +
-                  "   방 +" + XTapStatFormat.Compact(target.defense) +
-                  "   체 +" + XTapStatFormat.Compact(target.hp);
+                  "\n" + XTapStatFormat.BlockTriplet(target.attack, target.defense, target.hp, "   ");
         }
 
         double sacrificeAttack = 0d;
@@ -527,17 +522,13 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 materialSlotText.text =
                     singleSacrifice.displayName +
                     (singleSacrifice.enhanceLevel > 0 ? "  +" + singleSacrifice.enhanceLevel : "") +
-                    "\n공 +" + XTapStatFormat.Compact(singleSacrifice.attack) +
-                    "   방 +" + XTapStatFormat.Compact(singleSacrifice.defense) +
-                    "   체 +" + XTapStatFormat.Compact(singleSacrifice.hp);
+                    "\n" + XTapStatFormat.BlockTriplet(singleSacrifice.attack, singleSacrifice.defense, singleSacrifice.hp, "   ");
             }
             else
             {
                 materialSlotText.text =
                     "제물 " + sacrificeCount + "개" +
-                    "\n합계  공 +" + XTapStatFormat.Compact(sacrificeAttack) +
-                    "   방 +" + XTapStatFormat.Compact(sacrificeDefense) +
-                    "   체 +" + XTapStatFormat.Compact(sacrificeHp);
+                    "\n합계  " + XTapStatFormat.BlockTriplet(sacrificeAttack, sacrificeDefense, sacrificeHp, "   ");
             }
         }
 
@@ -665,9 +656,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
             resultText.text =
                 "합성 성공!  " + consumedName + " 능력을 흡수했습니다.  " +
-                "공 +" + XTapStatFormat.Compact(addAttack) +
-                " / 방 +" + XTapStatFormat.Compact(addDefense) +
-                " / 체 +" + XTapStatFormat.Compact(addHp);
+                XTapStatFormat.BlockTriplet(addAttack, addDefense, addHp, " / ");
         }
         else
         {
@@ -843,6 +832,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         t.fontSize = Mathf.RoundToInt(size * UiFontScale);
         t.alignment = align;
         t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+        t.supportRichText = true;
         t.horizontalOverflow = HorizontalWrapMode.Wrap;
         t.verticalOverflow = VerticalWrapMode.Truncate;
         t.raycastTarget = false;
