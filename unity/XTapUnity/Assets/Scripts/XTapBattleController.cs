@@ -824,8 +824,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
     int CurrentVisualFloor()
     {
-        // Floor art is currently guaranteed for 1-3; higher floors cycle it.
-        return ((TowerFloor() - 1) % 3) + 1;
+        // Each tower floor uses its own character art. Characters repeat only
+        // after the 10-character cycle, never every 3 floors.
+        return CurrentCharacterId();
     }
 
     IEnumerator PreloadCurrentImages()
