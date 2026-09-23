@@ -37,6 +37,10 @@ public sealed class XTapBattleController : MonoBehaviour
     Coroutine bubbleAnimRoutine;
 
     GameObject mainOverlay;
+    RectTransform mainInfoDrawer;
+    Text mainInfoTabText;
+    Coroutine mainInfoDrawerRoutine;
+    bool mainInfoDrawerOpen;
     Text mainFloorText;
     Text mainFloorSubText;
     Text mainStatusText;
@@ -313,43 +317,38 @@ public sealed class XTapBattleController : MonoBehaviour
         RectTransform mainRoot = mainOverlay.GetComponent<RectTransform>();
         Anchor(mainRoot, 0, 0, 1, 1);
 
-        // Keep the current floor character artwork alive behind readable gothic HUD panels.
-        MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .18f), 0f, .70f, 1f, 1f);
+        // Keep the character artwork dominant. Only the action button,
+        // dialogue, build code and bottom navigation are always visible.
+        MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .10f), 0f, .72f, 1f, 1f);
         MakePanel(mainOverlay.transform, "BottomShade", new Color(.008f, .006f, .008f, .72f), 0f, 0f, 1f, .18f);
-
-        // X탑 logo.
-        Text logoX = MakeOutlinedText(mainOverlay.transform, "X", 52, TextAnchor.MiddleCenter, true);
-        logoX.color = new Color(.72f, .015f, .02f, 1f);
-        Anchor(logoX.rectTransform, .018f, .855f, .145f, .995f);
-
-        Text logoTower = MakeOutlinedText(mainOverlay.transform, "탑", 45, TextAnchor.MiddleCenter, true);
-        logoTower.color = new Color(.96f, .93f, .86f, 1f);
-        Anchor(logoTower.rectTransform, .118f, .858f, .285f, .992f);
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.025f, .020f, .020f, .92f), .775f, .940f, .985f, .990f);
         ApplyGothicPanel(codePlate, XTapMainSkin.UtilityButton, Color.white);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1075", 13, TextAnchor.MiddleCenter, true);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1076", 13, TextAnchor.MiddleCenter, true);
         codeText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(codeText.rectTransform, .04f, .04f, .96f, .96f);
 
-        // FLOOR panel. Always shows both progress notation and explicit Korean floor/stage.
-        Image floorPanel = MakePanel(mainOverlay.transform, "FloorPanel", new Color(.025f, .020f, .018f, .92f), .028f, .705f, .405f, .850f);
+        // Hidden left drawer: floor/stage + player stats live here only.
+        Image drawerImage = MakePanel(mainOverlay.transform, "MainInfoDrawer", new Color(.018f, .015f, .014f, .96f), 0f, .365f, .445f, .885f);
+        mainInfoDrawer = drawerImage.rectTransform;
+        ApplyGothicPanel(drawerImage, XTapMainSkin.PlayerPanel, Color.white);
+
+        Image floorPanel = MakePanel(mainInfoDrawer, "FloorPanel", new Color(.025f, .020f, .018f, .94f), .045f, .565f, .955f, .965f);
         ApplyGothicPanel(floorPanel, XTapMainSkin.FloorPanel, Color.white);
 
         Text floorWord = MakeOutlinedText(floorPanel.transform, "FLOOR", 18, TextAnchor.MiddleCenter, true);
         floorWord.color = new Color(.94f, .87f, .73f, 1f);
-        Anchor(floorWord.rectTransform, .08f, .70f, .92f, .98f);
+        Anchor(floorWord.rectTransform, .08f, .72f, .92f, .98f);
 
-        mainFloorText = MakeOutlinedText(floorPanel.transform, TowerFloor().ToString(), 34, TextAnchor.MiddleCenter, true);
+        mainFloorText = MakeOutlinedText(floorPanel.transform, TowerFloor().ToString(), 38, TextAnchor.MiddleCenter, true);
         mainFloorText.color = new Color(1f, .72f, .22f, 1f);
         Anchor(mainFloorText.rectTransform, .08f, .28f, .92f, .72f);
 
-        mainFloorSubText = MakeOutlinedText(floorPanel.transform, "", 14, TextAnchor.MiddleCenter, true);
+        mainFloorSubText = MakeOutlinedText(floorPanel.transform, "", 16, TextAnchor.MiddleCenter, true);
         mainFloorSubText.color = new Color(.96f, .92f, .84f, 1f);
-        Anchor(mainFloorSubText.rectTransform, .08f, .02f, .92f, .30f);
+        Anchor(mainFloorSubText.rectTransform, .08f, .02f, .92f, .29f);
 
-        // Player stat panel. Stats are separate rows so they never disappear into a wrapped status sentence.
-        Image statPanel = MakePanel(mainOverlay.transform, "PlayerStats", new Color(.025f, .020f, .018f, .90f), .025f, .430f, .425f, .695f);
+        Image statPanel = MakePanel(mainInfoDrawer, "PlayerStats", new Color(.025f, .020f, .018f, .94f), .045f, .035f, .955f, .545f);
         ApplyGothicPanel(statPanel, XTapMainSkin.PlayerPanel, Color.white);
 
         Text playerTitle = MakeOutlinedText(statPanel.transform, "플레이어", 20, TextAnchor.MiddleLeft, true);
@@ -375,6 +374,22 @@ public sealed class XTapBattleController : MonoBehaviour
         mainHpText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
         mainHpText.color = new Color(1f, .46f, .46f, 1f);
         Anchor(mainHpText.rectTransform, .10f, .00f, .92f, .17f);
+
+        // Thin edge tab is the only persistent hint that the drawer exists.
+        GameObject tabGo = new GameObject("MainInfoTab", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        tabGo.transform.SetParent(mainOverlay.transform, false);
+        Image tabBg = tabGo.GetComponent<Image>();
+        tabBg.color = new Color(.035f, .030f, .028f, .94f);
+        ApplyGothicPanel(tabBg, XTapMainSkin.NavButton, Color.white);
+        Anchor(tabBg.rectTransform, 0f, .525f, .070f, .690f);
+
+        mainInfoTabText = MakeOutlinedText(tabGo.transform, "›", 24, TextAnchor.MiddleCenter, true);
+        mainInfoTabText.color = new Color(1f, .82f, .42f, 1f);
+        Anchor(mainInfoTabText.rectTransform, .05f, .05f, .95f, .95f);
+
+        Button tabButton = tabGo.GetComponent<Button>();
+        tabButton.targetGraphic = tabBg;
+        tabButton.onClick.AddListener(ToggleMainInfoDrawer);
 
         // Main-screen speech bubble.
         Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
@@ -430,7 +445,73 @@ public sealed class XTapBattleController : MonoBehaviour
                 b.onClick.AddListener(OpenJail);
         }
 
+        SetMainInfoDrawerOpen(false, true);
         mainOverlay.SetActive(false);
+    }
+
+    void ToggleMainInfoDrawer()
+    {
+        SetMainInfoDrawerOpen(!mainInfoDrawerOpen, false);
+    }
+
+    void SetMainInfoDrawerOpen(bool open, bool instant)
+    {
+        mainInfoDrawerOpen = open;
+
+        if (mainInfoTabText != null)
+            mainInfoTabText.text = open ? "‹" : "›";
+
+        if (mainInfoDrawer == null)
+            return;
+
+        float width = mainInfoDrawer.rect.width;
+        if (width <= 1f)
+            width = 480f;
+
+        float targetX = open ? 0f : -(width - 24f);
+
+        if (mainInfoDrawerRoutine != null)
+        {
+            StopCoroutine(mainInfoDrawerRoutine);
+            mainInfoDrawerRoutine = null;
+        }
+
+        if (instant)
+        {
+            Vector2 p = mainInfoDrawer.anchoredPosition;
+            p.x = targetX;
+            mainInfoDrawer.anchoredPosition = p;
+            return;
+        }
+
+        mainInfoDrawerRoutine = StartCoroutine(AnimateMainInfoDrawer(targetX));
+    }
+
+    IEnumerator AnimateMainInfoDrawer(float targetX)
+    {
+        if (mainInfoDrawer == null)
+            yield break;
+
+        float startX = mainInfoDrawer.anchoredPosition.x;
+        const float duration = .22f;
+        float t = 0f;
+
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / duration);
+            p = p * p * (3f - 2f * p);
+
+            Vector2 pos = mainInfoDrawer.anchoredPosition;
+            pos.x = Mathf.Lerp(startX, targetX, p);
+            mainInfoDrawer.anchoredPosition = pos;
+            yield return null;
+        }
+
+        Vector2 finalPos = mainInfoDrawer.anchoredPosition;
+        finalPos.x = targetX;
+        mainInfoDrawer.anchoredPosition = finalPos;
+        mainInfoDrawerRoutine = null;
     }
 
     Image MakePanel(Transform parent, string name, Color color, float x1, float y1, float x2, float y2)
@@ -589,6 +670,7 @@ public sealed class XTapBattleController : MonoBehaviour
         ResetFight();
         SetStageOrFallback(0);
         RefreshMainProgressUi();
+        SetMainInfoDrawerOpen(false, true);
 
         if (mainOverlay != null)
         {
