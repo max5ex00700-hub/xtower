@@ -1588,7 +1588,7 @@ public sealed class XTapInventory : MonoBehaviour
         // Legacy blocks created before stat persistence get a stable default split.
         item.attack = Mathf.Max(1, Mathf.RoundToInt(total * .40f));
         item.defense = Mathf.Max(1, Mathf.RoundToInt(total * .20f));
-        item.hp = Mathf.Max(1, total - item.attack - item.defense);
+        item.hp = Math.Max(1d, total - item.attack - item.defense);
     }
 
     void Load()
