@@ -7,7 +7,7 @@ using UnityEngine.EventSystems;
 
 public sealed class XTapBattleController : MonoBehaviour
 {
-    const float UiFontScale = 1.70f;
+    const float UiFontScale = 2.15f;
     const double BasePlayerHp = 100d;
     const double BasePlayerAttack = 5d;
     const double BasePlayerDefense = 1d;
