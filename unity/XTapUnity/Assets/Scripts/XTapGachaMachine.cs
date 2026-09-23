@@ -75,7 +75,8 @@ public sealed class XTapGachaMachine : MonoBehaviour
     public void PlayReward(int characterId, int progressStep)
     {
         if (host == null || overlay == null) return;
-        activeCharacterId = Mathf.Max(1, characterId);
+        int normalizedCharacter = Mathf.Max(1, characterId);
+        activeCharacterId = ((normalizedCharacter - 1) % 10) + 1;
         activeProgressStep = Mathf.Max(0, progressStep);
 
         if (playRoutine != null) StopCoroutine(playRoutine);

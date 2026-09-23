@@ -63,6 +63,23 @@ public sealed class XTapInventory : MonoBehaviour
     public bool IsOpen { get; private set; }
     public int Count { get { return items.Count; } }
 
+    static int CharacterSlot(int value)
+    {
+        if (value <= 0) return 0;
+        return ((value - 1) % 10) + 1;
+    }
+
+    bool IsCompatibleWithBagOwner(XTapGearBlockData item, int ownerCharacterId)
+    {
+        if (item == null) return false;
+
+        int owner = CharacterSlot(ownerCharacterId);
+        if (owner == 0)
+            return !item.exclusive;
+
+        return item.exclusive && CharacterSlot(item.characterId) == owner;
+    }
+
     RectTransform host;
     Font font;
     Action onClosed;
@@ -138,8 +155,8 @@ public sealed class XTapInventory : MonoBehaviour
 
     public void OpenCharacterBag(int characterId)
     {
-        characterId = Mathf.Clamp(characterId, 1, 10);
-        if (PlayerPrefs.GetInt("xtap_captured_char_" + characterId, 0) != 1)
+        characterId = CharacterSlot(characterId);
+        if (characterId <= 0 || PlayerPrefs.GetInt("xtap_captured_char_" + characterId, 0) != 1)
             return;
 
         OpenBagForOwner(characterId);
@@ -149,7 +166,7 @@ public sealed class XTapInventory : MonoBehaviour
     {
         if (overlay == null) return;
 
-        activeBagOwnerCharacterId = Mathf.Max(0, ownerCharacterId);
+        activeBagOwnerCharacterId = CharacterSlot(ownerCharacterId);
         heldPage = 0;
         groundPage = 0;
         selectedId = null;
@@ -537,11 +554,13 @@ public sealed class XTapInventory : MonoBehaviour
                 hp = XTapStatFormat.SafeAdd(hp, item.hp);
                 CreateGridItemView(item);
             }
-            else if (item.location == XTapGearBlockData.LocationHeld)
+            else if (item.location == XTapGearBlockData.LocationHeld &&
+                     IsCompatibleWithBagOwner(item, activeBagOwnerCharacterId))
             {
                 heldCount++;
             }
-            else if (item.location == XTapGearBlockData.LocationGround)
+            else if (item.location == XTapGearBlockData.LocationGround &&
+                     IsCompatibleWithBagOwner(item, activeBagOwnerCharacterId))
             {
                 groundCount++;
             }
@@ -560,8 +579,16 @@ public sealed class XTapInventory : MonoBehaviour
                          "     체력 +" + XTapStatFormat.Compact(hp);
         if (bagCountText != null)
             bagCountText.text = OccupiedCellCount() + " / " + ActiveGridCapacity + "칸";
-        heldCountText.text = "소지품    " + heldCount + "개";
-        groundCountText.text = "바닥    " + groundCount + "개";
+        if (activeBagOwnerCharacterId == 0)
+        {
+            heldCountText.text = "소지품    " + heldCount + "개";
+            groundCountText.text = "바닥    " + groundCount + "개";
+        }
+        else
+        {
+            heldCountText.text = "전용 소지품    " + heldCount + "개";
+            groundCountText.text = "전용 바닥    " + groundCount + "개";
+        }
 
         heldPageText.text = heldCount == 0 ? "0 / 0" : (heldPage + 1) + " / " + heldPages;
         groundPageText.text = groundCount == 0 ? "0 / 0" : (groundPage + 1) + " / " + groundPages;
@@ -610,8 +637,12 @@ public sealed class XTapInventory : MonoBehaviour
     {
         List<XTapGearBlockData> filtered = new List<XTapGearBlockData>();
         for (int i = 0; i < items.Count; i++)
-            if (items[i].location == location)
-                filtered.Add(items[i]);
+        {
+            XTapGearBlockData item = items[i];
+            if (item == null || item.location != location) continue;
+            if (!IsCompatibleWithBagOwner(item, activeBagOwnerCharacterId)) continue;
+            filtered.Add(item);
+        }
 
         int start = page * StoragePageSize;
         int shown = 0;
@@ -1532,7 +1563,7 @@ public sealed class XTapInventory : MonoBehaviour
 
     bool CanPlace(XTapGearBlockData item, int ox, int oy, int rotation, string ignoreId)
     {
-        if (item.exclusive && activeBagOwnerCharacterId != item.characterId)
+        if (!IsCompatibleWithBagOwner(item, activeBagOwnerCharacterId))
             return false;
 
         List<Vector2Int> cells = GetCells(item, rotation);
@@ -1749,12 +1780,14 @@ public sealed class XTapInventory : MonoBehaviour
         if (item.location < XTapGearBlockData.LocationBag || item.location > XTapGearBlockData.LocationGround)
             item.location = XTapGearBlockData.LocationHeld;
 
-        item.bagOwnerCharacterId = Mathf.Clamp(item.bagOwnerCharacterId, 0, 10);
+        item.characterId = CharacterSlot(item.characterId);
+        item.bagOwnerCharacterId = CharacterSlot(item.bagOwnerCharacterId);
 
-        // Character-exclusive gear can only be equipped in that captured character's bag.
-        if (item.exclusive &&
-            item.location == XTapGearBlockData.LocationBag &&
-            item.bagOwnerCharacterId != item.characterId)
+        // Player grid accepts only normal user blocks.
+        // Captured-character grids accept only that character family's exclusive blocks.
+        // Legacy invalid equipment is automatically unequipped back to carried storage.
+        if (item.location == XTapGearBlockData.LocationBag &&
+            !IsCompatibleWithBagOwner(item, item.bagOwnerCharacterId))
         {
             item.location = XTapGearBlockData.LocationHeld;
             item.bagOwnerCharacterId = 0;
