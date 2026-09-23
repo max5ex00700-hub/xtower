@@ -538,12 +538,14 @@ public sealed class XTapInventory : MonoBehaviour
         name.resizeTextMaxSize = 23;
         Anchor(name.rectTransform, .42f, .52f, .96f, .94f);
 
-        Text stat = MakeText(root, "공 " + item.attack + "   방 " + item.defense + "   체 " + item.hp, 12, TextAnchor.MiddleLeft, true);
-        stat.color = new Color(1f, .78f, .34f, 1f);
+        Text stat = MakeText(root,
+            "공 +" + item.attack + "   방 +" + item.defense + "   체 +" + item.hp,
+            15, TextAnchor.MiddleLeft, true);
+        stat.color = new Color(1f, .74f, .20f, 1f);
         stat.resizeTextForBestFit = true;
-        stat.resizeTextMinSize = 15;
-        stat.resizeTextMaxSize = 22;
-        Anchor(stat.rectTransform, .42f, .12f, .96f, .50f);
+        stat.resizeTextMinSize = 18;
+        stat.resizeTextMaxSize = 28;
+        Anchor(stat.rectTransform, .38f, .08f, .98f, .52f);
 
         itemViews[item.id] = root;
     }
@@ -658,27 +660,35 @@ public sealed class XTapInventory : MonoBehaviour
     {
         GameObject badgeGo = new GameObject("StatsBadge", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         badgeGo.transform.SetParent(root, false);
+        badgeGo.transform.SetAsLastSibling();
 
         Image badge = badgeGo.GetComponent<Image>();
-        badge.color = new Color(.025f, .022f, .024f, .82f);
+        badge.color = new Color(.015f, .012f, .014f, .94f);
         badge.raycastTarget = false;
 
         RectTransform br = badge.rectTransform;
-        br.anchorMin = new Vector2(0f, 0f);
-        br.anchorMax = new Vector2(1f, 0f);
-        br.pivot = new Vector2(.5f, 0f);
-        br.sizeDelta = new Vector2(0f, 58f);
-        br.anchoredPosition = new Vector2(0f, 3f);
+        br.anchorMin = new Vector2(0f, 1f);
+        br.anchorMax = new Vector2(0f, 1f);
+        br.pivot = new Vector2(0f, 1f);
+        br.sizeDelta = new Vector2(
+            Mathf.Max(CellSize, Mathf.Min(root.sizeDelta.x, CellSize * 1.65f)),
+            94f
+        );
+        br.anchoredPosition = new Vector2(5f, -5f);
 
-        Text t = MakeText(badgeGo.transform,
-            (item.enhanceLevel > 0 ? "+" + item.enhanceLevel + "  " : "") +
-            "공" + item.attack + "  방" + item.defense + "\n체" + item.hp,
-            11, TextAnchor.MiddleCenter, true);
-        t.color = new Color(1f, .88f, .54f, 1f);
+        string enhance = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
+        Text t = MakeText(
+            badgeGo.transform,
+            "공 +" + item.attack + enhance + "\n방 +" + item.defense + "   체 +" + item.hp,
+            13,
+            TextAnchor.MiddleCenter,
+            true
+        );
+        t.color = new Color(1f, .82f, .32f, 1f);
         t.resizeTextForBestFit = true;
-        t.resizeTextMinSize = 12;
-        t.resizeTextMaxSize = 18;
-        Anchor(t.rectTransform, .03f, .02f, .97f, .98f);
+        t.resizeTextMinSize = 16;
+        t.resizeTextMaxSize = 24;
+        Anchor(t.rectTransform, .04f, .05f, .96f, .95f);
     }
 
     public int EquippedAttack
@@ -1490,7 +1500,7 @@ public sealed class XTapInventory : MonoBehaviour
             zone + " · " + item.displayName +
             (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
             "  [" + item.cellCount + "칸 / " + corr + "]\n" +
-            "공 +" + item.attack + "     방 +" + item.defense + "     체 +" + item.hp;
+            "공 +" + item.attack + "   방 +" + item.defense + "   체 +" + item.hp;
     }
 
     void NormalizeItem(XTapGearBlockData item)
