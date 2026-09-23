@@ -127,11 +127,12 @@ public sealed class XTapGachaMachine : MonoBehaviour
         float segment = 360f / corrections.Length;
 
         // Slot 0 is authored at the top pointer, and slot indices increase clockwise.
+        // A positive Unity Z rotation brings a clockwise-authored slot back to the top pointer.
         // Always spin from the current wheel orientation to the ABSOLUTE target slot.
         // This prevents visual selection from drifting away from the actual correction
         // after the first reward spin.
         float startAngle = NormalizeSignedAngle(wheel.localEulerAngles.z);
-        float targetAngle = -correctionIndex * segment;
+        float targetAngle = correctionIndex * segment;
         float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
         float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
 
