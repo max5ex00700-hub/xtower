@@ -211,7 +211,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         heldPrevButton = MakeButton(panel, "◀", 18, new Color(.09f, .07f, .06f, 1f));
         ApplyButtonSkin(heldPrevButton, buttonNeutralSkin);
         Anchor(heldPrevButton.GetComponent<RectTransform>(), .635f, .445f, .735f, .492f);
-        heldPrevButton.onClick.AddListener(delegate { ChangeStoragePage(XTapGearBlockData.LocationHeld, -1); });
+        heldPrevButton.onClick.AddListener(delegate { ChangeStoragePage(XTapInventory.ForgeEquippedAndHeldLocation, -1); });
 
         heldPageText = MakeText(panel, "", 17, TextAnchor.MiddleCenter, true);
         heldPageText.color = new Color(1f, .84f, .50f, 1f);
@@ -220,7 +220,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         heldNextButton = MakeButton(panel, "▶", 18, new Color(.09f, .07f, .06f, 1f));
         ApplyButtonSkin(heldNextButton, buttonNeutralSkin);
         Anchor(heldNextButton.GetComponent<RectTransform>(), .860f, .445f, .960f, .492f);
-        heldNextButton.onClick.AddListener(delegate { ChangeStoragePage(XTapGearBlockData.LocationHeld, 1); });
+        heldNextButton.onClick.AddListener(delegate { ChangeStoragePage(XTapInventory.ForgeEquippedAndHeldLocation, 1); });
 
         RectTransform heldViewport;
         inventory.BuildSharedStorageZone(
@@ -423,15 +423,15 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void RefreshSharedStorage()
     {
-        int heldCount = inventory.GetStorageCount(XTapGearBlockData.LocationHeld, IsForgeListVisible);
+        int heldCount = inventory.GetStorageCount(XTapInventory.ForgeEquippedAndHeldLocation, IsForgeListVisible);
         int groundCount = inventory.GetStorageCount(XTapGearBlockData.LocationGround, IsForgeListVisible);
-        int heldPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationHeld, IsForgeListVisible);
+        int heldPages = inventory.GetStoragePageCount(XTapInventory.ForgeEquippedAndHeldLocation, IsForgeListVisible);
         int groundPages = inventory.GetStoragePageCount(XTapGearBlockData.LocationGround, IsForgeListVisible);
 
         heldPage = Mathf.Clamp(heldPage, 0, heldPages - 1);
         groundPage = Mathf.Clamp(groundPage, 0, groundPages - 1);
 
-        if (heldCountText != null) heldCountText.text = "소지품    " + heldCount + "개";
+        if (heldCountText != null) heldCountText.text = "장착/소지품    " + heldCount + "개";
         if (groundCountText != null) groundCountText.text = "바닥    " + groundCount + "개";
         if (heldPageText != null) heldPageText.text = heldCount == 0 ? "0 / 0" : (heldPage + 1) + " / " + heldPages;
         if (groundPageText != null) groundPageText.text = groundCount == 0 ? "0 / 0" : (groundPage + 1) + " / " + groundPages;
@@ -442,7 +442,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (groundNextButton != null) groundNextButton.interactable = groundCount > 0 && groundPage < groundPages - 1;
 
         inventory.RenderSharedStoragePage(
-            XTapGearBlockData.LocationHeld,
+            XTapInventory.ForgeEquippedAndHeldLocation,
             heldContent,
             heldPage,
             OnItemPressed,
@@ -485,7 +485,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void ChangeStoragePage(int location, int delta)
     {
-        if (location == XTapGearBlockData.LocationHeld)
+        if (location == XTapInventory.ForgeEquippedAndHeldLocation)
             heldPage = Mathf.Max(0, heldPage + delta);
         else if (location == XTapGearBlockData.LocationGround)
             groundPage = Mathf.Max(0, groundPage + delta);
@@ -506,8 +506,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (string.IsNullOrEmpty(id)) return;
         XTapGearBlockData pressed = inventory.FindForgeItem(id);
         if (pressed == null) return;
-        if (pressed.location != XTapGearBlockData.LocationHeld &&
-            pressed.location != XTapGearBlockData.LocationGround)
+        if (pressed.location < XTapGearBlockData.LocationBag ||
+            pressed.location > XTapGearBlockData.LocationGround)
             return;
 
         if (mode == ForgeMode.Dismantle)
@@ -826,6 +826,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             resultText.text = "강화 실패. 재료 " + materialCount + "개가 소모됐습니다.";
         }
 
+        NotifyForgeStatsChanged();
         ClearSelection();
     }
 
@@ -858,8 +859,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
             inventory.CommitForgeChanges();
 
             resultText.text =
-                "합성 성공!  " + consumedName + " 능력을 흡수했습니다.  " +
-                XTapStatFormat.BlockTriplet(addAttack, addDefense, addHp, " / ");
+                "합성 성공!  " + consumedName + " 능력 흡수 · 합성 후  " +
+                XTapStatFormat.BlockTriplet(target.attack, target.defense, target.hp, " / ");
         }
         else
         {
@@ -867,7 +868,13 @@ public sealed class XTapBlacksmith : MonoBehaviour
             resultText.text = "합성 실패. " + consumedName + "이(가) 소모됐습니다.";
         }
 
+        NotifyForgeStatsChanged();
         ClearSelection();
+    }
+
+    void NotifyForgeStatsChanged()
+    {
+        if (onClosed != null) onClosed();
     }
 
     void ResolveDismantle(bool success)

@@ -325,7 +325,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.025f, .020f, .020f, .92f), .775f, .940f, .985f, .990f);
         ApplyGothicPanel(codePlate, XTapMainSkin.UtilityButton, Color.white);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1080", 13, TextAnchor.MiddleCenter, true);
+        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1081", 13, TextAnchor.MiddleCenter, true);
         codeText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(codeText.rectTransform, .04f, .04f, .96f, .96f);
 
