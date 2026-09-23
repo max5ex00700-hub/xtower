@@ -247,9 +247,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "BLOCK GEAR";
         nameText.text = r.displayName + "  ·  " + r.cellCount + "칸";
         statsText.text =
-            "공격 +" + XTapStatFormat.Compact(r.attack) +
-            "     방어 +" + XTapStatFormat.Compact(r.defense) +
-            "     체력 +" + XTapStatFormat.Compact(r.hp);
+            XTapStatFormat.BlockTriplet(r.attack, r.defense, r.hp, "     ");
         DrawBlock(r);
     }
 
@@ -631,6 +629,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         t.fontSize = Mathf.RoundToInt(size * UiFontScale);
         t.alignment = anchor;
         t.fontStyle = bold ? FontStyle.Bold : FontStyle.Normal;
+        t.supportRichText = true;
         t.horizontalOverflow = HorizontalWrapMode.Wrap;
         t.verticalOverflow = VerticalWrapMode.Truncate;
         t.raycastTarget = false;
