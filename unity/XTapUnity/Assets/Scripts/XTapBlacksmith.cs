@@ -435,9 +435,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
                   "   체 +" + XTapStatFormat.Compact(target.hp);
         }
 
-        int sacrificeAttack = 0;
-        int sacrificeDefense = 0;
-        int sacrificeHp = 0;
+        double sacrificeAttack = 0d;
+        double sacrificeDefense = 0d;
+        double sacrificeHp = 0d;
         int sacrificeCount = 0;
         XTapGearBlockData singleSacrifice = null;
 
@@ -447,9 +447,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
             if (material == null) continue;
 
             sacrificeCount++;
-            sacrificeAttack += Mathf.Max(0, material.attack);
-            sacrificeDefense += Mathf.Max(0, material.defense);
-            sacrificeHp += Mathf.Max(0, material.hp);
+            sacrificeAttack += Math.Max(0d, material.attack);
+            sacrificeDefense += Math.Max(0d, material.defense);
+            sacrificeHp += Math.Max(0d, material.hp);
             if (sacrificeCount == 1)
                 singleSacrifice = material;
         }
@@ -586,9 +586,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
             return;
         }
 
-        int addAttack = material.attack;
-        int addDefense = material.defense;
-        int addHp = material.hp;
+        double addAttack = material.attack;
+        double addDefense = material.defense;
+        double addHp = material.hp;
         string consumedName = material.displayName;
 
         bool success = UnityEngine.Random.Range(0f, 100f) < 1f;
