@@ -4,7 +4,6 @@ using System.IO;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
-using UnityEditor.Build;
 using UnityEngine;
 
 public sealed class XTapBuildConfig : IPreprocessBuildWithReport
@@ -56,6 +55,12 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         string gitBranch = Environment.GetEnvironmentVariable("GIT_BRANCH");
         string gitCommit = Environment.GetEnvironmentVariable("GIT_COMMIT");
+
+        if (!string.IsNullOrEmpty(gitBranch) &&
+            gitBranch.IndexOf("unity-prototype", StringComparison.OrdinalIgnoreCase) < 0)
+            throw new BuildFailedException(
+                "X탑 Unity 빌드 브랜치 오류. unity-prototype이 아니라 " + gitBranch + " 를 빌드하려고 했습니다.");
+
         string shortCommit = string.IsNullOrEmpty(gitCommit)
             ? "local"
             : gitCommit.Substring(0, Math.Min(8, gitCommit.Length));
