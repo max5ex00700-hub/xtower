@@ -497,7 +497,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Image optionButtonImage = optionButtonGo.GetComponent<Image>();
         optionButtonImage.color = Color.white;
         ApplyMainButtonSkin(optionButtonImage, XTapMainSkin.UtilityButton);
-        Anchor(optionButtonImage.rectTransform, .865f, .925f, .975f, .985f);
+        Anchor(optionButtonImage.rectTransform, .865f, .934f, .975f, .985f);
         Text optionButtonText = MakeOutlinedText(optionButtonGo.transform, "⚙", 22, TextAnchor.MiddleCenter, true);
         optionButtonText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(optionButtonText.rectTransform, .04f, .04f, .96f, .96f);
@@ -507,8 +507,8 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Button codexButton = MakeUtilityButton(mainOverlay.transform, "▤", "도감");
         RectTransform codexButtonRect = codexButton.GetComponent<RectTransform>();
-        codexButtonRect.anchorMin = new Vector2(.865f, .835f);
-        codexButtonRect.anchorMax = new Vector2(.975f, .895f);
+        codexButtonRect.anchorMin = new Vector2(.865f, .858f);
+        codexButtonRect.anchorMax = new Vector2(.975f, .909f);
         codexButtonRect.offsetMin = codexButtonRect.offsetMax = Vector2.zero;
         codexButton.onClick.AddListener(OpenCodex);
 
@@ -564,7 +564,7 @@ public sealed class XTapBattleController : MonoBehaviour
         tabBg.color = Color.white;
         ApplyMainButtonSkin(tabBg, XTapMainSkin.InfoTabButton);
         mainInfoTabRect = tabBg.rectTransform;
-        Anchor(mainInfoTabRect, 0f, .535f, .052f, .670f);
+        Anchor(mainInfoTabRect, 0f, .565f, .052f, .645f);
 
         mainInfoTabText = MakeOutlinedText(tabGo.transform, "›", 26, TextAnchor.MiddleCenter, true);
         mainInfoTabText.color = new Color(1f, .82f, .42f, 1f);
@@ -623,8 +623,8 @@ public sealed class XTapBattleController : MonoBehaviour
         // Large central action button.
         Button fight = MakeGothicButton(mainOverlay.transform, "전투", 24);
         RectTransform fr = fight.GetComponent<RectTransform>();
-        fr.anchorMin = new Vector2(.235f, .140f);
-        fr.anchorMax = new Vector2(.765f, .250f);
+        fr.anchorMin = new Vector2(.270f, .135f);
+        fr.anchorMax = new Vector2(.730f, .255f);
         fr.offsetMin = fr.offsetMax = Vector2.zero;
         fight.onClick.AddListener(BeginBattle);
 
@@ -640,7 +640,7 @@ public sealed class XTapBattleController : MonoBehaviour
             Button b = MakeNavButton(navRail.transform, icons[i], labels[i]);
             RectTransform br = b.GetComponent<RectTransform>();
             float x1 = .015f + i * .197f;
-            float x2 = x1 + .182f;
+            float x2 = x1 + .165f;
             br.anchorMin = new Vector2(x1, .08f);
             br.anchorMax = new Vector2(x2, .92f);
             br.offsetMin = br.offsetMax = Vector2.zero;
@@ -692,7 +692,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.08  (1108)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.09  (1109)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -814,9 +814,9 @@ public sealed class XTapBattleController : MonoBehaviour
         if (mainInfoTabRect != null)
         {
             if (open)
-                Anchor(mainInfoTabRect, .300f, .535f, .352f, .670f);
+                Anchor(mainInfoTabRect, .300f, .565f, .352f, .645f);
             else
-                Anchor(mainInfoTabRect, 0f, .535f, .052f, .670f);
+                Anchor(mainInfoTabRect, 0f, .565f, .052f, .645f);
         }
 
         if (mainInfoDrawer == null)
@@ -906,7 +906,7 @@ public sealed class XTapBattleController : MonoBehaviour
         {
             image.sprite = sprite;
             image.type = Image.Type.Simple;
-            image.preserveAspect = false;
+            image.preserveAspect = true;
             image.color = Color.white;
         }
         else
@@ -947,13 +947,11 @@ public sealed class XTapBattleController : MonoBehaviour
         outer.color = Color.white;
         ApplyMainButtonSkin(outer, XTapMainSkin.FightButton);
 
-        Text kicker = MakeOutlinedText(go.transform, "BATTLE", 10, TextAnchor.MiddleCenter, true);
-        kicker.color = new Color(.92f, .66f, .34f, 1f);
-        Anchor(kicker.rectTransform, .14f, .62f, .86f, .83f);
-
-        Text text = MakeOutlinedText(go.transform, label, fontSize + 5, TextAnchor.MiddleCenter, true);
-        text.color = new Color(1f, .96f, .88f, 1f);
-        Anchor(text.rectTransform, .08f, .18f, .92f, .65f);
+        // Reference button uses the crossed-sword crest as the upper visual,
+        // so keep only the large Korean action title in the lower plaque.
+        Text text = MakeOutlinedText(go.transform, label, fontSize + 10, TextAnchor.MiddleCenter, true);
+        text.color = new Color(1f, .97f, .90f, 1f);
+        Anchor(text.rectTransform, .08f, .16f, .92f, .60f);
 
         Button button = go.GetComponent<Button>();
         button.targetGraphic = outer;
@@ -976,9 +974,9 @@ public sealed class XTapBattleController : MonoBehaviour
         bg.color = Color.white;
         ApplyMainButtonSkin(bg, XTapMainSkin.NavButton);
 
-        Text iconText = MakeOutlinedText(go.transform, icon, 20, TextAnchor.MiddleCenter, true);
+        Text iconText = MakeOutlinedText(go.transform, icon, 24, TextAnchor.MiddleCenter, true);
         iconText.color = new Color(1f, .78f, .36f, 1f);
-        Anchor(iconText.rectTransform, .12f, .48f, .88f, .82f);
+        Anchor(iconText.rectTransform, .12f, .49f, .88f, .83f);
 
         Text labelText = MakeOutlinedText(go.transform, label, 13, TextAnchor.MiddleCenter, true);
         labelText.color = new Color(.98f, .93f, .84f, 1f);
