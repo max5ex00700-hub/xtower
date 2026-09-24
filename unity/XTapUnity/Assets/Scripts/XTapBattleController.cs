@@ -492,24 +492,16 @@ public sealed class XTapBattleController : MonoBehaviour
         MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .10f), 0f, .72f, 1f, 1f);
         MakePanel(mainOverlay.transform, "BottomShade", new Color(.008f, .006f, .008f, .72f), 0f, 0f, 1f, .18f);
 
-        GameObject optionButtonGo = new GameObject("OptionsButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-        optionButtonGo.transform.SetParent(mainOverlay.transform, false);
-        Image optionButtonImage = optionButtonGo.GetComponent<Image>();
-        optionButtonImage.color = Color.white;
-        ApplyMainButtonSkin(optionButtonImage, XTapMainSkin.UtilityButton);
-        Anchor(optionButtonImage.rectTransform, .865f, .934f, .975f, .985f);
-        Text optionButtonText = MakeOutlinedText(optionButtonGo.transform, "⚙", 22, TextAnchor.MiddleCenter, true);
-        optionButtonText.color = new Color(.96f, .90f, .80f, 1f);
-        Anchor(optionButtonText.rectTransform, .04f, .04f, .96f, .96f);
-        Button optionButton = optionButtonGo.GetComponent<Button>();
-        optionButton.targetGraphic = optionButtonImage;
+        // Exact artwork extracted from the approved reference image.
+        Button optionButton = MakeReferenceImageButton(mainOverlay.transform, "OptionsButton", XTapMainSkin.OptionButton);
+        Anchor(optionButton.GetComponent<RectTransform>(), .885f, .936f, .993f, .996f);
         optionButton.onClick.AddListener(OpenOptions);
 
-        Button codexButton = MakeUtilityButton(mainOverlay.transform, "▤", "도감");
-        RectTransform codexButtonRect = codexButton.GetComponent<RectTransform>();
-        codexButtonRect.anchorMin = new Vector2(.865f, .858f);
-        codexButtonRect.anchorMax = new Vector2(.975f, .909f);
-        codexButtonRect.offsetMin = codexButtonRect.offsetMax = Vector2.zero;
+        Button codexButton = MakeReferenceImageButton(mainOverlay.transform, "CodexButton", XTapMainSkin.CodexButton);
+        Anchor(codexButton.GetComponent<RectTransform>(), .885f, .852f, .993f, .922f);
+        Text codexLabel = MakeOutlinedText(codexButton.transform, "도감", 8, TextAnchor.LowerCenter, true);
+        codexLabel.color = new Color(.98f, .92f, .80f, 1f);
+        Anchor(codexLabel.rectTransform, .08f, .02f, .92f, .28f);
         codexButton.onClick.AddListener(OpenCodex);
 
         // Approved composition: no large outer box. FLOOR and player stats are
@@ -564,11 +556,8 @@ public sealed class XTapBattleController : MonoBehaviour
         tabBg.color = Color.white;
         ApplyMainButtonSkin(tabBg, XTapMainSkin.InfoTabButton);
         mainInfoTabRect = tabBg.rectTransform;
-        Anchor(mainInfoTabRect, 0f, .565f, .052f, .645f);
-
-        mainInfoTabText = MakeOutlinedText(tabGo.transform, "›", 26, TextAnchor.MiddleCenter, true);
-        mainInfoTabText.color = new Color(1f, .82f, .42f, 1f);
-        Anchor(mainInfoTabText.rectTransform, .05f, .05f, .95f, .95f);
+        Anchor(mainInfoTabRect, 0f, .749f, .058f, .815f);
+        mainInfoTabText = null;
 
         // Brief floor/stage indicator shown after a successful section move.
         mainProgressToast = new GameObject(
@@ -620,29 +609,34 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(mainSpeechText.rectTransform, .06f, .18f, .95f, .92f);
         mainSpeechBubble.gameObject.SetActive(false);
 
-        // Large central action button.
-        Button fight = MakeGothicButton(mainOverlay.transform, "전투", 24);
-        RectTransform fr = fight.GetComponent<RectTransform>();
-        fr.anchorMin = new Vector2(.270f, .135f);
-        fr.anchorMax = new Vector2(.730f, .255f);
-        fr.offsetMin = fr.offsetMax = Vector2.zero;
+        // Exact central battle button from the reference image. The artwork
+        // already contains crossed swords and the Korean label, so no text is overlaid.
+        Button fight = MakeReferenceImageButton(mainOverlay.transform, "MainFightButton", XTapMainSkin.FightButton);
+        Anchor(fight.GetComponent<RectTransform>(), .287f, .115f, .713f, .271f);
         fight.onClick.AddListener(BeginBattle);
 
-        // Bottom navigation bar.
-        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.010f, .008f, .010f, .985f), 0f, 0f, 1f, .125f);
-        ApplyGothicPanel(navRail, XTapMainSkin.BottomRail, new Color(.025f, .018f, .018f, 1f));
+        // Reference bottom rail: five real button images, no Unicode placeholder icons.
+        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.008f, .006f, .007f, .96f), 0f, 0f, 1f, .145f);
+        AddFrame(navRail.rectTransform, new Color(.54f, .34f, .18f, .92f), 1.5f);
 
-        string[] icons = {"↓", "▣", "▥", "⚒", "↑"};
         string[] labels = {"이전 구간", "가방", "감옥", "대장간", "다음 구간"};
+        Sprite[] navSprites =
+        {
+            XTapMainSkin.NavPrevButton,
+            XTapMainSkin.NavBagButton,
+            XTapMainSkin.NavJailButton,
+            XTapMainSkin.NavForgeButton,
+            XTapMainSkin.NavNextButton
+        };
+        float[] navX1 = {.012f, .197f, .394f, .590f, .787f};
+        float[] navX2 = {.194f, .391f, .588f, .785f, .993f};
 
         for (int i = 0; i < labels.Length; i++)
         {
-            Button b = MakeNavButton(navRail.transform, icons[i], labels[i]);
+            Button b = MakeReferenceImageButton(navRail.transform, labels[i] + "NavButton", navSprites[i]);
             RectTransform br = b.GetComponent<RectTransform>();
-            float x1 = .015f + i * .197f;
-            float x2 = x1 + .165f;
-            br.anchorMin = new Vector2(x1, .08f);
-            br.anchorMax = new Vector2(x2, .92f);
+            br.anchorMin = new Vector2(navX1[i], .035f);
+            br.anchorMax = new Vector2(navX2[i], .985f);
             br.offsetMin = br.offsetMax = Vector2.zero;
 
             if (i == 0)
@@ -692,7 +686,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.09  (1109)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.10  (1110)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -808,15 +802,16 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         mainInfoDrawerOpen = open;
 
-        if (mainInfoTabText != null)
-            mainInfoTabText.text = open ? "‹" : "›";
-
         if (mainInfoTabRect != null)
         {
             if (open)
-                Anchor(mainInfoTabRect, .300f, .565f, .352f, .645f);
+                Anchor(mainInfoTabRect, .300f, .749f, .358f, .815f);
             else
-                Anchor(mainInfoTabRect, 0f, .565f, .052f, .645f);
+                Anchor(mainInfoTabRect, 0f, .749f, .058f, .815f);
+
+            // The reference art already contains the chevron. Mirror the full
+            // button when the drawer is open instead of drawing a second text glyph.
+            mainInfoTabRect.localScale = new Vector3(open ? -1f : 1f, 1f, 1f);
         }
 
         if (mainInfoDrawer == null)
@@ -826,7 +821,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (width <= 1f)
             width = 480f;
 
-        float targetX = open ? 0f : -width;
+        float targetX = open ? 0f : -(width + 24f);
 
         if (mainInfoDrawerRoutine != null)
         {
@@ -936,6 +931,28 @@ public sealed class XTapBattleController : MonoBehaviour
         left.rectTransform.sizeDelta = new Vector2(thickness, 0f);
         Image right = MakePanel(parent, "FrameRight", color, 1f, 0f, 1f, 1f);
         right.rectTransform.sizeDelta = new Vector2(thickness, 0f);
+    }
+
+    Button MakeReferenceImageButton(Transform parent, string objectName, Sprite sprite)
+    {
+        GameObject go = new GameObject(objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+
+        Image image = go.GetComponent<Image>();
+        image.color = Color.white;
+        ApplyMainButtonSkin(image, sprite);
+
+        Button button = go.GetComponent<Button>();
+        button.targetGraphic = image;
+
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1.06f, 1.04f, 1.02f, 1f);
+        colors.pressedColor = new Color(.78f, .72f, .68f, 1f);
+        colors.selectedColor = Color.white;
+        colors.fadeDuration = .055f;
+        button.colors = colors;
+        return button;
     }
 
     Button MakeGothicButton(Transform parent, string label, int fontSize)
