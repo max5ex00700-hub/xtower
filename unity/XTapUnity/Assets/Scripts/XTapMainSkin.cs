@@ -116,7 +116,7 @@ public static class XTapMainSkin
             new Vector2(.185f,.37f)
         };
 
-        return BuildButtonSprite(640, 240, outer, inner, core, true, true);
+        return BuildButtonSprite(520, 285, outer, inner, core, true, true);
     }
 
     static Sprite CreateNavButton()
@@ -148,7 +148,7 @@ public static class XTapMainSkin
             new Vector2(.32f,.17f)
         };
 
-        return BuildButtonSprite(288, 320, outer, inner, core, false, true);
+        return BuildButtonSprite(256, 352, outer, inner, core, false, true);
     }
 
     static Sprite CreateUtilityButton()
@@ -211,7 +211,7 @@ public static class XTapMainSkin
             new Vector2(.20f,.79f), new Vector2(.23f,.21f)
         };
 
-        return BuildButtonSprite(80, 360, outer, inner, core, false, true);
+        return BuildButtonSprite(96, 240, outer, inner, core, false, true);
     }
 
     static Sprite BuildButtonSprite(
@@ -311,6 +311,9 @@ public static class XTapMainSkin
             }
         }
 
+        if (redCore)
+            DrawFightCrest(texture);
+
         texture.Apply(false, true);
 
         return Sprite.Create(
@@ -321,6 +324,62 @@ public static class XTapMainSkin
             0,
             SpriteMeshType.FullRect
         );
+    }
+
+    static void DrawFightCrest(Texture2D texture)
+    {
+        int width = texture.width;
+        int height = texture.height;
+
+        Vector2 swordA0 = new Vector2(.385f, .855f);
+        Vector2 swordA1 = new Vector2(.555f, .585f);
+        Vector2 swordB0 = new Vector2(.615f, .855f);
+        Vector2 swordB1 = new Vector2(.445f, .585f);
+
+        for (int y = 0; y < height; y++)
+        {
+            float v = (y + .5f) / height;
+
+            for (int x = 0; x < width; x++)
+            {
+                float u = (x + .5f) / width;
+                Vector2 p = new Vector2(u, v);
+
+                float da = DistanceToSegment(p, swordA0, swordA1);
+                float db = DistanceToSegment(p, swordB0, swordB1);
+                float d = Mathf.Min(da, db);
+
+                if (d < .016f)
+                {
+                    Color blade = d < .004f
+                        ? new Color(.98f, .96f, .90f, 1f)
+                        : (d < .010f
+                            ? new Color(.74f, .72f, .69f, 1f)
+                            : new Color(.18f, .14f, .13f, 1f));
+                    texture.SetPixel(x, y, blade);
+                }
+
+                float gem = Mathf.Abs(u - .5f) / .028f + Mathf.Abs(v - .895f) / .050f;
+                if (gem <= 1f)
+                {
+                    texture.SetPixel(
+                        x,
+                        y,
+                        gem < .45f
+                            ? new Color(1f, .18f, .045f, 1f)
+                            : new Color(.46f, .018f, .015f, 1f)
+                    );
+                }
+            }
+        }
+    }
+
+    static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
+    {
+        Vector2 ab = b - a;
+        float lengthSq = Mathf.Max(.000001f, Vector2.Dot(ab, ab));
+        float t = Mathf.Clamp01(Vector2.Dot(p - a, ab) / lengthSq);
+        return Vector2.Distance(p, a + ab * t);
     }
 
     static bool Inside(Vector2 p, Vector2[] polygon)
