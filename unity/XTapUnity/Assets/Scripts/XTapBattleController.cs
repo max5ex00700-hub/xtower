@@ -18,6 +18,9 @@ public sealed class XTapBattleController : MonoBehaviour
     const int StagesPerFloor = 10;
     const string CurrentStepKey = "xtap_current_progress_step";
     const string MaxUnlockedStepKey = "xtap_max_unlocked_progress_step";
+    const string VibrationSettingKey = "xtap_option_vibration";
+    const string SfxSettingKey = "xtap_option_sfx";
+    const string BgmSettingKey = "xtap_option_bgm";
 
     XTapOriginalApkAssets assets;
     AudioSource audioSource;
@@ -49,6 +52,14 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainAttackText;
     Text mainDefenseText;
     Text mainHpText;
+
+    GameObject optionsOverlay;
+    Text vibrationOptionValue;
+    Text sfxOptionValue;
+    Text bgmOptionValue;
+    bool vibrationEnabled = true;
+    bool sfxEnabled = true;
+    bool bgmEnabled = true;
 
     Font koreanFont;
     Sprite ringSprite;
@@ -151,6 +162,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Screen.fullScreen = true;
 
         LoadProgress();
+        LoadOptionSettings();
 
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
@@ -319,15 +331,22 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(mainRoot, 0, 0, 1, 1);
 
         // Keep the character artwork dominant. Only the action button,
-        // dialogue, build code and bottom navigation are always visible.
+        // dialogue, options button and bottom navigation are always visible.
         MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .10f), 0f, .72f, 1f, 1f);
         MakePanel(mainOverlay.transform, "BottomShade", new Color(.008f, .006f, .008f, .72f), 0f, 0f, 1f, .18f);
 
-        Image codePlate = MakePanel(mainOverlay.transform, "BuildCode", new Color(.025f, .020f, .020f, .92f), .775f, .940f, .985f, .990f);
-        ApplyGothicPanel(codePlate, XTapMainSkin.UtilityButton, Color.white);
-        Text codeText = MakeOutlinedText(codePlate.transform, "코드 1089", 13, TextAnchor.MiddleCenter, true);
-        codeText.color = new Color(.96f, .90f, .80f, 1f);
-        Anchor(codeText.rectTransform, .04f, .04f, .96f, .96f);
+        GameObject optionButtonGo = new GameObject("OptionsButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        optionButtonGo.transform.SetParent(mainOverlay.transform, false);
+        Image optionButtonImage = optionButtonGo.GetComponent<Image>();
+        optionButtonImage.color = new Color(.025f, .020f, .020f, .94f);
+        ApplyGothicPanel(optionButtonImage, XTapMainSkin.UtilityButton, Color.white);
+        Anchor(optionButtonImage.rectTransform, .820f, .935f, .980f, .990f);
+        Text optionButtonText = MakeOutlinedText(optionButtonGo.transform, "옵션", 13, TextAnchor.MiddleCenter, true);
+        optionButtonText.color = new Color(.96f, .90f, .80f, 1f);
+        Anchor(optionButtonText.rectTransform, .04f, .04f, .96f, .96f);
+        Button optionButton = optionButtonGo.GetComponent<Button>();
+        optionButton.targetGraphic = optionButtonImage;
+        optionButton.onClick.AddListener(OpenOptions);
 
         // Hidden left drawer: floor/stage + player stats live here only.
         Image drawerImage = MakePanel(mainOverlay.transform, "MainInfoDrawer", new Color(.018f, .015f, .014f, .96f), 0f, .365f, .445f, .885f);
@@ -447,8 +466,146 @@ public sealed class XTapBattleController : MonoBehaviour
                 b.onClick.AddListener(OpenJail);
         }
 
+        BuildOptionsUi();
+
         SetMainInfoDrawerOpen(false, true);
         mainOverlay.SetActive(false);
+    }
+
+    void BuildOptionsUi()
+    {
+        optionsOverlay = new GameObject("OptionsOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        optionsOverlay.transform.SetParent(mainOverlay.transform, false);
+        Image dim = optionsOverlay.GetComponent<Image>();
+        dim.color = new Color(0f, 0f, 0f, .82f);
+        dim.raycastTarget = true;
+        Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
+
+        Image panel = MakePanel(optionsOverlay.transform, "OptionsPanel", new Color(.020f, .017f, .018f, .985f), .12f, .24f, .88f, .79f);
+        panel.raycastTarget = true;
+        ApplyGothicPanel(panel, XTapMainSkin.PlayerPanel, Color.white);
+
+        Text title = MakeOutlinedText(panel.transform, "옵션", 25, TextAnchor.MiddleCenter, true);
+        title.color = new Color(1f, .88f, .62f, 1f);
+        Anchor(title.rectTransform, .08f, .82f, .92f, .96f);
+
+        Button vibrationButton = MakeOptionToggle(panel.transform, "진동", out vibrationOptionValue);
+        Anchor(vibrationButton.GetComponent<RectTransform>(), .08f, .62f, .92f, .78f);
+        vibrationButton.onClick.AddListener(ToggleVibrationSetting);
+
+        Button sfxButton = MakeOptionToggle(panel.transform, "효과음", out sfxOptionValue);
+        Anchor(sfxButton.GetComponent<RectTransform>(), .08f, .43f, .92f, .59f);
+        sfxButton.onClick.AddListener(ToggleSfxSetting);
+
+        Button bgmButton = MakeOptionToggle(panel.transform, "배경음악", out bgmOptionValue);
+        Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
+        bgmButton.onClick.AddListener(ToggleBgmSetting);
+
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.90  (1090)", 14, TextAnchor.MiddleCenter, true);
+        version.color = new Color(.72f, .69f, .64f, 1f);
+        Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
+
+        GameObject closeGo = new GameObject("OptionsClose", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        closeGo.transform.SetParent(panel.transform, false);
+        Image closeImage = closeGo.GetComponent<Image>();
+        closeImage.color = new Color(.10f, .075f, .065f, .98f);
+        AddFrame(closeImage.rectTransform, new Color(.60f, .42f, .22f, 1f), 2f);
+        Anchor(closeImage.rectTransform, .30f, .025f, .70f, .11f);
+        Text closeText = MakeOutlinedText(closeGo.transform, "닫기", 14, TextAnchor.MiddleCenter, true);
+        closeText.color = new Color(.98f, .92f, .82f, 1f);
+        Anchor(closeText.rectTransform, .04f, .04f, .96f, .96f);
+        Button closeButton = closeGo.GetComponent<Button>();
+        closeButton.targetGraphic = closeImage;
+        closeButton.onClick.AddListener(CloseOptions);
+
+        RefreshOptionLabels();
+        optionsOverlay.SetActive(false);
+    }
+
+    Button MakeOptionToggle(Transform parent, string label, out Text valueText)
+    {
+        GameObject go = new GameObject(label + "Option", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+
+        Image bg = go.GetComponent<Image>();
+        bg.color = new Color(.040f, .034f, .034f, .98f);
+        AddFrame(bg.rectTransform, new Color(.45f, .34f, .23f, .95f), 2f);
+
+        Text labelText = MakeOutlinedText(go.transform, label, 16, TextAnchor.MiddleLeft, true);
+        labelText.color = new Color(.96f, .90f, .80f, 1f);
+        Anchor(labelText.rectTransform, .07f, .08f, .62f, .92f);
+
+        valueText = MakeOutlinedText(go.transform, "", 15, TextAnchor.MiddleRight, true);
+        Anchor(valueText.rectTransform, .60f, .08f, .92f, .92f);
+
+        Button button = go.GetComponent<Button>();
+        button.targetGraphic = bg;
+        return button;
+    }
+
+    void OpenOptions()
+    {
+        if (optionsOverlay == null) return;
+        RefreshOptionLabels();
+        optionsOverlay.SetActive(true);
+        optionsOverlay.transform.SetAsLastSibling();
+    }
+
+    void CloseOptions()
+    {
+        if (optionsOverlay != null) optionsOverlay.SetActive(false);
+    }
+
+    void LoadOptionSettings()
+    {
+        vibrationEnabled = PlayerPrefs.GetInt(VibrationSettingKey, 1) == 1;
+        sfxEnabled = PlayerPrefs.GetInt(SfxSettingKey, 1) == 1;
+        bgmEnabled = PlayerPrefs.GetInt(BgmSettingKey, 1) == 1;
+    }
+
+    void SaveOptionSettings()
+    {
+        PlayerPrefs.SetInt(VibrationSettingKey, vibrationEnabled ? 1 : 0);
+        PlayerPrefs.SetInt(SfxSettingKey, sfxEnabled ? 1 : 0);
+        PlayerPrefs.SetInt(BgmSettingKey, bgmEnabled ? 1 : 0);
+        PlayerPrefs.Save();
+    }
+
+    void ToggleVibrationSetting()
+    {
+        vibrationEnabled = !vibrationEnabled;
+        SaveOptionSettings();
+        RefreshOptionLabels();
+    }
+
+    void ToggleSfxSetting()
+    {
+        sfxEnabled = !sfxEnabled;
+        SaveOptionSettings();
+        RefreshOptionLabels();
+    }
+
+    void ToggleBgmSetting()
+    {
+        bgmEnabled = !bgmEnabled;
+        SaveOptionSettings();
+        RefreshOptionLabels();
+    }
+
+    void RefreshOptionLabels()
+    {
+        SetOptionValue(vibrationOptionValue, vibrationEnabled);
+        SetOptionValue(sfxOptionValue, sfxEnabled);
+        SetOptionValue(bgmOptionValue, bgmEnabled);
+    }
+
+    void SetOptionValue(Text text, bool enabled)
+    {
+        if (text == null) return;
+        text.text = enabled ? "ON" : "OFF";
+        text.color = enabled
+            ? new Color(.65f, 1f, .66f, 1f)
+            : new Color(1f, .48f, .44f, 1f);
     }
 
     void ToggleMainInfoDrawer()
@@ -1364,6 +1521,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void VibrateTouch(bool strong)
     {
+        if (!vibrationEnabled) return;
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
         {
@@ -1461,6 +1619,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void Play(string entry)
     {
+        if (!sfxEnabled) return;
         if (assets == null || audioSource == null) return;
         AudioClip clip = assets.GetWav(entry);
         if (clip != null) audioSource.PlayOneShot(clip);
@@ -1524,6 +1683,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void PlayCombatSfx(string id, float volume)
     {
+        if (!sfxEnabled) return;
         if (audioSource == null) return;
         AudioClip clip = LoadCombatSfx(id);
         if (clip != null) audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
@@ -1559,6 +1719,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void PlayVoice(string id, float volume)
     {
+        if (!sfxEnabled) return;
         if (audioSource == null) return;
         AudioClip clip = LoadVoice(id);
         if (clip != null) audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
@@ -1720,7 +1881,7 @@ public sealed class XTapBattleController : MonoBehaviour
                         const string required =
                             "0123456789+-/%.,:()[] " +
                             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz" +
-                            "플레이어가방소지품바닥공격력방어력체력성장이동장비층구간칸개코드강화합성분해감옥대장간";
+                            "플레이어가방소지품바닥공격력방어력체력성장이동장비층구간칸개강화합성분해감옥대장간옵션진동효과음배경음악버전정보닫기";
                         f.RequestCharactersInTexture(required, 64, FontStyle.Normal);
                         f.RequestCharactersInTexture(required, 64, FontStyle.Bold);
                         return f;
