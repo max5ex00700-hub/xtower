@@ -22,6 +22,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
     RectTransform rewardRoot;
     Text title;
     Text correctionText;
+    Text ticketStatusText;
     Text nameText;
     Text statsText;
     Text hintText;
@@ -201,6 +202,146 @@ public sealed class XTapGachaMachine : MonoBehaviour
     public void PlayReward()
     {
         PlayReward(1, 0);
+    }
+
+    public void PlayTicketRewards(int ticketCount, int progressStep, Action onTicketConsumed)
+    {
+        if (host == null || overlay == null || ticketCount <= 0) return;
+
+        activeProgressStep = Mathf.Max(0, progressStep);
+        int highestFloor = activeProgressStep / 10 + 1;
+        activeCharacterId = ((highestFloor - 1) % 10) + 1;
+
+        if (playRoutine != null) StopCoroutine(playRoutine);
+        playRoutine = StartCoroutine(PlayTicketRoutine(ticketCount, onTicketConsumed));
+    }
+
+    IEnumerator PlayTicketRoutine(int ticketCount, Action onTicketConsumed)
+    {
+        IsOpen = true;
+        readyToCollect = false;
+        pendingOutcome = null;
+        overlay.SetActive(true);
+        overlay.transform.SetAsLastSibling();
+
+        ClearReward();
+        correctionText.text = "";
+        if (ticketStatusText != null)
+        {
+            ticketStatusText.text = "";
+            ticketStatusText.gameObject.SetActive(false);
+        }
+        nameText.text = "";
+        statsText.text = "";
+
+        int highestFloor = activeProgressStep / 10 + 1;
+        title.text = "X-TOWER  HOURLY TICKET";
+        if (ticketStatusText != null)
+        {
+            ticketStatusText.gameObject.SetActive(true);
+            ticketStatusText.text = "최고 " + highestFloor + "층 블록  ·  무료 티켓 " + ticketCount + "장";
+        }
+
+        machine.localScale = Vector3.one * .90f;
+        machine.anchoredPosition = new Vector2(0f, -40f);
+
+        float intro = 0f;
+        while (intro < .22f)
+        {
+            intro += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(intro / .22f);
+            float e = 1f - Mathf.Pow(1f - p, 3f);
+            machine.localScale = Vector3.one * Mathf.Lerp(.90f, 1f, e);
+            machine.anchoredPosition = new Vector2(0f, Mathf.Lerp(-40f, 0f, e));
+            yield return null;
+        }
+
+        for (int spin = 0; spin < ticketCount; spin++)
+        {
+            int remaining = ticketCount - spin;
+            ClearReward();
+            correctionText.text = "";
+            nameText.text = "";
+            statsText.text = "";
+            hintText.text = "무료 티켓 자동 가챠  ·  남은 " + remaining + "장";
+
+            if (ticketStatusText != null)
+                ticketStatusText.text =
+                    "최고 " + highestFloor + "층 블록  ·  " + (spin + 1) + " / " + ticketCount;
+
+            int correctionIndex = UnityEngine.Random.Range(0, corrections.Length);
+            int correction = corrections[correctionIndex];
+            float segment = 360f / corrections.Length;
+
+            float startAngle = NormalizeSignedAngle(wheel.localEulerAngles.z);
+            float targetAngle = correctionIndex * segment;
+            float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
+            float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
+
+            float duration = spin == 0 ? 1.55f : 1.20f;
+            float t = 0f;
+
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / duration);
+                float e = 1f - Mathf.Pow(1f - p, 4f);
+                float angle = startAngle - totalSpin * e;
+                wheel.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+                float shake = Mathf.Sin(Time.unscaledTime * 72f) * (1f - p) * 5f;
+                machine.anchoredPosition = new Vector2(shake, 0f);
+
+                float pulse = 1f + Mathf.Sin(Time.unscaledTime * 17f) * .05f;
+                wheelCore.rectTransform.localScale = Vector3.one * pulse;
+                yield return null;
+            }
+
+            wheel.localRotation = Quaternion.Euler(0f, 0f, targetAngle);
+            machine.anchoredPosition = Vector2.zero;
+            wheelCore.rectTransform.localScale = Vector3.one;
+
+            yield return ChuteKick();
+
+            // Hourly tickets always create a block. They never roll capture,
+            // even when the visible correction lands on 0%.
+            pendingOutcome = new Outcome();
+            pendingOutcome.correction = correction;
+            pendingOutcome.block = RollBlock(correction, false);
+
+            ShowOutcome(pendingOutcome);
+            title.text = "X-TOWER  HOURLY TICKET";
+            if (ticketStatusText != null)
+                ticketStatusText.text =
+                    "최고 " + highestFloor + "층 블록  ·  " + (spin + 1) + " / " + ticketCount;
+
+            yield return DropReward();
+
+            if (bag == null || !bag.AddToGround(pendingOutcome.block))
+            {
+                hintText.text = "바닥 저장 실패 · 이 티켓은 차감되지 않습니다";
+                pendingOutcome = null;
+                yield return new WaitForSecondsRealtime(1.2f);
+                break;
+            }
+
+            pendingOutcome = null;
+            if (onTicketConsumed != null)
+                onTicketConsumed();
+
+            hintText.text = "바닥에 적재 완료";
+            yield return new WaitForSecondsRealtime(.55f);
+        }
+
+        ClearReward();
+        readyToCollect = false;
+        IsOpen = false;
+        pendingOutcome = null;
+        overlay.SetActive(false);
+        playRoutine = null;
+
+        if (onCollected != null)
+            onCollected();
     }
 
     IEnumerator PlayRoutine()
@@ -790,9 +931,14 @@ public sealed class XTapGachaMachine : MonoBehaviour
         title.color = new Color(1f, .84f, .39f, 1f);
         Anchor(title.rectTransform, .06f, .905f, .94f, .985f);
 
-        correctionText = MakeText(machine, "", 20, TextAnchor.MiddleCenter, true);
+        ticketStatusText = MakeText(machine, "", 14, TextAnchor.MiddleCenter, true);
+        ticketStatusText.color = new Color(1f, .87f, .48f, 1f);
+        Anchor(ticketStatusText.rectTransform, .08f, .855f, .92f, .905f);
+        ticketStatusText.gameObject.SetActive(false);
+
+        correctionText = MakeText(machine, "", 18, TextAnchor.MiddleCenter, true);
         correctionText.color = new Color(.96f, .76f, .25f, 1f);
-        Anchor(correctionText.rectTransform, .12f, .830f, .88f, .905f);
+        Anchor(correctionText.rectTransform, .12f, .805f, .88f, .855f);
 
         RectTransform window = MakePanel(machine, "WheelWindow", new Color(.025f, .03f, .045f, 1f));
         Anchor(window, .17f, .455f, .83f, .820f);
