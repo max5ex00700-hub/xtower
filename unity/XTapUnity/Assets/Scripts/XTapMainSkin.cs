@@ -47,16 +47,19 @@ public static class XTapMainSkin
 
         // 11.10: use the actual button artwork extracted from the approved
         // reference image. Procedural art is fallback only.
-        FightButton = LoadReferenceButtonSprite("XTapMainUI/ref_fight_runtime", "XTapReferenceFight") ?? CreateFightButton();
-        OptionButton = LoadReferenceButtonSprite("XTapMainUI/ref_option_runtime", "XTapReferenceOption") ?? CreateUtilityButton();
-        CodexButton = LoadReferenceButtonSprite("XTapMainUI/ref_codex_runtime", "XTapReferenceCodex") ?? OptionButton;
-        InfoTabButton = LoadReferenceButtonSprite("XTapMainUI/ref_tab_runtime", "XTapReferenceInfoTab") ?? CreateInfoTabButton();
+        FightButton = LoadReferenceButtonSprite("XTapMainUI/ref_fight_runtime", "XTapReferenceFight");
+        OptionButton = LoadReferenceButtonSprite("XTapMainUI/ref_option_runtime", "XTapReferenceOption");
+        CodexButton = LoadReferenceButtonSprite("XTapMainUI/ref_codex_runtime", "XTapReferenceCodex");
+        InfoTabButton = LoadReferenceButtonSprite("XTapMainUI/ref_tab_runtime", "XTapReferenceInfoTab");
 
-        NavPrevButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_prev_runtime", "XTapReferenceNavPrev") ?? CreateNavButton();
-        NavBagButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_bag_runtime", "XTapReferenceNavBag") ?? CreateNavButton();
-        NavJailButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_jail_runtime", "XTapReferenceNavJail") ?? CreateNavButton();
-        NavForgeButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_forge_runtime", "XTapReferenceNavForge") ?? CreateNavButton();
-        NavNextButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_next_runtime", "XTapReferenceNavNext") ?? CreateNavButton();
+        NavPrevButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_prev_runtime", "XTapReferenceNavPrev");
+        NavBagButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_bag_runtime", "XTapReferenceNavBag");
+        NavJailButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_jail_runtime", "XTapReferenceNavJail");
+        NavForgeButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_forge_runtime", "XTapReferenceNavForge");
+        NavNextButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_next_runtime", "XTapReferenceNavNext");
+
+        if (!Ready)
+            Debug.LogError("X탑 기준 이미지 버튼 자산이 하나 이상 누락되었습니다. 11.11부터 절차 생성 버튼으로 대체하지 않습니다.");
 
         // Compatibility aliases for older callers/fallback paths.
         UtilityButton = OptionButton;
