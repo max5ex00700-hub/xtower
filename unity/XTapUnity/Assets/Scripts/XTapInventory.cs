@@ -33,6 +33,7 @@ public sealed class XTapGearBlockData
     // generated name/effect survives save/load, enhancement and synthesis.
     public int descriptorCount;
     public string descriptorIds;
+    public string descriptorWords;
     public string descriptorEffectText;
     public int descriptorFormulaVersion;
 
@@ -51,41 +52,18 @@ public sealed class XTapGearBlockData
 
 public static class XTapGearNameColor
 {
-    struct DescriptorStyle
+    // Descriptor color is determined only by its roll order.
+    // 1st descriptor = cyan, 2nd = violet, 3rd = gold.
+    static readonly string[] TierColors =
     {
-        public string word;
-        public string hex;
-
-        public DescriptorStyle(string descriptorWord, string colorHex)
-        {
-            word = descriptorWord;
-            hex = colorHex;
-        }
-    }
-
-    static DescriptorStyle StyleFor(string id)
-    {
-        switch (id)
-        {
-            case "splendid":   return new DescriptorStyle("화려한", "#FFD166"); // gold
-            case "solid":      return new DescriptorStyle("단단한", "#A9C7D8"); // steel blue
-            case "fine":       return new DescriptorStyle("멋진", "#D6A3FF"); // violet
-            case "sharp":      return new DescriptorStyle("날카로운", "#FF665E"); // red
-            case "sturdy":     return new DescriptorStyle("견고한", "#D29A5B"); // bronze
-            case "vital":      return new DescriptorStyle("생명력 넘치는", "#71E39A"); // green
-            case "balanced":   return new DescriptorStyle("균형 잡힌", "#61D8FF"); // cyan
-            case "precise":    return new DescriptorStyle("정교한", "#7FA8FF"); // blue
-            case "guardian":   return new DescriptorStyle("수호의", "#DCE6F1"); // silver
-            case "fierce":     return new DescriptorStyle("맹렬한", "#FF914D"); // orange
-            case "unyielding": return new DescriptorStyle("불굴의", "#F27AC8"); // magenta
-            case "heavy":      return new DescriptorStyle("묵직한", "#C5A27D"); // brown-gold
-            default:             return new DescriptorStyle("", "");
-        }
-    }
+        "#63D9FF",
+        "#C58AFF",
+        "#FFD166"
+    };
 
     static string ColorizeFirst(string source, string word, string hex)
     {
-        if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(word) || string.IsNullOrEmpty(hex))
+        if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(word))
             return source;
 
         int index = source.IndexOf(word, StringComparison.Ordinal);
@@ -103,16 +81,13 @@ public static class XTapGearNameColor
             return "";
 
         string result = item.displayName;
-        if (item.descriptorCount <= 0 || string.IsNullOrEmpty(item.descriptorIds))
+        if (item.descriptorCount <= 0 || string.IsNullOrEmpty(item.descriptorWords))
             return result;
 
-        string[] ids = item.descriptorIds.Split(',');
-        int max = Mathf.Min(3, ids.Length);
+        string[] words = item.descriptorWords.Split('|');
+        int max = Mathf.Min(3, Mathf.Min(words.Length, item.descriptorCount));
         for (int i = 0; i < max; i++)
-        {
-            DescriptorStyle style = StyleFor(ids[i]);
-            result = ColorizeFirst(result, style.word, style.hex);
-        }
+            result = ColorizeFirst(result, words[i], TierColors[i]);
 
         return result;
     }

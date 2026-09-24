@@ -316,6 +316,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         if (selected.Count == 0)
         {
             item.descriptorIds = "";
+            item.descriptorWords = "";
             item.descriptorEffectText = "";
             item.displayName = noun;
             return;
@@ -333,6 +334,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         int bonusPercent = selected.Count == 1 ? 25 : (selected.Count == 2 ? 50 : 100);
         item.descriptorIds = string.Join(",", ids.ToArray());
+        item.descriptorWords = string.Join("|", words.ToArray());
         item.descriptorEffectText =
             "수식어 " + selected.Count + "개 · 최종 공/방/체 +" + bonusPercent + "%";
         item.displayName = string.Join(" ", words.ToArray()) + " " + noun;
