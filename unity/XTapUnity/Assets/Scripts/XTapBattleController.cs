@@ -495,8 +495,8 @@ public sealed class XTapBattleController : MonoBehaviour
         GameObject optionButtonGo = new GameObject("OptionsButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         optionButtonGo.transform.SetParent(mainOverlay.transform, false);
         Image optionButtonImage = optionButtonGo.GetComponent<Image>();
-        optionButtonImage.color = new Color(.025f, .020f, .020f, .94f);
-        ApplyGothicPanel(optionButtonImage, XTapMainSkin.UtilityButton, Color.white);
+        optionButtonImage.color = Color.white;
+        ApplyMainButtonSkin(optionButtonImage, XTapMainSkin.UtilityButton);
         Anchor(optionButtonImage.rectTransform, .865f, .925f, .975f, .985f);
         Text optionButtonText = MakeOutlinedText(optionButtonGo.transform, "⚙", 22, TextAnchor.MiddleCenter, true);
         optionButtonText.color = new Color(.96f, .90f, .80f, 1f);
@@ -506,6 +506,7 @@ public sealed class XTapBattleController : MonoBehaviour
         optionButton.onClick.AddListener(OpenOptions);
 
         Button codexButton = MakeNavButton(mainOverlay.transform, "▤", "도감");
+        ApplyMainButtonSkin(codexButton.GetComponent<Image>(), XTapMainSkin.UtilityButton);
         RectTransform codexButtonRect = codexButton.GetComponent<RectTransform>();
         codexButtonRect.anchorMin = new Vector2(.865f, .835f);
         codexButtonRect.anchorMax = new Vector2(.975f, .915f);
@@ -561,8 +562,8 @@ public sealed class XTapBattleController : MonoBehaviour
         GameObject tabGo = new GameObject("MainInfoTab", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
         tabGo.transform.SetParent(mainOverlay.transform, false);
         Image tabBg = tabGo.GetComponent<Image>();
-        tabBg.color = new Color(.035f, .030f, .028f, .94f);
-        ApplyGothicPanel(tabBg, XTapMainSkin.NavButton, Color.white);
+        tabBg.color = Color.white;
+        ApplyMainButtonSkin(tabBg, XTapMainSkin.UtilityButton);
         mainInfoTabRect = tabBg.rectTransform;
         Anchor(mainInfoTabRect, 0f, .535f, .052f, .670f);
 
@@ -692,7 +693,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.05  (1105)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.06  (1106)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -898,6 +899,24 @@ public sealed class XTapBattleController : MonoBehaviour
         }
     }
 
+    void ApplyMainButtonSkin(Image image, Sprite sprite)
+    {
+        if (image == null) return;
+
+        if (sprite != null)
+        {
+            image.sprite = sprite;
+            image.type = Image.Type.Simple;
+            image.preserveAspect = false;
+            image.color = Color.white;
+        }
+        else
+        {
+            image.color = new Color(.045f, .035f, .035f, 1f);
+            AddFrame(image.rectTransform, new Color(.68f, .44f, .20f, 1f), 3f);
+        }
+    }
+
     Text MakeOutlinedText(Transform parent, string value, int size, TextAnchor alignment, bool bold)
     {
         Text t = MakeText(parent, value, size, alignment, bold);
@@ -927,20 +946,15 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image outer = go.GetComponent<Image>();
         outer.color = Color.white;
-        ApplyGothicPanel(outer, XTapMainSkin.FightButton, new Color(.16f, .035f, .025f, 1f));
+        ApplyMainButtonSkin(outer, XTapMainSkin.FightButton);
 
-        Image inner = MakePanel(go.transform, "Inset", new Color(.065f, .004f, .008f, .78f), .045f, .12f, .955f, .88f);
+        Text kicker = MakeOutlinedText(go.transform, "BATTLE", 10, TextAnchor.MiddleCenter, true);
+        kicker.color = new Color(.92f, .66f, .34f, 1f);
+        Anchor(kicker.rectTransform, .14f, .62f, .86f, .83f);
 
-        Text kicker = MakeOutlinedText(inner.transform, "BATTLE", 10, TextAnchor.MiddleCenter, true);
-        kicker.color = new Color(.82f, .58f, .34f, 1f);
-        Anchor(kicker.rectTransform, .08f, .68f, .92f, .92f);
-
-        Text text = MakeOutlinedText(inner.transform, label, fontSize + 3, TextAnchor.MiddleCenter, true);
-        text.color = new Color(1f, .94f, .84f, 1f);
-        Anchor(text.rectTransform, .03f, .12f, .97f, .72f);
-
-        Image accent = MakePanel(inner.transform, "TypeAccent", new Color(.80f, .08f, .035f, 1f), .26f, .08f, .74f, .10f);
-        accent.raycastTarget = false;
+        Text text = MakeOutlinedText(go.transform, label, fontSize + 5, TextAnchor.MiddleCenter, true);
+        text.color = new Color(1f, .96f, .88f, 1f);
+        Anchor(text.rectTransform, .08f, .18f, .92f, .65f);
 
         Button button = go.GetComponent<Button>();
         button.targetGraphic = outer;
@@ -961,18 +975,15 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image bg = go.GetComponent<Image>();
         bg.color = Color.white;
-        ApplyGothicPanel(bg, XTapMainSkin.NavButton, new Color(.055f, .043f, .034f, 1f));
-
-        Image topAccent = MakePanel(go.transform, "TypeTopAccent", new Color(.72f, .49f, .24f, .95f), .18f, .915f, .82f, .93f);
-        topAccent.raycastTarget = false;
+        ApplyMainButtonSkin(bg, XTapMainSkin.NavButton);
 
         Text iconText = MakeOutlinedText(go.transform, icon, 20, TextAnchor.MiddleCenter, true);
         iconText.color = new Color(1f, .78f, .36f, 1f);
-        Anchor(iconText.rectTransform, .08f, .46f, .92f, .86f);
+        Anchor(iconText.rectTransform, .12f, .48f, .88f, .82f);
 
         Text labelText = MakeOutlinedText(go.transform, label, 13, TextAnchor.MiddleCenter, true);
         labelText.color = new Color(.98f, .93f, .84f, 1f);
-        Anchor(labelText.rectTransform, .04f, .10f, .96f, .45f);
+        Anchor(labelText.rectTransform, .08f, .16f, .92f, .46f);
 
         Button button = go.GetComponent<Button>();
         button.targetGraphic = bg;
