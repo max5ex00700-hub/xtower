@@ -52,6 +52,10 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainAttackText;
     Text mainDefenseText;
     Text mainHpText;
+    Image mainSpeechBubble;
+    Text mainSpeechText;
+    Coroutine mainSpeechRoutine;
+    Coroutine mainTouchResponseRoutine;
 
     GameObject optionsOverlay;
     Text vibrationOptionValue;
@@ -109,6 +113,15 @@ public sealed class XTapBattleController : MonoBehaviour
 
     readonly string[] dodgeTalk = {"느려.","피했어.","거긴 아니야.","다 보여."};
     readonly string[] criticalTalk = {"윽… 거긴!","잠깐…!","그걸 찾았어?","균형이… 깨졌어."};
+
+    // Main-screen interaction dialogue, migrated from the original Android prototype.
+    readonly string[] mainGeneralTalk = {"...또 왔네.","무슨 일이야?","왜 그렇게 보고 있어?","가만히 좀 있어."};
+    readonly string[] mainHairTalk = {"머리… 만지지 마.","흩트리지 마.","손 치워. 전투 중이잖아."};
+    readonly string[] mainFaceTalk = {"얼굴을 만지다니.","가까이 오지 마.","…시선이 거슬려."};
+    readonly string[] mainChestTalk = {"거기 안 돼.","옷 밑으로 넣지 마.","하아… 정신 차려."};
+    readonly string[] mainThighTalk = {"허벅지는 그만.","다리가 가렵다고 하지 마.","손 올려. 지금."};
+    readonly string[] mainGroinTalk = {"거긴 절대 안 돼!","손 치워!!","어디서 손을…!!"};
+    readonly string[] mainBootTalk = {"신발은 상관없어.","발끝은 봐 주지."};
 
     readonly Dictionary<string, AudioClip> voiceClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
     readonly Dictionary<string, AudioClip> combatSfxClips = new Dictionary<string, AudioClip>(StringComparer.OrdinalIgnoreCase);
@@ -211,7 +224,11 @@ public sealed class XTapBattleController : MonoBehaviour
 
         UpdateWeakPoint();
 
-        if (mainOverlay != null && mainOverlay.activeSelf) return;
+        if (mainOverlay != null && mainOverlay.activeSelf)
+        {
+            HandleMainScreenInput();
+            return;
+        }
         if (gachaMachine != null && gachaMachine.IsOpen) return;
         if (busy) return;
 
@@ -341,15 +358,15 @@ public sealed class XTapBattleController : MonoBehaviour
         optionButtonImage.color = new Color(.025f, .020f, .020f, .94f);
         ApplyGothicPanel(optionButtonImage, XTapMainSkin.UtilityButton, Color.white);
         Anchor(optionButtonImage.rectTransform, .820f, .935f, .980f, .990f);
-        Text optionButtonText = MakeOutlinedText(optionButtonGo.transform, "옵션", 13, TextAnchor.MiddleCenter, true);
+        Text optionButtonText = MakeOutlinedText(optionButtonGo.transform, "⚙", 22, TextAnchor.MiddleCenter, true);
         optionButtonText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(optionButtonText.rectTransform, .04f, .04f, .96f, .96f);
         Button optionButton = optionButtonGo.GetComponent<Button>();
         optionButton.targetGraphic = optionButtonImage;
         optionButton.onClick.AddListener(OpenOptions);
 
-        // Hidden left drawer: floor/stage + player stats live here only.
-        Image drawerImage = MakePanel(mainOverlay.transform, "MainInfoDrawer", new Color(.018f, .015f, .014f, .96f), 0f, .365f, .445f, .885f);
+        // Fixed compact info panel matching the approved main-screen composition.
+        Image drawerImage = MakePanel(mainOverlay.transform, "MainInfoDrawer", new Color(.018f, .015f, .014f, .94f), .020f, .650f, .305f, .960f);
         mainInfoDrawer = drawerImage.rectTransform;
         ApplyGothicPanel(drawerImage, XTapMainSkin.PlayerPanel, Color.white);
 
@@ -411,64 +428,64 @@ public sealed class XTapBattleController : MonoBehaviour
         Button tabButton = tabGo.GetComponent<Button>();
         tabButton.targetGraphic = tabBg;
         tabButton.onClick.AddListener(ToggleMainInfoDrawer);
+        tabGo.SetActive(false);
 
-        // Main-screen speech bubble.
-        Image mainBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
-        mainBubble.transform.SetParent(mainOverlay.transform, false);
-        mainBubble.sprite = speechBubbleSprite;
-        mainBubble.color = new Color(.98f, .97f, .93f, .98f);
-        mainBubble.raycastTarget = false;
-        Anchor(mainBubble.rectTransform, .570f, .765f, .980f, .895f);
+        // Speech bubble is invisible until the character is actually touched.
+        mainSpeechBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        mainSpeechBubble.transform.SetParent(mainOverlay.transform, false);
+        mainSpeechBubble.sprite = speechBubbleSprite;
+        mainSpeechBubble.color = new Color(.98f, .97f, .93f, .98f);
+        mainSpeechBubble.raycastTarget = false;
+        Anchor(mainSpeechBubble.rectTransform, .535f, .760f, .965f, .890f);
 
-        Text mainBubbleText = MakeText(mainBubble.transform, "...또 오는 거야?", 17, TextAnchor.MiddleCenter, true);
-        mainBubbleText.color = new Color(.08f, .055f, .05f, 1f);
-        mainBubbleText.resizeTextForBestFit = true;
-        mainBubbleText.resizeTextMinSize = 28;
-        mainBubbleText.resizeTextMaxSize = 42;
-        Anchor(mainBubbleText.rectTransform, .06f, .18f, .95f, .92f);
+        mainSpeechText = MakeText(mainSpeechBubble.transform, "", 17, TextAnchor.MiddleCenter, true);
+        mainSpeechText.color = new Color(.08f, .055f, .05f, 1f);
+        mainSpeechText.resizeTextForBestFit = true;
+        mainSpeechText.resizeTextMinSize = 28;
+        mainSpeechText.resizeTextMaxSize = 42;
+        Anchor(mainSpeechText.rectTransform, .06f, .18f, .95f, .92f);
+        mainSpeechBubble.gameObject.SetActive(false);
 
         // Large central action button.
-        Button fight = MakeGothicButton(mainOverlay.transform, "그녀를 베다", 24);
+        Button fight = MakeGothicButton(mainOverlay.transform, "전투", 24);
         RectTransform fr = fight.GetComponent<RectTransform>();
-        fr.anchorMin = new Vector2(.185f, .190f);
-        fr.anchorMax = new Vector2(.815f, .315f);
+        fr.anchorMin = new Vector2(.250f, .145f);
+        fr.anchorMax = new Vector2(.750f, .245f);
         fr.offsetMin = fr.offsetMax = Vector2.zero;
         fight.onClick.AddListener(BeginBattle);
 
         // Bottom navigation bar.
-        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.010f, .008f, .010f, .985f), 0f, 0f, 1f, .165f);
+        Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.010f, .008f, .010f, .985f), 0f, 0f, 1f, .125f);
         ApplyGothicPanel(navRail, XTapMainSkin.BottomRail, Color.white);
 
-        string[] icons = {"↻", "↓", "↑", "▣", "⚒", "▥"};
-        string[] labels = {"다시", "↓", "↑", "배낭", "대장간", "감옥"};
+        string[] icons = {"↓", "▣", "▥", "⚒", "↑"};
+        string[] labels = {"이전 구간", "가방", "감옥", "대장간", "다음 구간"};
 
         for (int i = 0; i < labels.Length; i++)
         {
             Button b = MakeNavButton(navRail.transform, icons[i], labels[i]);
             RectTransform br = b.GetComponent<RectTransform>();
-            float x1 = .018f + i * .1635f;
-            float x2 = x1 + .145f;
-            br.anchorMin = new Vector2(x1, .10f);
-            br.anchorMax = new Vector2(x2, .88f);
+            float x1 = .015f + i * .197f;
+            float x2 = x1 + .182f;
+            br.anchorMin = new Vector2(x1, .08f);
+            br.anchorMax = new Vector2(x2, .92f);
             br.offsetMin = br.offsetMax = Vector2.zero;
 
             if (i == 0)
-                b.onClick.AddListener(ReturnToMain);
-            else if (i == 1)
                 b.onClick.AddListener(delegate { MoveProgress(-1); });
-            else if (i == 2)
-                b.onClick.AddListener(delegate { MoveProgress(1); });
-            else if (i == 3)
+            else if (i == 1)
                 b.onClick.AddListener(OpenInventory);
-            else if (i == 4)
-                b.onClick.AddListener(OpenBlacksmith);
-            else if (i == 5)
+            else if (i == 2)
                 b.onClick.AddListener(OpenJail);
+            else if (i == 3)
+                b.onClick.AddListener(OpenBlacksmith);
+            else if (i == 4)
+                b.onClick.AddListener(delegate { MoveProgress(1); });
         }
 
         BuildOptionsUi();
 
-        SetMainInfoDrawerOpen(false, true);
+        SetMainInfoDrawerOpen(true, true);
         mainOverlay.SetActive(false);
     }
 
@@ -501,7 +518,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.90  (1090)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.91  (1091)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -796,6 +813,105 @@ public sealed class XTapBattleController : MonoBehaviour
         return button;
     }
 
+    void HandleMainScreenInput()
+    {
+        if (optionsOverlay != null && optionsOverlay.activeSelf) return;
+        if (Input.touchCount <= 0) return;
+
+        Touch touch = Input.GetTouch(0);
+        if (touch.phase != TouchPhase.Ended) return;
+
+        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject(touch.fingerId))
+            return;
+
+        HandleMainCharacterTouch(touch.position);
+    }
+
+    void HandleMainCharacterTouch(Vector2 screen)
+    {
+        string zone = MainTouchZone(screen);
+        string[] pool = mainGeneralTalk;
+
+        if (zone == "hair") pool = mainHairTalk;
+        else if (zone == "face") pool = mainFaceTalk;
+        else if (zone == "chest") pool = mainChestTalk;
+        else if (zone == "groin") pool = mainGroinTalk;
+        else if (zone == "thigh") pool = mainThighTalk;
+        else if (zone == "boot") pool = mainBootTalk;
+
+        string line = pool[UnityEngine.Random.Range(0, pool.Length)];
+        ShowMainSpeech(line);
+
+        StartCoroutine(TouchPulse(screen, zone == "groin", false));
+        VibrateTouch(zone == "groin");
+
+        if (mainTouchResponseRoutine != null)
+            StopCoroutine(mainTouchResponseRoutine);
+        mainTouchResponseRoutine = StartCoroutine(MainTouchResponse());
+    }
+
+    string MainTouchZone(Vector2 screen)
+    {
+        float nx = screen.x / Mathf.Max(1f, Screen.width);
+        float ny = 1f - screen.y / Mathf.Max(1f, Screen.height);
+
+        // Original prototype touch regions. Outside the central character area
+        // is treated as ordinary conversation rather than a body-part reaction.
+        if (nx < .18f || nx > .82f) return "general";
+        if (ny < .16f) return "hair";
+        if (ny < .30f) return "face";
+        if (ny < .48f) return "chest";
+        if (ny < .58f && nx > .38f && nx < .62f) return "groin";
+        if (ny < .78f) return "thigh";
+        return "boot";
+    }
+
+    void ShowMainSpeech(string line)
+    {
+        if (mainSpeechBubble == null || mainSpeechText == null) return;
+
+        if (mainSpeechRoutine != null)
+        {
+            StopCoroutine(mainSpeechRoutine);
+            mainSpeechRoutine = null;
+        }
+
+        mainSpeechText.text = line;
+        mainSpeechBubble.gameObject.SetActive(true);
+        mainSpeechBubble.transform.SetAsLastSibling();
+        mainSpeechRoutine = StartCoroutine(HideMainSpeechLater(1.6f));
+    }
+
+    IEnumerator HideMainSpeechLater(float seconds)
+    {
+        yield return new WaitForSecondsRealtime(seconds);
+        if (mainSpeechBubble != null)
+            mainSpeechBubble.gameObject.SetActive(false);
+        mainSpeechRoutine = null;
+    }
+
+    IEnumerator MainTouchResponse()
+    {
+        if (battleImage == null) yield break;
+
+        RectTransform r = battleImage.rectTransform;
+        Vector3 baseScale = r.localScale;
+        float total = .16f;
+        float t = 0f;
+
+        while (t < total)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / total);
+            float wave = Mathf.Sin(p * Mathf.PI);
+            r.localScale = baseScale * (1f + .008f * wave);
+            yield return null;
+        }
+
+        r.localScale = baseScale;
+        mainTouchResponseRoutine = null;
+    }
+
     void BeginBattle()
     {
         if (mainOverlay != null) mainOverlay.SetActive(false);
@@ -828,7 +944,8 @@ public sealed class XTapBattleController : MonoBehaviour
         ResetFight();
         SetStageOrFallback(0);
         RefreshMainProgressUi();
-        SetMainInfoDrawerOpen(false, true);
+        SetMainInfoDrawerOpen(true, true);
+        if (mainSpeechBubble != null) mainSpeechBubble.gameObject.SetActive(false);
 
         if (mainOverlay != null)
         {
@@ -864,10 +981,10 @@ public sealed class XTapBattleController : MonoBehaviour
     void RefreshMainProgressUi()
     {
         if (mainFloorText != null)
-            mainFloorText.text = TowerFloor().ToString();
+            mainFloorText.text = TowerFloor() + "층";
 
         if (mainFloorSubText != null)
-            mainFloorSubText.text = SubStage() + "구간";
+            mainFloorSubText.text = StageLabel();
 
         bool canMoveUp = currentStep < maxUnlockedStep;
 
@@ -879,13 +996,13 @@ public sealed class XTapBattleController : MonoBehaviour
         double hp = CurrentPlayerMaxHp();
 
         if (mainAttackText != null)
-            mainAttackText.text = "공    " + XTapStatFormat.Compact(atk);
+            mainAttackText.text = "공격력    " + XTapStatFormat.Compact(atk);
 
         if (mainDefenseText != null)
-            mainDefenseText.text = "방    " + XTapStatFormat.Compact(def);
+            mainDefenseText.text = "방어력    " + XTapStatFormat.Compact(def);
 
         if (mainHpText != null)
-            mainHpText.text = "체    " + XTapStatFormat.Compact(hp);
+            mainHpText.text = "체력      " + XTapStatFormat.Compact(hp);
     }
 
     void LoadProgress()
