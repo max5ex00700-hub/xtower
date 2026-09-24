@@ -66,7 +66,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
     Text probabilityTitleText;
     Text probabilityChanceText;
     Text probabilityRollText;
+    Text probabilityPhaseText;
     Text probabilityResultText;
+    Image probabilityChargeFill;
+    readonly Image[] probabilityLamps = new Image[3];
     bool probabilityBusy;
     Coroutine probabilityRoutine;
 
@@ -304,7 +307,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
 
         probabilityMachine = MakePanel(probabilityOverlay.transform, "ProbabilityMachine", new Color(.035f, .020f, .014f, .99f));
-        Anchor(probabilityMachine, .10f, .255f, .90f, .745f);
+        Anchor(probabilityMachine, .08f, .215f, .92f, .785f);
         ApplyPanelSkin(probabilityMachine, panelSkin);
         if (panelSkin == null)
             Frame(probabilityMachine, new Color(.76f, .45f, .18f, 1f), 5f);
@@ -314,28 +317,48 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Anchor(probabilityTitleText.rectTransform, .08f, .82f, .92f, .96f);
 
         RectTransform chanceBar = MakePanel(probabilityMachine, "ChanceBar", new Color(.07f, .045f, .030f, .96f));
-        Anchor(chanceBar, .10f, .66f, .90f, .80f);
+        Anchor(chanceBar, .10f, .705f, .90f, .815f);
         ApplyPanelSkin(chanceBar, statusBarSkin);
 
         probabilityChanceText = MakeText(chanceBar, "", 18, TextAnchor.MiddleCenter, true);
         probabilityChanceText.color = new Color(1f, .88f, .62f, 1f);
         Anchor(probabilityChanceText.rectTransform, .05f, .05f, .95f, .95f);
 
+        RectTransform lampRail = MakePanel(probabilityMachine, "MachineLamps", new Color(.025f, .018f, .016f, .92f));
+        Anchor(lampRail, .20f, .625f, .80f, .685f);
+        for (int i = 0; i < probabilityLamps.Length; i++)
+        {
+            RectTransform lamp = MakePanel(lampRail, "Lamp" + (i + 1), new Color(.16f, .055f, .035f, 1f));
+            float x1 = .04f + i * .325f;
+            Anchor(lamp, x1, .18f, x1 + .285f, .82f);
+            probabilityLamps[i] = lamp.GetComponent<Image>();
+        }
+
+        RectTransform chargeTrack = MakePanel(probabilityMachine, "ChargeTrack", new Color(.055f, .035f, .028f, .98f));
+        Anchor(chargeTrack, .14f, .585f, .86f, .612f);
+        probabilityChargeFill = MakePanel(chargeTrack, "ChargeFill", new Color(1f, .30f, .055f, .98f)).GetComponent<Image>();
+        probabilityChargeFill.raycastTarget = false;
+        Anchor(probabilityChargeFill.rectTransform, .015f, .16f, .015f, .84f);
+
         probabilityWheel = MakePanel(probabilityMachine, "NumberDrum", new Color(.025f, .020f, .018f, 1f));
-        Anchor(probabilityWheel, .20f, .31f, .80f, .64f);
+        Anchor(probabilityWheel, .20f, .285f, .80f, .565f);
         ApplyPanelSkin(probabilityWheel, slotSkin);
 
-        probabilityRollText = MakeText(probabilityWheel, "00", 58, TextAnchor.MiddleCenter, true);
+        probabilityRollText = MakeText(probabilityWheel, "00", 66, TextAnchor.MiddleCenter, true);
         probabilityRollText.color = new Color(1f, .74f, .24f, 1f);
         Anchor(probabilityRollText.rectTransform, .05f, .06f, .95f, .94f);
 
-        probabilityResultText = MakeText(probabilityMachine, "", 21, TextAnchor.MiddleCenter, true);
-        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
-        Anchor(probabilityResultText.rectTransform, .08f, .12f, .92f, .29f);
+        probabilityPhaseText = MakeText(probabilityMachine, "", 17, TextAnchor.MiddleCenter, true);
+        probabilityPhaseText.color = new Color(1f, .82f, .46f, 1f);
+        Anchor(probabilityPhaseText.rectTransform, .08f, .205f, .92f, .275f);
 
-        Text guide = MakeText(probabilityMachine, "00~99 중 숫자 하나가 결정됩니다", 13, TextAnchor.MiddleCenter, false);
+        probabilityResultText = MakeText(probabilityMachine, "", 22, TextAnchor.MiddleCenter, true);
+        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
+        Anchor(probabilityResultText.rectTransform, .08f, .105f, .92f, .195f);
+
+        Text guide = MakeText(probabilityMachine, "실제 결과는 00~99 중 한 번만 결정됩니다", 13, TextAnchor.MiddleCenter, false);
         guide.color = new Color(.74f, .66f, .58f, 1f);
-        Anchor(guide.rectTransform, .08f, .035f, .92f, .12f);
+        Anchor(guide.rectTransform, .08f, .025f, .92f, .095f);
 
         probabilityOverlay.SetActive(false);
     }
@@ -735,57 +758,174 @@ public sealed class XTapBlacksmith : MonoBehaviour
             ? "강화"
             : (operationMode == ForgeMode.Synthesis ? "합성" : "분해");
 
-        probabilityTitleText.text = operationName + " 확률 머신";
-        probabilityChanceText.text = chance >= 100
-            ? "성공률 100%  ·  무조건 성공"
-            : "성공률 " + chance + "%  ·  00~" + Mathf.Max(0, chance - 1).ToString("00") + " 성공";
-        probabilityResultText.text = "판정 중...";
-        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
+        XTapGearBlockData enhanceTarget = operationMode == ForgeMode.Enhance
+            ? inventory.FindForgeItem(targetId)
+            : null;
+        bool destructiveEnhance = enhanceTarget != null && enhanceTarget.enhanceLevel >= 10;
 
-        // Pick the real 00-99 outcome once. The animation only reveals it.
+        probabilityTitleText.text = operationName + " 판정로";
+        probabilityChanceText.text = chance >= 100
+            ? "성공률 100%  ·  확정 성공"
+            : "성공률 " + chance + "%  ·  00~" + Mathf.Max(0, chance - 1).ToString("00") + " 성공";
+        probabilityResultText.text = "";
+        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
+        probabilityRollText.text = "--";
+        probabilityRollText.color = new Color(1f, .74f, .24f, 1f);
+        probabilityRollText.transform.localScale = Vector3.one;
+        SetProbabilityCharge(0f);
+        SetProbabilityLamps(0);
+
+        // The real 00-99 result is picked exactly once. Everything before the reveal
+        // is presentation only and never changes the configured probability.
         int finalRoll = UnityEngine.Random.Range(0, 100);
         bool success = finalRoll < chance;
 
-        float duration = 1.85f;
+        // Phase 1: load the selected blocks into the machine.
+        probabilityPhaseText.text = "재료 투입";
         float t = 0f;
-        int lastShown = -1;
-
-        while (t < duration)
+        const float loadTime = .42f;
+        while (t < loadTime)
         {
             t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / duration);
+            float p = Mathf.Clamp01(t / loadTime);
+            SetProbabilityCharge(.18f * p);
+            probabilityWheel.localScale = Vector3.one * (1f + Mathf.Sin(p * Mathf.PI) * .025f);
+            yield return null;
+        }
+        SetProbabilityLamps(1);
+        probabilityWheel.localScale = Vector3.one;
 
-            // Fast at the start, visibly decelerating near the final result.
-            float interval = Mathf.Lerp(.025f, .18f, p * p);
-            int tick = Mathf.FloorToInt(t / Mathf.Max(.02f, interval));
-            if (tick != lastShown)
+        // Phase 2: three relays arm one by one while the charge bar climbs.
+        probabilityPhaseText.text = "동력 충전";
+        t = 0f;
+        const float chargeTime = .72f;
+        int lastLamp = 1;
+        while (t < chargeTime)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / chargeTime);
+            SetProbabilityCharge(Mathf.Lerp(.18f, 1f, p));
+
+            int lamps = p < .36f ? 1 : (p < .72f ? 2 : 3);
+            if (lamps != lastLamp)
             {
-                lastShown = tick;
-                int shown = UnityEngine.Random.Range(0, 100);
-                probabilityRollText.text = shown.ToString("00");
-                probabilityRollText.transform.localScale = Vector3.one * (1f + (1f - p) * .10f);
+                lastLamp = lamps;
+                SetProbabilityLamps(lamps);
+                probabilityMachine.localScale = Vector3.one * 1.008f;
+            }
+            else
+            {
+                probabilityMachine.localScale = Vector3.Lerp(probabilityMachine.localScale, Vector3.one, .18f);
             }
 
-            if (probabilityWheel != null)
+            probabilityRollText.text = p < .50f ? "--" : "##";
+            yield return null;
+        }
+        SetProbabilityCharge(1f);
+        SetProbabilityLamps(3);
+        probabilityMachine.localScale = Vector3.one;
+
+        // Phase 3: high-speed drum. These are only rolling display numbers.
+        probabilityPhaseText.text = "고속 회전";
+        t = 0f;
+        const float spinTime = .88f;
+        int lastTick = -1;
+        while (t < spinTime)
+        {
+            t += Time.unscaledDeltaTime;
+            int tick = Mathf.FloorToInt(t / .032f);
+            if (tick != lastTick)
             {
-                float wobble = Mathf.Sin(Time.unscaledTime * 34f) * (1f - p) * 7f;
-                probabilityWheel.anchoredPosition = new Vector2(wobble, probabilityWheel.anchoredPosition.y);
+                lastTick = tick;
+                probabilityRollText.text = UnityEngine.Random.Range(0, 100).ToString("00");
             }
 
+            float wobble = Mathf.Sin(Time.unscaledTime * 48f) * 10f;
+            probabilityWheel.anchoredPosition = new Vector2(wobble, probabilityWheel.anchoredPosition.y);
+            probabilityRollText.transform.localScale =
+                Vector3.one * (1f + Mathf.Abs(Mathf.Sin(Time.unscaledTime * 32f)) * .08f);
             yield return null;
         }
 
-        if (probabilityWheel != null)
-            probabilityWheel.anchoredPosition = new Vector2(0f, probabilityWheel.anchoredPosition.y);
+        // Phase 4: long deceleration. The drum gets slower enough to make each
+        // passing number readable, but the true roll is still hidden.
+        probabilityPhaseText.text = "감속 중...";
+        t = 0f;
+        const float brakeTime = 1.18f;
+        float nextChange = 0f;
+        while (t < brakeTime)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / brakeTime);
 
+            if (t >= nextChange)
+            {
+                probabilityRollText.text = UnityEngine.Random.Range(0, 100).ToString("00");
+                nextChange = t + Mathf.Lerp(.055f, .30f, p * p);
+                probabilityRollText.transform.localScale = Vector3.one * (1.10f - p * .06f);
+            }
+
+            float wobble = Mathf.Sin(Time.unscaledTime * Mathf.Lerp(32f, 13f, p)) *
+                           Mathf.Lerp(7f, 1.2f, p);
+            probabilityWheel.anchoredPosition = new Vector2(wobble, probabilityWheel.anchoredPosition.y);
+            yield return null;
+        }
+
+        // Phase 5: hide the drum for a short lock interval. Destructive enhancement
+        // gets an explicit danger warning here, not after the outcome.
+        probabilityWheel.anchoredPosition = new Vector2(0f, probabilityWheel.anchoredPosition.y);
         probabilityRollText.transform.localScale = Vector3.one;
+        probabilityRollText.text = "??";
+        probabilityPhaseText.text = "판정 잠금";
+
+        if (destructiveEnhance)
+        {
+            probabilityResultText.text = "경고  ·  실패 시 대상 파괴";
+            probabilityResultText.color = new Color(1f, .30f, .22f, 1f);
+        }
+        else
+        {
+            probabilityResultText.text = "결과 고정 중...";
+            probabilityResultText.color = new Color(1f, .82f, .52f, 1f);
+        }
+
+        t = 0f;
+        const float lockTime = .58f;
+        while (t < lockTime)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / lockTime);
+            float pulse = .94f + Mathf.Abs(Mathf.Sin(p * Mathf.PI * 4f)) * .13f;
+            probabilityRollText.transform.localScale = Vector3.one * pulse;
+
+            if (destructiveEnhance)
+            {
+                Color c = probabilityResultText.color;
+                c.a = .50f + Mathf.Abs(Mathf.Sin(p * Mathf.PI * 5f)) * .50f;
+                probabilityResultText.color = c;
+            }
+            yield return null;
+        }
+
+        // Final reveal.
+        probabilityRollText.transform.localScale = Vector3.one * 1.28f;
         probabilityRollText.text = finalRoll.ToString("00");
+        probabilityRollText.color = success
+            ? new Color(.62f, 1f, .52f, 1f)
+            : new Color(1f, .34f, .28f, 1f);
+        probabilityPhaseText.text = "판정 완료";
         probabilityResultText.text = success ? "성공!" : "실패";
         probabilityResultText.color = success
             ? new Color(.58f, 1f, .58f, 1f)
             : new Color(1f, .42f, .38f, 1f);
 
-        yield return new WaitForSecondsRealtime(.65f);
+        probabilityMachine.localScale = Vector3.one * 1.015f;
+        VibrateForgeResult();
+
+        yield return new WaitForSecondsRealtime(.16f);
+        probabilityRollText.transform.localScale = Vector3.one;
+        probabilityMachine.localScale = Vector3.one;
+        yield return new WaitForSecondsRealtime(.72f);
 
         if (operationMode == ForgeMode.Enhance)
             ResolveEnhance(success);
@@ -798,6 +938,36 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityBusy = false;
         probabilityRoutine = null;
         Refresh();
+    }
+
+    void SetProbabilityCharge(float value)
+    {
+        if (probabilityChargeFill == null) return;
+        float p = Mathf.Clamp01(value);
+        RectTransform r = probabilityChargeFill.rectTransform;
+        r.anchorMin = new Vector2(.015f, .16f);
+        r.anchorMax = new Vector2(Mathf.Lerp(.015f, .985f, p), .84f);
+        r.offsetMin = Vector2.zero;
+        r.offsetMax = Vector2.zero;
+    }
+
+    void SetProbabilityLamps(int litCount)
+    {
+        for (int i = 0; i < probabilityLamps.Length; i++)
+        {
+            if (probabilityLamps[i] == null) continue;
+            probabilityLamps[i].color = i < litCount
+                ? new Color(1f, .30f, .055f, 1f)
+                : new Color(.16f, .055f, .035f, 1f);
+        }
+    }
+
+    void VibrateForgeResult()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (PlayerPrefs.GetInt("xtap_option_vibration", 1) == 1)
+            Handheld.Vibrate();
+#endif
     }
 
     void ResolveEnhance(bool success)
