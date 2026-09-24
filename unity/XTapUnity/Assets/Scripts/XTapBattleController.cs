@@ -186,11 +186,13 @@ public sealed class XTapBattleController : MonoBehaviour
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
         XTapMainSkin.EnsureLoaded();
 
-        BuildStartupSplash();
-        SetStartupProgress(.06f);
-
         BuildBattleOnlyUi();
         BuildMainUi();
+
+        // Canvas/root must exist before the startup splash is attached.
+        BuildStartupSplash();
+        SetStartupProgress(.06f);
+        yield return null;
         SetStartupProgress(.16f);
 
         inventory = gameObject.AddComponent<XTapInventory>();
