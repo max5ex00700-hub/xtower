@@ -191,6 +191,8 @@ public sealed class XTapBattleController : MonoBehaviour
         ringSprite = CreateRingSprite(128, 9);
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
         XTapMainSkin.EnsureLoaded();
+        if (!XTapMainSkin.Ready)
+            throw new InvalidOperationException("X탑 메인 기준 이미지 버튼 자산 로드 실패. 잘못된 UI로 계속 실행하지 않습니다.");
 
         BuildBattleOnlyUi();
         BuildMainUi();
@@ -686,7 +688,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.10  (1110)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1111)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
