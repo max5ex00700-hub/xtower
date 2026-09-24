@@ -4,9 +4,9 @@
 - Repository: max5ex00700-hub/xtower
 - Branch: unity-prototype
 - Unity project subfolder: unity/XTapUnity
-- Unity version: 2022.3.62f1
+- Unity version: 2022.3.62f2
 - Android package: com.xtower.game.unity
-- Version code: 1025
+- Version code: source-controlled; current 1111
 - Test APK signing: Unity Build Automation의 Auto-generated debug keystore 사용
 
 ## 폰에서 최초 1회 설정
@@ -36,3 +36,15 @@
 - 감옥 카운트
 
 이 버전의 목적은 먼저 '폰 -> 클라우드 -> 설치 가능한 Unity APK' 파이프라인을 검증하는 것이다.
+
+
+## 중요: GitHub Actions APK와 Unity APK를 혼동하지 말 것
+- `.github/workflows/build-apk.yml`은 루트 `app/`의 예전 Android/Java 앱만 빌드한다.
+- X탑 Unity 최신 APK는 반드시 Unity Build Automation에서 `unity/XTapUnity`를 빌드해야 한다.
+- GitHub Actions의 legacy Android artifact는 Unity APK가 아니다.
+
+## 최신 커밋 검증
+- 11.11부터 Unity Build Automation의 `GIT_COMMIT`을 Android versionName에 자동 삽입한다.
+- 옵션 > 버전 정보에서 `11.11-main-ref-<커밋 앞 8자리> (1111)` 형식으로 확인한다.
+- Unity Build Automation 빌드 로그에서도 `X탑 BUILD FINGERPRINT`를 검색하면 branch와 commit이 표시된다.
+- 11.11은 기준 이미지에서 추출한 메인 버튼 9개를 pre-build 단계에서 검증한다. 누락/손상 시 APK를 만들지 않고 빌드를 실패시킨다.
