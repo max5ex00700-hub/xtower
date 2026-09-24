@@ -967,6 +967,53 @@ public sealed class XTapInventory : MonoBehaviour
         return PlayerPrefs.GetInt("xtap_captured_char_" + ownerCharacterId, 0) == 1;
     }
 
+    public int DescriptorSetBonusPercent
+    {
+        get
+        {
+            Dictionary<string, int> counts = new Dictionary<string, int>();
+
+            for (int i = 0; i < items.Count; i++)
+            {
+                XTapGearBlockData item = items[i];
+                if (!CountsTowardPlayerStats(item) ||
+                    item.descriptorCount <= 0 ||
+                    string.IsNullOrEmpty(item.descriptorIds))
+                    continue;
+
+                string[] ids = item.descriptorIds.Split(',');
+                HashSet<string> uniqueOnItem = new HashSet<string>();
+
+                for (int d = 0; d < ids.Length && d < 3; d++)
+                {
+                    string id = ids[d].Trim();
+                    if (string.IsNullOrEmpty(id) || !uniqueOnItem.Add(id))
+                        continue;
+
+                    int count;
+                    counts.TryGetValue(id, out count);
+                    counts[id] = count + 1;
+                }
+            }
+
+            int bonus = 0;
+            foreach (KeyValuePair<string, int> pair in counts)
+            {
+                // A set starts at 2 matching descriptors. Every matching equipped
+                // descriptor contributes +1% to the player's final total stats.
+                if (pair.Value >= 2)
+                    bonus += pair.Value;
+            }
+
+            return Mathf.Max(0, bonus);
+        }
+    }
+
+    public double DescriptorSetMultiplier
+    {
+        get { return 1d + DescriptorSetBonusPercent * .01d; }
+    }
+
     public double EquippedAttack
     {
         get

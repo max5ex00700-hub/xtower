@@ -647,7 +647,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.00  (1100)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.01  (1101)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1196,17 +1196,20 @@ public sealed class XTapBattleController : MonoBehaviour
 
     double CurrentPlayerAttack()
     {
-        return XTapStatFormat.SafeAdd(BasePlayerAttack, inventory != null ? inventory.EquippedAttack : 0d);
+        double total = XTapStatFormat.SafeAdd(BasePlayerAttack, inventory != null ? inventory.EquippedAttack : 0d);
+        return SafeMultiply(total, inventory != null ? inventory.DescriptorSetMultiplier : 1d);
     }
 
     double CurrentPlayerDefense()
     {
-        return XTapStatFormat.SafeAdd(BasePlayerDefense, inventory != null ? inventory.EquippedDefense : 0d);
+        double total = XTapStatFormat.SafeAdd(BasePlayerDefense, inventory != null ? inventory.EquippedDefense : 0d);
+        return SafeMultiply(total, inventory != null ? inventory.DescriptorSetMultiplier : 1d);
     }
 
     double CurrentPlayerMaxHp()
     {
-        return XTapStatFormat.SafeAdd(BasePlayerHp, inventory != null ? inventory.EquippedHp : 0d);
+        double total = XTapStatFormat.SafeAdd(BasePlayerHp, inventory != null ? inventory.EquippedHp : 0d);
+        return SafeMultiply(total, inventory != null ? inventory.DescriptorSetMultiplier : 1d);
     }
 
     double SafeMultiply(double a, double b)

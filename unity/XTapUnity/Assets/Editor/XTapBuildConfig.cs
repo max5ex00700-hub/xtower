@@ -12,14 +12,14 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
     {
         PlayerSettings.productName = "X탑";
         PlayerSettings.companyName = "XTap";
-        PlayerSettings.bundleVersion = "11.00-descriptor-tier-colors1";
+        PlayerSettings.bundleVersion = "11.01-100-descriptors-set-bonus1";
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.xtower.game.unity");
         PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
         PlayerSettings.SplashScreen.show = true;
         PlayerSettings.SplashScreen.showUnityLogo = true;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
-        PlayerSettings.Android.bundleVersionCode = 1100;
+        PlayerSettings.Android.bundleVersionCode = 1101;
 
         // 64-bit Android is required for current 64-bit-only devices.
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
