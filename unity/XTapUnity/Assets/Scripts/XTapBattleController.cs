@@ -57,6 +57,10 @@ public sealed class XTapBattleController : MonoBehaviour
     Coroutine mainSpeechRoutine;
     Coroutine mainTouchResponseRoutine;
 
+    GameObject splashOverlay;
+    Image splashFill;
+    Text splashPromptText;
+
     GameObject optionsOverlay;
     Text vibrationOptionValue;
     Text sfxOptionValue;
@@ -182,8 +186,12 @@ public sealed class XTapBattleController : MonoBehaviour
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
         XTapMainSkin.EnsureLoaded();
 
+        BuildStartupSplash();
+        SetStartupProgress(.06f);
+
         BuildBattleOnlyUi();
         BuildMainUi();
+        SetStartupProgress(.16f);
 
         inventory = gameObject.AddComponent<XTapInventory>();
         inventory.Initialize(root, koreanFont, OnInventoryClosed);
@@ -196,10 +204,13 @@ public sealed class XTapBattleController : MonoBehaviour
 
         jail = gameObject.AddComponent<XTapJail>();
         jail.Initialize(root, koreanFont, inventory, RefreshMainProgressUi);
+        SetStartupProgress(.28f);
 
         var assetGo = new GameObject("OriginalApkAssets");
         assets = assetGo.AddComponent<XTapOriginalApkAssets>();
+        SetStartupProgress(.35f);
         yield return assets.Load();
+        SetStartupProgress(.72f);
 
         audioSource = gameObject.AddComponent<AudioSource>();
         audioSource.playOnAwake = false;
@@ -207,6 +218,7 @@ public sealed class XTapBattleController : MonoBehaviour
         audioSource.volume = 1f;
         PreloadCombatVoices();
         PreloadCombatSfx();
+        SetStartupProgress(.84f);
 
         if (!assets.Ready)
         {
@@ -214,8 +226,125 @@ public sealed class XTapBattleController : MonoBehaviour
             yield break;
         }
 
+        SetStartupProgress(.90f);
         yield return PreloadCurrentImages();
+        SetStartupProgress(1f);
+
+        if (splashPromptText != null)
+            splashPromptText.gameObject.SetActive(true);
+
+        yield return WaitForStartupTap();
+        CloseStartupSplash();
         ReturnToMain();
+    }
+
+    void BuildStartupSplash()
+    {
+        splashOverlay = new GameObject("XTapStartupSplash", typeof(RectTransform));
+        splashOverlay.transform.SetParent(root, false);
+        RectTransform sr = splashOverlay.GetComponent<RectTransform>();
+        Anchor(sr, 0f, 0f, 1f, 1f);
+
+        Image bg = new GameObject("SplashBackground", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        bg.transform.SetParent(splashOverlay.transform, false);
+        bg.color = Color.white;
+        bg.raycastTarget = false;
+        Anchor(bg.rectTransform, 0f, 0f, 1f, 1f);
+
+        Texture2D tex = Resources.Load<Texture2D>("XTapSplash/xtower_splash");
+        if (tex != null)
+        {
+            bg.sprite = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(.5f, .5f), 100f);
+            bg.type = Image.Type.Simple;
+            bg.preserveAspect = false;
+        }
+        else
+        {
+            bg.color = new Color(.025f, .008f, .010f, 1f);
+            Text fallback = MakeOutlinedText(bg.transform, "X탑", 42, TextAnchor.MiddleCenter, true);
+            fallback.color = new Color(1f, .74f, .48f, 1f);
+            Anchor(fallback.rectTransform, .10f, .42f, .90f, .62f);
+        }
+
+        Image bottomShade = MakePanel(splashOverlay.transform, "SplashBottomShade", new Color(.012f, .006f, .008f, .78f), 0f, 0f, 1f, .205f);
+        bottomShade.raycastTarget = false;
+
+        Image track = MakePanel(splashOverlay.transform, "LoadingTrack", new Color(.035f, .025f, .028f, .98f), .075f, .105f, .925f, .132f);
+        track.raycastTarget = false;
+        AddFrame(track.rectTransform, new Color(.76f, .42f, .22f, 1f), 2f);
+
+        splashFill = MakePanel(track.transform, "LoadingFill", new Color(.90f, .08f, .045f, .98f), .015f, .20f, .015f, .80f);
+        splashFill.raycastTarget = false;
+
+        splashPromptText = MakeOutlinedText(splashOverlay.transform, "준비 되면 화면을 터치 하세요", 18, TextAnchor.MiddleCenter, true);
+        splashPromptText.color = new Color(1f, .88f, .72f, 1f);
+        splashPromptText.resizeTextForBestFit = true;
+        splashPromptText.resizeTextMinSize = 28;
+        splashPromptText.resizeTextMaxSize = 44;
+        Anchor(splashPromptText.rectTransform, .08f, .140f, .92f, .190f);
+        splashPromptText.gameObject.SetActive(false);
+
+        Text credit = MakeOutlinedText(splashOverlay.transform, "제작: 포시즌Jo", 14, TextAnchor.MiddleCenter, true);
+        credit.color = new Color(.90f, .82f, .70f, 1f);
+        Anchor(credit.rectTransform, .08f, .035f, .92f, .082f);
+
+        splashOverlay.transform.SetAsLastSibling();
+    }
+
+    void SetStartupProgress(float value)
+    {
+        if (splashFill == null) return;
+        float p = Mathf.Clamp01(value);
+        RectTransform r = splashFill.rectTransform;
+        r.anchorMin = new Vector2(.015f, .20f);
+        r.anchorMax = new Vector2(Mathf.Lerp(.015f, .985f, p), .80f);
+        r.offsetMin = Vector2.zero;
+        r.offsetMax = Vector2.zero;
+    }
+
+    IEnumerator WaitForStartupTap()
+    {
+        float pulse = 0f;
+
+        while (true)
+        {
+            pulse += Time.unscaledDeltaTime;
+
+            if (splashPromptText != null)
+            {
+                Color c = splashPromptText.color;
+                c.a = Mathf.Lerp(.50f, 1f, (Mathf.Sin(pulse * 3.2f) + 1f) * .5f);
+                splashPromptText.color = c;
+            }
+
+            bool pressed = false;
+            if (Input.touchCount > 0)
+            {
+                Touch t = Input.GetTouch(0);
+                pressed = t.phase == TouchPhase.Ended;
+            }
+
+#if UNITY_EDITOR || UNITY_STANDALONE
+            if (Input.GetMouseButtonUp(0))
+                pressed = true;
+#endif
+
+            if (pressed)
+                yield break;
+
+            yield return null;
+        }
+    }
+
+    void CloseStartupSplash()
+    {
+        if (splashOverlay != null)
+        {
+            Destroy(splashOverlay);
+            splashOverlay = null;
+            splashFill = null;
+            splashPromptText = null;
+        }
     }
 
     void Update()
