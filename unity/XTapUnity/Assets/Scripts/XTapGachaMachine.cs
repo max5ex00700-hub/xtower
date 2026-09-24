@@ -389,8 +389,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         nameText.text = r.displayName + "  ·  " + r.cellCount + "칸";
         statsText.text =
             XTapStatFormat.BlockTriplet(r.attack, r.defense, r.hp, "     ") +
-            (string.IsNullOrEmpty(r.descriptorEffectText) ? "" : "
-" + r.descriptorEffectText);
+            (string.IsNullOrEmpty(r.descriptorEffectText) ? "" : "\n" + r.descriptorEffectText);
         DrawBlock(r);
     }
 
