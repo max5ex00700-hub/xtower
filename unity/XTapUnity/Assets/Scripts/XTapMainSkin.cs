@@ -9,6 +9,7 @@ public static class XTapMainSkin
     public static Sprite FloorPanel { get; private set; }
     public static Sprite FightButton { get; private set; }
     public static Sprite UtilityButton { get; private set; }
+    public static Sprite InfoTabButton { get; private set; }
     public static Sprite BottomRail { get; private set; }
     public static Sprite PlayerPanel { get; private set; }
     public static Sprite NavButton { get; private set; }
@@ -34,6 +35,7 @@ public static class XTapMainSkin
         FightButton = CreateFightButton();
         NavButton = CreateNavButton();
         UtilityButton = CreateUtilityButton();
+        InfoTabButton = CreateInfoTabButton();
     }
 
     static void LoadLegacyPanelAtlas()
@@ -82,42 +84,36 @@ public static class XTapMainSkin
 
     static Sprite CreateFightButton()
     {
-        // Reference-inspired wide gothic battle plaque:
-        // red core, black iron body, bronze spikes and crown-like tips.
+        // One-piece gothic battle plaque. Keep every decorative edge connected
+        // to the body so scaling on portrait devices never looks fragmented.
         Vector2[] outer =
         {
-            new Vector2(.025f,.50f), new Vector2(.065f,.64f), new Vector2(.050f,.79f),
-            new Vector2(.135f,.78f), new Vector2(.175f,.92f), new Vector2(.285f,.87f),
-            new Vector2(.435f,.87f), new Vector2(.50f,.995f), new Vector2(.565f,.87f),
-            new Vector2(.715f,.87f), new Vector2(.825f,.92f), new Vector2(.865f,.78f),
-            new Vector2(.950f,.79f), new Vector2(.935f,.64f), new Vector2(.975f,.50f),
-            new Vector2(.935f,.36f), new Vector2(.950f,.21f), new Vector2(.865f,.22f),
-            new Vector2(.825f,.08f), new Vector2(.715f,.13f), new Vector2(.565f,.13f),
-            new Vector2(.50f,.005f), new Vector2(.435f,.13f), new Vector2(.285f,.13f),
-            new Vector2(.175f,.08f), new Vector2(.135f,.22f), new Vector2(.050f,.21f),
-            new Vector2(.065f,.36f)
+            new Vector2(.020f,.50f), new Vector2(.060f,.68f), new Vector2(.130f,.78f),
+            new Vector2(.220f,.86f), new Vector2(.420f,.86f), new Vector2(.500f,.950f),
+            new Vector2(.580f,.86f), new Vector2(.780f,.86f), new Vector2(.870f,.78f),
+            new Vector2(.940f,.68f), new Vector2(.980f,.50f), new Vector2(.940f,.32f),
+            new Vector2(.870f,.22f), new Vector2(.780f,.14f), new Vector2(.580f,.14f),
+            new Vector2(.500f,.050f), new Vector2(.420f,.14f), new Vector2(.220f,.14f),
+            new Vector2(.130f,.22f), new Vector2(.060f,.32f)
         };
 
         Vector2[] inner =
         {
-            new Vector2(.075f,.50f), new Vector2(.105f,.63f), new Vector2(.090f,.73f),
-            new Vector2(.165f,.72f), new Vector2(.205f,.83f), new Vector2(.30f,.79f),
-            new Vector2(.445f,.79f), new Vector2(.50f,.885f), new Vector2(.555f,.79f),
-            new Vector2(.70f,.79f), new Vector2(.795f,.83f), new Vector2(.835f,.72f),
-            new Vector2(.910f,.73f), new Vector2(.895f,.63f), new Vector2(.925f,.50f),
-            new Vector2(.895f,.37f), new Vector2(.910f,.27f), new Vector2(.835f,.28f),
-            new Vector2(.795f,.17f), new Vector2(.70f,.21f), new Vector2(.555f,.21f),
-            new Vector2(.50f,.115f), new Vector2(.445f,.21f), new Vector2(.30f,.21f),
-            new Vector2(.205f,.17f), new Vector2(.165f,.28f), new Vector2(.090f,.27f),
-            new Vector2(.105f,.37f)
+            new Vector2(.075f,.50f), new Vector2(.105f,.64f), new Vector2(.175f,.72f),
+            new Vector2(.255f,.79f), new Vector2(.435f,.79f), new Vector2(.500f,.855f),
+            new Vector2(.565f,.79f), new Vector2(.745f,.79f), new Vector2(.825f,.72f),
+            new Vector2(.895f,.64f), new Vector2(.925f,.50f), new Vector2(.895f,.36f),
+            new Vector2(.825f,.28f), new Vector2(.745f,.21f), new Vector2(.565f,.21f),
+            new Vector2(.500f,.145f), new Vector2(.435f,.21f), new Vector2(.255f,.21f),
+            new Vector2(.175f,.28f), new Vector2(.105f,.36f)
         };
 
         Vector2[] core =
         {
-            new Vector2(.135f,.50f), new Vector2(.17f,.64f), new Vector2(.23f,.70f),
-            new Vector2(.77f,.70f), new Vector2(.83f,.64f), new Vector2(.865f,.50f),
-            new Vector2(.83f,.36f), new Vector2(.77f,.30f), new Vector2(.23f,.30f),
-            new Vector2(.17f,.36f)
+            new Vector2(.145f,.50f), new Vector2(.185f,.63f), new Vector2(.250f,.69f),
+            new Vector2(.750f,.69f), new Vector2(.815f,.63f), new Vector2(.855f,.50f),
+            new Vector2(.815f,.37f), new Vector2(.750f,.31f), new Vector2(.250f,.31f),
+            new Vector2(.185f,.37f)
         };
 
         return BuildButtonSprite(640, 240, outer, inner, core, true, true);
@@ -125,35 +121,31 @@ public static class XTapMainSkin
 
     static Sprite CreateNavButton()
     {
-        // Reference-inspired tall black iron menu frame.
+        // Tall one-piece black-iron menu plate.
         Vector2[] outer =
         {
-            new Vector2(.10f,.11f), new Vector2(.055f,.22f), new Vector2(.07f,.76f),
-            new Vector2(.13f,.83f), new Vector2(.095f,.91f), new Vector2(.25f,.90f),
-            new Vector2(.31f,.98f), new Vector2(.43f,.95f), new Vector2(.50f,1.00f),
-            new Vector2(.57f,.95f), new Vector2(.69f,.98f), new Vector2(.75f,.90f),
-            new Vector2(.905f,.91f), new Vector2(.87f,.83f), new Vector2(.93f,.76f),
-            new Vector2(.945f,.22f), new Vector2(.90f,.11f), new Vector2(.80f,.07f),
-            new Vector2(.75f,.015f), new Vector2(.58f,.045f), new Vector2(.50f,0f),
-            new Vector2(.42f,.045f), new Vector2(.25f,.015f), new Vector2(.20f,.07f)
+            new Vector2(.10f,.10f), new Vector2(.055f,.23f), new Vector2(.055f,.77f),
+            new Vector2(.12f,.87f), new Vector2(.34f,.90f), new Vector2(.50f,.975f),
+            new Vector2(.66f,.90f), new Vector2(.88f,.87f), new Vector2(.945f,.77f),
+            new Vector2(.945f,.23f), new Vector2(.90f,.10f), new Vector2(.66f,.075f),
+            new Vector2(.50f,.025f), new Vector2(.34f,.075f)
         };
 
         Vector2[] inner =
         {
-            new Vector2(.16f,.16f), new Vector2(.115f,.26f), new Vector2(.13f,.71f),
-            new Vector2(.19f,.78f), new Vector2(.16f,.84f), new Vector2(.29f,.84f),
-            new Vector2(.34f,.90f), new Vector2(.66f,.90f), new Vector2(.71f,.84f),
-            new Vector2(.84f,.84f), new Vector2(.81f,.78f), new Vector2(.87f,.71f),
-            new Vector2(.885f,.26f), new Vector2(.84f,.16f), new Vector2(.76f,.13f),
-            new Vector2(.71f,.075f), new Vector2(.29f,.075f), new Vector2(.24f,.13f)
+            new Vector2(.16f,.16f), new Vector2(.115f,.28f), new Vector2(.115f,.72f),
+            new Vector2(.18f,.80f), new Vector2(.37f,.83f), new Vector2(.50f,.89f),
+            new Vector2(.63f,.83f), new Vector2(.82f,.80f), new Vector2(.885f,.72f),
+            new Vector2(.885f,.28f), new Vector2(.84f,.16f), new Vector2(.63f,.14f),
+            new Vector2(.50f,.10f), new Vector2(.37f,.14f)
         };
 
         Vector2[] core =
         {
-            new Vector2(.23f,.20f), new Vector2(.18f,.30f), new Vector2(.19f,.68f),
-            new Vector2(.25f,.75f), new Vector2(.75f,.75f), new Vector2(.81f,.68f),
-            new Vector2(.82f,.30f), new Vector2(.77f,.20f), new Vector2(.69f,.15f),
-            new Vector2(.31f,.15f)
+            new Vector2(.22f,.22f), new Vector2(.18f,.32f), new Vector2(.18f,.68f),
+            new Vector2(.24f,.76f), new Vector2(.76f,.76f), new Vector2(.82f,.68f),
+            new Vector2(.82f,.32f), new Vector2(.78f,.22f), new Vector2(.68f,.17f),
+            new Vector2(.32f,.17f)
         };
 
         return BuildButtonSprite(288, 320, outer, inner, core, false, true);
@@ -161,37 +153,65 @@ public static class XTapMainSkin
 
     static Sprite CreateUtilityButton()
     {
-        // Compact square button matching the same iron/bronze family.
+        // Compact connected square plate for options/codex.
         Vector2[] outer =
         {
-            new Vector2(.12f,.17f), new Vector2(.055f,.30f), new Vector2(.055f,.70f),
-            new Vector2(.12f,.83f), new Vector2(.20f,.86f), new Vector2(.245f,.95f),
-            new Vector2(.39f,.94f), new Vector2(.45f,1.00f), new Vector2(.55f,1.00f),
-            new Vector2(.61f,.94f), new Vector2(.755f,.95f), new Vector2(.80f,.86f),
-            new Vector2(.88f,.83f), new Vector2(.945f,.70f), new Vector2(.945f,.30f),
-            new Vector2(.88f,.17f), new Vector2(.80f,.14f), new Vector2(.755f,.05f),
-            new Vector2(.61f,.06f), new Vector2(.55f,0f), new Vector2(.45f,0f),
-            new Vector2(.39f,.06f), new Vector2(.245f,.05f), new Vector2(.20f,.14f)
+            new Vector2(.16f,.08f), new Vector2(.07f,.20f), new Vector2(.04f,.36f),
+            new Vector2(.04f,.64f), new Vector2(.07f,.80f), new Vector2(.16f,.92f),
+            new Vector2(.36f,.96f), new Vector2(.50f,1.00f), new Vector2(.64f,.96f),
+            new Vector2(.84f,.92f), new Vector2(.93f,.80f), new Vector2(.96f,.64f),
+            new Vector2(.96f,.36f), new Vector2(.93f,.20f), new Vector2(.84f,.08f),
+            new Vector2(.64f,.04f), new Vector2(.50f,0f), new Vector2(.36f,.04f)
         };
 
         Vector2[] inner =
         {
-            new Vector2(.18f,.22f), new Vector2(.115f,.34f), new Vector2(.115f,.66f),
-            new Vector2(.18f,.78f), new Vector2(.25f,.81f), new Vector2(.29f,.88f),
-            new Vector2(.71f,.88f), new Vector2(.75f,.81f), new Vector2(.82f,.78f),
-            new Vector2(.885f,.66f), new Vector2(.885f,.34f), new Vector2(.82f,.22f),
-            new Vector2(.75f,.19f), new Vector2(.71f,.12f), new Vector2(.29f,.12f),
-            new Vector2(.25f,.19f)
+            new Vector2(.21f,.15f), new Vector2(.13f,.25f), new Vector2(.11f,.39f),
+            new Vector2(.11f,.61f), new Vector2(.13f,.75f), new Vector2(.21f,.85f),
+            new Vector2(.39f,.89f), new Vector2(.50f,.92f), new Vector2(.61f,.89f),
+            new Vector2(.79f,.85f), new Vector2(.87f,.75f), new Vector2(.89f,.61f),
+            new Vector2(.89f,.39f), new Vector2(.87f,.25f), new Vector2(.79f,.15f),
+            new Vector2(.61f,.11f), new Vector2(.50f,.08f), new Vector2(.39f,.11f)
         };
 
         Vector2[] core =
         {
-            new Vector2(.25f,.25f), new Vector2(.19f,.36f), new Vector2(.19f,.64f),
-            new Vector2(.25f,.75f), new Vector2(.75f,.75f), new Vector2(.81f,.64f),
-            new Vector2(.81f,.36f), new Vector2(.75f,.25f)
+            new Vector2(.27f,.23f), new Vector2(.20f,.34f), new Vector2(.20f,.66f),
+            new Vector2(.27f,.77f), new Vector2(.73f,.77f), new Vector2(.80f,.66f),
+            new Vector2(.80f,.34f), new Vector2(.73f,.23f)
         };
 
         return BuildButtonSprite(256, 256, outer, inner, core, false, true);
+    }
+
+    static Sprite CreateInfoTabButton()
+    {
+        // Dedicated narrow vertical plate. Never stretch the square utility art
+        // into the drawer tab because that tears the ornament visually.
+        Vector2[] outer =
+        {
+            new Vector2(.24f,.02f), new Vector2(.76f,.02f), new Vector2(.91f,.08f),
+            new Vector2(.97f,.18f), new Vector2(.97f,.82f), new Vector2(.91f,.92f),
+            new Vector2(.76f,.98f), new Vector2(.24f,.98f), new Vector2(.09f,.92f),
+            new Vector2(.03f,.82f), new Vector2(.03f,.18f), new Vector2(.09f,.08f)
+        };
+
+        Vector2[] inner =
+        {
+            new Vector2(.30f,.08f), new Vector2(.70f,.08f), new Vector2(.82f,.13f),
+            new Vector2(.88f,.22f), new Vector2(.88f,.78f), new Vector2(.82f,.87f),
+            new Vector2(.70f,.92f), new Vector2(.30f,.92f), new Vector2(.18f,.87f),
+            new Vector2(.12f,.78f), new Vector2(.12f,.22f), new Vector2(.18f,.13f)
+        };
+
+        Vector2[] core =
+        {
+            new Vector2(.34f,.14f), new Vector2(.66f,.14f), new Vector2(.77f,.21f),
+            new Vector2(.80f,.79f), new Vector2(.66f,.86f), new Vector2(.34f,.86f),
+            new Vector2(.20f,.79f), new Vector2(.23f,.21f)
+        };
+
+        return BuildButtonSprite(80, 360, outer, inner, core, false, true);
     }
 
     static Sprite BuildButtonSprite(
