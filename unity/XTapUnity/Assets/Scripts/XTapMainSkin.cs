@@ -8,18 +8,33 @@ public static class XTapMainSkin
 
     public static Sprite FloorPanel { get; private set; }
     public static Sprite FightButton { get; private set; }
+    public static Sprite OptionButton { get; private set; }
+    public static Sprite CodexButton { get; private set; }
     public static Sprite UtilityButton { get; private set; }
     public static Sprite InfoTabButton { get; private set; }
     public static Sprite BottomRail { get; private set; }
     public static Sprite PlayerPanel { get; private set; }
     public static Sprite NavButton { get; private set; }
+    public static Sprite NavPrevButton { get; private set; }
+    public static Sprite NavBagButton { get; private set; }
+    public static Sprite NavJailButton { get; private set; }
+    public static Sprite NavForgeButton { get; private set; }
+    public static Sprite NavNextButton { get; private set; }
 
     public static bool Ready
     {
         get
         {
             EnsureLoaded();
-            return FightButton != null && NavButton != null && UtilityButton != null;
+            return FightButton != null &&
+                   OptionButton != null &&
+                   CodexButton != null &&
+                   InfoTabButton != null &&
+                   NavPrevButton != null &&
+                   NavBagButton != null &&
+                   NavJailButton != null &&
+                   NavForgeButton != null &&
+                   NavNextButton != null;
         }
     }
 
@@ -30,12 +45,58 @@ public static class XTapMainSkin
 
         LoadLegacyPanelAtlas();
 
-        // Main buttons are generated at runtime so Cloud Build can never fall
-        // back to flat white Unity Images because of an importer/meta problem.
-        FightButton = CreateFightButton();
-        NavButton = CreateNavButton();
-        UtilityButton = CreateUtilityButton();
-        InfoTabButton = CreateInfoTabButton();
+        // 11.10: use the actual button artwork extracted from the approved
+        // reference image. Procedural art is fallback only.
+        FightButton = LoadReferenceButtonSprite("XTapMainUI/ref_fight_runtime", "XTapReferenceFight") ?? CreateFightButton();
+        OptionButton = LoadReferenceButtonSprite("XTapMainUI/ref_option_runtime", "XTapReferenceOption") ?? CreateUtilityButton();
+        CodexButton = LoadReferenceButtonSprite("XTapMainUI/ref_codex_runtime", "XTapReferenceCodex") ?? OptionButton;
+        InfoTabButton = LoadReferenceButtonSprite("XTapMainUI/ref_tab_runtime", "XTapReferenceInfoTab") ?? CreateInfoTabButton();
+
+        NavPrevButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_prev_runtime", "XTapReferenceNavPrev") ?? CreateNavButton();
+        NavBagButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_bag_runtime", "XTapReferenceNavBag") ?? CreateNavButton();
+        NavJailButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_jail_runtime", "XTapReferenceNavJail") ?? CreateNavButton();
+        NavForgeButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_forge_runtime", "XTapReferenceNavForge") ?? CreateNavButton();
+        NavNextButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_next_runtime", "XTapReferenceNavNext") ?? CreateNavButton();
+
+        // Compatibility aliases for older callers/fallback paths.
+        UtilityButton = OptionButton;
+        NavButton = NavBagButton;
+    }
+
+    static Sprite LoadReferenceButtonSprite(string resourcePath, string spriteName)
+    {
+        try
+        {
+            TextAsset encoded = Resources.Load<TextAsset>(resourcePath);
+            if (encoded == null || string.IsNullOrWhiteSpace(encoded.text))
+                return null;
+
+            byte[] bytes = Convert.FromBase64String(encoded.text.Trim());
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            texture.name = spriteName + "Texture";
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            if (!texture.LoadImage(bytes, false))
+            {
+                UnityEngine.Object.Destroy(texture);
+                return null;
+            }
+
+            return Sprite.Create(
+                texture,
+                new Rect(0f, 0f, texture.width, texture.height),
+                new Vector2(.5f, .5f),
+                100f,
+                0,
+                SpriteMeshType.FullRect
+            );
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 기준 이미지 버튼 로드 실패: " + resourcePath + " / " + e.Message);
+            return null;
+        }
     }
 
     static void LoadLegacyPanelAtlas()
