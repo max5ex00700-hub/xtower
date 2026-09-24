@@ -36,16 +36,48 @@ public sealed class XTapGachaMachine : MonoBehaviour
     readonly int[] allowedSizes = {1, 2, 3, 4, 5, 6, 9, 12};
     readonly int[] baseBudgets = {10, 22, 35, 50, 66, 84, 135, 190};
 
-    readonly string[] prefixes =
-    {
-        "검은", "붉은", "은빛", "낡은", "잊힌", "차가운",
-        "불완전한", "무거운", "날카로운", "고요한", "균열난", "빛나는"
-    };
-
     readonly string[] nouns =
     {
-        "파편", "인장", "갑주", "장식", "핵", "조각",
-        "결정", "부품", "흔적", "고리", "판금", "심장"
+        "단검", "장검", "도끼", "철퇴", "창", "활",
+        "방패", "갑옷", "투구", "장갑", "장화", "반지", "목걸이"
+    };
+
+    sealed class DescriptorDef
+    {
+        public readonly string id;
+        public readonly string word;
+        public readonly double attackMul;
+        public readonly double defenseMul;
+        public readonly double hpMul;
+        public readonly string effectText;
+
+        public DescriptorDef(string descriptorId, string descriptorWord,
+            double attackMultiplier, double defenseMultiplier, double hpMultiplier,
+            string effect)
+        {
+            id = descriptorId;
+            word = descriptorWord;
+            attackMul = attackMultiplier;
+            defenseMul = defenseMultiplier;
+            hpMul = hpMultiplier;
+            effectText = effect;
+        }
+    }
+
+    readonly DescriptorDef[] descriptorDefs =
+    {
+        new DescriptorDef("splendid", "화려한", 1.12d, 1.00d, 1.00d, "공격력 +12%"),
+        new DescriptorDef("solid", "단단한", 1.00d, 1.15d, 1.00d, "방어력 +15%"),
+        new DescriptorDef("fine", "멋진", 1.06d, 1.06d, 1.06d, "공격·방어·체력 +6%"),
+        new DescriptorDef("sharp", "날카로운", 1.18d, 1.00d, 1.00d, "공격력 +18%"),
+        new DescriptorDef("sturdy", "견고한", 1.00d, 1.18d, 1.00d, "방어력 +18%"),
+        new DescriptorDef("vital", "생명력 넘치는", 1.00d, 1.00d, 1.20d, "체력 +20%"),
+        new DescriptorDef("balanced", "균형 잡힌", 1.07d, 1.07d, 1.07d, "공격·방어·체력 +7%"),
+        new DescriptorDef("precise", "정교한", 1.10d, 1.05d, 1.00d, "공격 +10% · 방어 +5%"),
+        new DescriptorDef("guardian", "수호의", 1.00d, 1.12d, 1.08d, "방어 +12% · 체력 +8%"),
+        new DescriptorDef("fierce", "맹렬한", 1.15d, 1.00d, 1.05d, "공격 +15% · 체력 +5%"),
+        new DescriptorDef("unyielding", "불굴의", 1.00d, 1.08d, 1.15d, "방어 +8% · 체력 +15%"),
+        new DescriptorDef("heavy", "묵직한", 1.05d, 1.10d, 1.10d, "공격 +5% · 방어/체력 +10%")
     };
 
     public void Initialize(RectTransform parent, Font uiFont, Action collected, XTapInventory inventory)
@@ -239,14 +271,92 @@ public sealed class XTapGachaMachine : MonoBehaviour
         r.exclusive = exclusive;
         r.characterId = activeCharacterId;
 
+        string noun = nouns[UnityEngine.Random.Range(0, nouns.Length)];
+        ApplySequentialDescriptors(r, noun);
+
         if (exclusive)
-            r.displayName = "캐릭터 " + activeCharacterId + " 전용 " + nouns[UnityEngine.Random.Range(0, nouns.Length)];
-        else
-            r.displayName = prefixes[UnityEngine.Random.Range(0, prefixes.Length)] + " " +
-                            nouns[UnityEngine.Random.Range(0, nouns.Length)];
+            r.displayName = "캐릭터 " + activeCharacterId + " 전용 " + r.displayName;
 
         r.shape = EncodeShape(ShapeFor(cells));
         return r;
+    }
+
+    void ApplySequentialDescriptors(XTapGearBlockData item, string noun)
+    {
+        List<DescriptorDef> selected = new List<DescriptorDef>();
+
+        // Each next roll only exists if the previous 1% roll succeeded.
+        // Exact probabilities:
+        // 0 descriptors = 99%
+        // exactly 1 = 0.99%
+        // exactly 2 = 0.0099%
+        // exactly 3 = 0.0001%
+        for (int slot = 0; slot < 3; slot++)
+        {
+            if (UnityEngine.Random.value >= .01f)
+                break;
+
+            DescriptorDef pick = null;
+            for (int guard = 0; guard < 32 && pick == null; guard++)
+            {
+                DescriptorDef candidate = descriptorDefs[UnityEngine.Random.Range(0, descriptorDefs.Length)];
+                bool duplicate = false;
+                for (int i = 0; i < selected.Count; i++)
+                {
+                    if (selected[i].id == candidate.id)
+                    {
+                        duplicate = true;
+                        break;
+                    }
+                }
+
+                if (!duplicate)
+                    pick = candidate;
+            }
+
+            if (pick == null)
+                break;
+
+            selected.Add(pick);
+        }
+
+        item.descriptorCount = selected.Count;
+
+        if (selected.Count == 0)
+        {
+            item.descriptorIds = "";
+            item.descriptorEffectText = "";
+            item.displayName = noun;
+            return;
+        }
+
+        List<string> ids = new List<string>();
+        List<string> words = new List<string>();
+        List<string> effects = new List<string>();
+
+        double attackMul = 1d;
+        double defenseMul = 1d;
+        double hpMul = 1d;
+
+        for (int i = 0; i < selected.Count; i++)
+        {
+            DescriptorDef descriptor = selected[i];
+            ids.Add(descriptor.id);
+            words.Add(descriptor.word);
+            effects.Add(descriptor.word + " : " + descriptor.effectText);
+
+            attackMul *= descriptor.attackMul;
+            defenseMul *= descriptor.defenseMul;
+            hpMul *= descriptor.hpMul;
+        }
+
+        item.attack = Math.Max(1d, Math.Round(item.attack * attackMul));
+        item.defense = Math.Max(1d, Math.Round(item.defense * defenseMul));
+        item.hp = Math.Max(1d, Math.Round(item.hp * hpMul));
+
+        item.descriptorIds = string.Join(",", ids.ToArray());
+        item.descriptorEffectText = string.Join(" · ", effects.ToArray());
+        item.displayName = string.Join(" ", words.ToArray()) + " " + noun;
     }
 
     void ShowOutcome(Outcome outcome)
@@ -278,7 +388,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
         title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "BLOCK GEAR";
         nameText.text = r.displayName + "  ·  " + r.cellCount + "칸";
         statsText.text =
-            XTapStatFormat.BlockTriplet(r.attack, r.defense, r.hp, "     ");
+            XTapStatFormat.BlockTriplet(r.attack, r.defense, r.hp, "     ") +
+            (string.IsNullOrEmpty(r.descriptorEffectText) ? "" : "
+" + r.descriptorEffectText);
         DrawBlock(r);
     }
 

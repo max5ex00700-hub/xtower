@@ -29,6 +29,12 @@ public sealed class XTapGearBlockData
     public int bagOwnerCharacterId;
     public int enhanceLevel;
 
+    // Rare sequential 1% descriptor system. These fields are persisted so the
+    // generated name/effect survives save/load, enhancement and synthesis.
+    public int descriptorCount;
+    public string descriptorIds;
+    public string descriptorEffectText;
+
     // Persisted field names use "base" for save compatibility, but semantically these
     // are the block's intrinsic/genuine stats fixed when that block is generated
     // (including its roulette correction). Synthesis bonuses are separate and are
@@ -1818,7 +1824,10 @@ public sealed class XTapInventory : MonoBehaviour
             zone + " · " + item.displayName +
             (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
             "  [" + item.cellCount + "칸 / " + corr + "]\n" +
-            XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "     ");
+            XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "     ") +
+            (string.IsNullOrEmpty(item.descriptorEffectText)
+                ? ""
+                : "\n수식어  " + item.descriptorEffectText);
     }
 
     void NormalizeItem(XTapGearBlockData item)
