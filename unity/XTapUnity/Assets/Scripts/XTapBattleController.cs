@@ -21,6 +21,9 @@ public sealed class XTapBattleController : MonoBehaviour
     const string VibrationSettingKey = "xtap_option_vibration";
     const string SfxSettingKey = "xtap_option_sfx";
     const string BgmSettingKey = "xtap_option_bgm";
+    const string HourlyTicketCountKey = "xtap_hourly_gacha_ticket_count";
+    const string HourlyTicketAnchorUtcKey = "xtap_hourly_gacha_ticket_anchor_utc";
+    const long HourlyTicketIntervalSeconds = 3600L;
 
     XTapOriginalApkAssets assets;
     AudioSource audioSource;
@@ -62,6 +65,13 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainSpeechText;
     Coroutine mainSpeechRoutine;
     Coroutine mainTouchResponseRoutine;
+
+    Button mainTicketButton;
+    Text mainTicketCountText;
+    Text mainTicketTimerText;
+    int hourlyTicketCount;
+    long hourlyTicketAnchorUtc;
+    float nextTicketClockRefresh;
 
     GameObject splashOverlay;
     Image splashFill;
@@ -185,6 +195,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Screen.fullScreen = true;
 
         LoadProgress();
+        LoadHourlyTicketState();
         LoadOptionSettings();
 
         koreanFont = CreateKoreanFont();
@@ -249,6 +260,7 @@ public sealed class XTapBattleController : MonoBehaviour
         yield return WaitForStartupTap();
         CloseStartupSplash();
         ReturnToMain();
+        TryStartHourlyTicketPayout();
     }
 
     void BuildStartupSplash()
@@ -362,6 +374,13 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void Update()
     {
+        if (Time.unscaledTime >= nextTicketClockRefresh)
+        {
+            nextTicketClockRefresh = Time.unscaledTime + 1f;
+            AccrueHourlyTickets();
+            RefreshMainTicketUi();
+        }
+
         if (assets == null || !assets.Ready) return;
 
         UpdateWeakPoint();
@@ -505,6 +524,58 @@ public sealed class XTapBattleController : MonoBehaviour
         codexLabel.color = new Color(.98f, .92f, .80f, 1f);
         Anchor(codexLabel.rectTransform, .08f, .02f, .92f, .28f);
         codexButton.onClick.AddListener(OpenCodex);
+
+        // Hourly offline gacha ticket card. Tickets accrue from UTC time even
+        // while the game is not running. Tapping the card settles any pending batch.
+        GameObject ticketGo = new GameObject(
+            "HourlyTicketCard",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Button)
+        );
+        ticketGo.transform.SetParent(mainOverlay.transform, false);
+
+        Image ticketBg = ticketGo.GetComponent<Image>();
+        ticketBg.color = new Color(.030f, .022f, .020f, .96f);
+        Anchor(ticketBg.rectTransform, .690f, .755f, .985f, .838f);
+        AddFrame(ticketBg.rectTransform, new Color(.72f, .47f, .20f, 1f), 2f);
+
+        Image ticketGem = MakePanel(
+            ticketGo.transform,
+            "TicketGem",
+            new Color(.34f, .17f, .055f, 1f),
+            .035f, .23f, .205f, .77f
+        );
+        AddFrame(ticketGem.rectTransform, new Color(.94f, .68f, .26f, 1f), 2f);
+
+        Text ticketIcon = MakeOutlinedText(ticketGem.transform, "T", 15, TextAnchor.MiddleCenter, true);
+        ticketIcon.color = new Color(1f, .84f, .40f, 1f);
+        Anchor(ticketIcon.rectTransform, .05f, .05f, .95f, .95f);
+
+        Text ticketTitle = MakeOutlinedText(ticketGo.transform, "무료 가챠", 9, TextAnchor.MiddleLeft, true);
+        ticketTitle.color = new Color(.95f, .78f, .42f, 1f);
+        Anchor(ticketTitle.rectTransform, .235f, .62f, .95f, .94f);
+
+        mainTicketCountText = MakeOutlinedText(ticketGo.transform, "", 12, TextAnchor.MiddleLeft, true);
+        mainTicketCountText.color = new Color(1f, .94f, .78f, 1f);
+        Anchor(mainTicketCountText.rectTransform, .235f, .29f, .95f, .66f);
+
+        mainTicketTimerText = MakeOutlinedText(ticketGo.transform, "", 8, TextAnchor.MiddleLeft, false);
+        mainTicketTimerText.color = new Color(.73f, .70f, .66f, 1f);
+        Anchor(mainTicketTimerText.rectTransform, .235f, .04f, .95f, .31f);
+
+        mainTicketButton = ticketGo.GetComponent<Button>();
+        mainTicketButton.targetGraphic = ticketBg;
+        ColorBlock ticketColors = mainTicketButton.colors;
+        ticketColors.normalColor = Color.white;
+        ticketColors.highlightedColor = new Color(1.08f, 1.04f, .98f, 1f);
+        ticketColors.pressedColor = new Color(.76f, .65f, .54f, 1f);
+        ticketColors.selectedColor = Color.white;
+        ticketColors.fadeDuration = .06f;
+        mainTicketButton.colors = ticketColors;
+        mainTicketButton.onClick.AddListener(TryStartHourlyTicketPayout);
+        RefreshMainTicketUi();
 
         // Approved composition: no large outer box. FLOOR and player stats are
         // independent compact ornate panels so the character stays visible.
@@ -1264,6 +1335,8 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void RefreshMainProgressUi()
     {
+        RefreshMainTicketUi();
+
         if (mainFloorText != null)
             mainFloorText.text = TowerFloor() + "층";
 
@@ -1287,6 +1360,138 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (mainHpText != null)
             mainHpText.text = "체력    " + XTapStatFormat.Compact(hp);
+    }
+
+    void LoadHourlyTicketState()
+    {
+        hourlyTicketCount = Mathf.Max(0, PlayerPrefs.GetInt(HourlyTicketCountKey, 0));
+
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+        long savedAnchor;
+        string raw = PlayerPrefs.GetString(HourlyTicketAnchorUtcKey, "");
+
+        if (!long.TryParse(raw, out savedAnchor) || savedAnchor <= 0L)
+        {
+            hourlyTicketAnchorUtc = now;
+            SaveHourlyTicketState();
+            return;
+        }
+
+        hourlyTicketAnchorUtc = savedAnchor;
+        AccrueHourlyTickets();
+    }
+
+    void AccrueHourlyTickets()
+    {
+        long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+
+        if (hourlyTicketAnchorUtc <= 0L)
+        {
+            hourlyTicketAnchorUtc = now;
+            SaveHourlyTicketState();
+            return;
+        }
+
+        // If the device clock moved backwards, restart only the current partial
+        // hour. Already-earned tickets are never removed.
+        if (now < hourlyTicketAnchorUtc)
+        {
+            hourlyTicketAnchorUtc = now;
+            SaveHourlyTicketState();
+            return;
+        }
+
+        long elapsed = now - hourlyTicketAnchorUtc;
+        long earned = elapsed / HourlyTicketIntervalSeconds;
+        if (earned <= 0L) return;
+
+        long total = (long)hourlyTicketCount + earned;
+        hourlyTicketCount = total >= int.MaxValue ? int.MaxValue : (int)total;
+        hourlyTicketAnchorUtc += earned * HourlyTicketIntervalSeconds;
+        SaveHourlyTicketState();
+    }
+
+    void SaveHourlyTicketState()
+    {
+        PlayerPrefs.SetInt(HourlyTicketCountKey, Mathf.Max(0, hourlyTicketCount));
+        PlayerPrefs.SetString(HourlyTicketAnchorUtcKey, hourlyTicketAnchorUtc.ToString());
+        PlayerPrefs.Save();
+    }
+
+    void ConsumeHourlyTicket()
+    {
+        if (hourlyTicketCount > 0)
+            hourlyTicketCount--;
+
+        SaveHourlyTicketState();
+        RefreshMainTicketUi();
+    }
+
+    void RefreshMainTicketUi()
+    {
+        if (mainTicketCountText == null || mainTicketTimerText == null)
+            return;
+
+        mainTicketCountText.text = "티켓  ×" + hourlyTicketCount;
+
+        if (hourlyTicketCount > 0)
+        {
+            mainTicketCountText.color = new Color(1f, .82f, .34f, 1f);
+            mainTicketTimerText.text = "터치하여 자동 정산";
+        }
+        else
+        {
+            mainTicketCountText.color = new Color(1f, .94f, .78f, 1f);
+
+            long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+            long elapsed = Mathf.Max(0, (int)Math.Min(int.MaxValue, Math.Max(0L, now - hourlyTicketAnchorUtc)));
+            long remain = HourlyTicketIntervalSeconds - (elapsed % HourlyTicketIntervalSeconds);
+            if (remain <= 0L || remain > HourlyTicketIntervalSeconds)
+                remain = HourlyTicketIntervalSeconds;
+
+            int minutes = (int)(remain / 60L);
+            int seconds = (int)(remain % 60L);
+            mainTicketTimerText.text = "다음  " + minutes.ToString("00") + ":" + seconds.ToString("00");
+        }
+
+        if (mainTicketButton != null)
+            mainTicketButton.interactable =
+                hourlyTicketCount > 0 &&
+                gachaMachine != null &&
+                !gachaMachine.IsOpen;
+    }
+
+    void TryStartHourlyTicketPayout()
+    {
+        AccrueHourlyTickets();
+        RefreshMainTicketUi();
+
+        if (hourlyTicketCount <= 0 || gachaMachine == null || gachaMachine.IsOpen)
+            return;
+
+        int batchCount = hourlyTicketCount;
+        int highestProgressStep = Mathf.Max(0, maxUnlockedStep);
+
+        if (mainTicketButton != null)
+            mainTicketButton.interactable = false;
+
+        gachaMachine.PlayTicketRewards(
+            batchCount,
+            highestProgressStep,
+            ConsumeHourlyTicket
+        );
+    }
+
+    void OnApplicationPause(bool paused)
+    {
+        AccrueHourlyTickets();
+        RefreshMainTicketUi();
+    }
+
+    void OnApplicationQuit()
+    {
+        AccrueHourlyTickets();
+        SaveHourlyTicketState();
     }
 
     void LoadProgress()
