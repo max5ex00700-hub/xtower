@@ -34,6 +34,7 @@ public sealed class XTapGearBlockData
     public int descriptorCount;
     public string descriptorIds;
     public string descriptorEffectText;
+    public int descriptorFormulaVersion;
 
     // Persisted field names use "base" for save compatibility, but semantically these
     // are the block's intrinsic/genuine stats fixed when that block is generated
@@ -1889,24 +1890,69 @@ public sealed class XTapInventory : MonoBehaviour
         item.enhancementBaseInitialized = true;
     }
 
+    static double DescriptorFinalMultiplier(int count)
+    {
+        if (count >= 3) return 2d;
+        if (count == 2) return 1.5d;
+        if (count == 1) return 1.25d;
+        return 1d;
+    }
+
+    public void GetPreDescriptorStats(
+        XTapGearBlockData item,
+        out double attack,
+        out double defense,
+        out double hp)
+    {
+        attack = 0d;
+        defense = 0d;
+        hp = 0d;
+        if (item == null) return;
+
+        EnsureEnhancementBaseStats(item);
+
+        // Exact order before descriptors:
+        // intrinsic stats (already including roulette +/- correction)
+        // -> enhancement -> synthesis.
+        double enhanceMultiplier = 1d + Mathf.Clamp(item.enhanceLevel, 0, 20) * .10d;
+        attack = XTapStatFormat.SafeAdd(
+            Math.Max(0d, item.baseAttack * enhanceMultiplier),
+            Math.Max(0d, item.synthesisAttack)
+        );
+        defense = XTapStatFormat.SafeAdd(
+            Math.Max(0d, item.baseDefense * enhanceMultiplier),
+            Math.Max(0d, item.synthesisDefense)
+        );
+        hp = XTapStatFormat.SafeAdd(
+            Math.Max(0d, item.baseHp * enhanceMultiplier),
+            Math.Max(0d, item.synthesisHp)
+        );
+    }
+
     public void RecalculateEnhancedStats(XTapGearBlockData item)
     {
         if (item == null) return;
-        EnsureEnhancementBaseStats(item);
 
-        double multiplier = 1d + Mathf.Clamp(item.enhanceLevel, 0, 20) * .10d;
-        item.attack = XTapStatFormat.SafeAdd(
-            Math.Max(0d, item.baseAttack * multiplier),
-            Math.Max(0d, item.synthesisAttack)
-        );
-        item.defense = XTapStatFormat.SafeAdd(
-            Math.Max(0d, item.baseDefense * multiplier),
-            Math.Max(0d, item.synthesisDefense)
-        );
-        item.hp = XTapStatFormat.SafeAdd(
-            Math.Max(0d, item.baseHp * multiplier),
-            Math.Max(0d, item.synthesisHp)
-        );
+        double preAttack;
+        double preDefense;
+        double preHp;
+        GetPreDescriptorStats(item, out preAttack, out preDefense, out preHp);
+
+        // Descriptor is always the final calculation:
+        // 1 descriptor +25%, 2 +50%, 3 +100%.
+        double descriptorMultiplier = DescriptorFinalMultiplier(item.descriptorCount);
+        item.attack = Math.Max(0d, preAttack * descriptorMultiplier);
+        item.defense = Math.Max(0d, preDefense * descriptorMultiplier);
+        item.hp = Math.Max(0d, preHp * descriptorMultiplier);
+
+        if (item.descriptorCount > 0)
+        {
+            int bonusPercent = item.descriptorCount == 1 ? 25 : (item.descriptorCount == 2 ? 50 : 100);
+            item.descriptorEffectText =
+                "수식어 " + Mathf.Clamp(item.descriptorCount, 1, 3) +
+                "개 · 최종 공/방/체 +" + bonusPercent + "%";
+            item.descriptorFormulaVersion = 2;
+        }
     }
 
     public void MergeSynthesisStats(XTapGearBlockData item, double attack, double defense, double hp)
@@ -1915,13 +1961,17 @@ public sealed class XTapInventory : MonoBehaviour
         EnsureEnhancementBaseStats(item);
         RecalculateEnhancedStats(item);
 
-        // Synthesis is block + block. Use the material's current effective stats,
-        // including all enhancement gains, and add them to the target's current
-        // effective stats. Bake the combined result back into the target block so
-        // future enhancement treats the merged block as one whole block.
-        double mergedAttack = XTapStatFormat.SafeAdd(item.attack, Math.Max(0d, attack));
-        double mergedDefense = XTapStatFormat.SafeAdd(item.defense, Math.Max(0d, defense));
-        double mergedHp = XTapStatFormat.SafeAdd(item.hp, Math.Max(0d, hp));
+        // Synthesis happens before descriptors. The target's descriptor must never
+        // be baked into the synthesis base, and the material's descriptor is stripped
+        // before its stats are absorbed.
+        double targetAttack;
+        double targetDefense;
+        double targetHp;
+        GetPreDescriptorStats(item, out targetAttack, out targetDefense, out targetHp);
+
+        double mergedAttack = XTapStatFormat.SafeAdd(targetAttack, Math.Max(0d, attack));
+        double mergedDefense = XTapStatFormat.SafeAdd(targetDefense, Math.Max(0d, defense));
+        double mergedHp = XTapStatFormat.SafeAdd(targetHp, Math.Max(0d, hp));
 
         double multiplier = 1d + Mathf.Clamp(item.enhanceLevel, 0, 20) * .10d;
         if (multiplier <= 0d) multiplier = 1d;

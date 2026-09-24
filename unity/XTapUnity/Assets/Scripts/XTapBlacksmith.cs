@@ -1027,9 +1027,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
             return;
         }
 
-        double addAttack = material.attack;
-        double addDefense = material.defense;
-        double addHp = material.hp;
+        double addAttack;
+        double addDefense;
+        double addHp;
+        inventory.GetPreDescriptorStats(material, out addAttack, out addDefense, out addHp);
         string consumedName = material.displayName;
 
         inventory.RemoveForgeItem(material.id);
