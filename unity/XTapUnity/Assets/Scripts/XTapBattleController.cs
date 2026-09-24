@@ -557,7 +557,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Button tabButton = tabGo.GetComponent<Button>();
         tabButton.targetGraphic = tabBg;
         tabButton.onClick.AddListener(ToggleMainInfoDrawer);
-        tabGo.SetActive(false);
+        tabGo.SetActive(true);
 
         // Speech bubble is invisible until the character is actually touched.
         mainSpeechBubble = new GameObject("MainSpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
@@ -614,7 +614,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         BuildOptionsUi();
 
-        SetMainInfoDrawerOpen(true, true);
+        SetMainInfoDrawerOpen(false, true);
         mainOverlay.SetActive(false);
     }
 
@@ -647,7 +647,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.93  (1093)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.94  (1094)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -781,7 +781,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (width <= 1f)
             width = 480f;
 
-        float targetX = open ? 0f : -(width - 24f);
+        float targetX = open ? 0f : -width;
 
         if (mainInfoDrawerRoutine != null)
         {
@@ -1072,7 +1072,7 @@ public sealed class XTapBattleController : MonoBehaviour
         ResetFight();
         SetStageOrFallback(0);
         RefreshMainProgressUi();
-        SetMainInfoDrawerOpen(true, true);
+        SetMainInfoDrawerOpen(false, true);
         if (mainSpeechBubble != null) mainSpeechBubble.gameObject.SetActive(false);
 
         if (mainOverlay != null)
