@@ -345,31 +345,38 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityWheel.sizeDelta = new Vector2(430f, 430f);
         probabilityWheel.anchoredPosition = Vector2.zero;
 
-        // Ten visual sectors represent exact 00-99 rolls.
-        // 00~09, 10~19 ... 90~99.
-        const int sectorCount = 10;
-        float segment = 360f / sectorCount;
-        for (int i = 0; i < sectorCount; i++)
+        // The real calculation still rolls one hidden value from 00 to 99.
+        // The player only sees the two possible outcomes: SUCCESS or FAIL.
+        string[] visibleOutcomes = { "성공", "실패" };
+        Color[] outcomeColors =
         {
-            float a = i * segment * Mathf.Deg2Rad;
+            new Color(.12f, .42f, .22f, 1f),
+            new Color(.48f, .10f, .08f, 1f)
+        };
 
-            GameObject slot = new GameObject("Slot" + i, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        for (int i = 0; i < visibleOutcomes.Length; i++)
+        {
+            float a = i * 180f * Mathf.Deg2Rad;
+
+            GameObject slot = new GameObject(
+                i == 0 ? "SuccessSlot" : "FailSlot",
+                typeof(RectTransform),
+                typeof(CanvasRenderer),
+                typeof(Image)
+            );
             slot.transform.SetParent(probabilityWheel, false);
+
             Image si = slot.GetComponent<Image>();
-            si.color = i % 2 == 0
-                ? new Color(.20f, .28f, .38f, 1f)
-                : new Color(.76f, .45f, .10f, 1f);
+            si.color = outcomeColors[i];
             si.raycastTarget = false;
 
             RectTransform sr = si.rectTransform;
             sr.anchorMin = sr.anchorMax = new Vector2(.5f, .5f);
-            sr.sizeDelta = new Vector2(92f, 66f);
+            sr.sizeDelta = new Vector2(180f, 74f);
             sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 176f;
 
-            int min = i * 10;
-            int max = min + 9;
-            Text lt = MakeText(slot.transform, min.ToString("00") + "-" + max.ToString("00"), 10, TextAnchor.MiddleCenter, true);
-            lt.color = Color.white;
+            Text lt = MakeText(slot.transform, visibleOutcomes[i], 18, TextAnchor.MiddleCenter, true);
+            lt.color = new Color(1f, .95f, .84f, 1f);
             Anchor(lt.rectTransform, 0f, 0f, 1f, 1f);
         }
 
@@ -405,11 +412,11 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityResultText.color = Color.white;
         Anchor(probabilityResultText.rectTransform, .04f, .06f, .96f, .56f);
 
-        Text guide = MakeText(probabilityMachine, "포인터 숫자가 성공 범위 안이면 성공", 15, TextAnchor.MiddleCenter, false);
+        Text guide = MakeText(probabilityMachine, "최종 결과는 성공 또는 실패", 15, TextAnchor.MiddleCenter, false);
         guide.color = new Color(.72f, .74f, .80f, 1f);
         Anchor(guide.rectTransform, .05f, .105f, .95f, .185f);
 
-        Text touchGuide = MakeText(probabilityMachine, "블록 머신과 같은 방식으로 판정됩니다", 13, TextAnchor.MiddleCenter, false);
+        Text touchGuide = MakeText(probabilityMachine, "확률 계산은 내부에서 정확히 판정됩니다", 13, TextAnchor.MiddleCenter, false);
         touchGuide.color = new Color(.58f, .60f, .66f, 1f);
         Anchor(touchGuide.rectTransform, .05f, .025f, .95f, .095f);
 
@@ -817,13 +824,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
         bool destructiveEnhance = enhanceTarget != null && enhanceTarget.enhanceLevel >= 10;
 
         probabilityTitleText.text = "X-TOWER  " + operationName.ToUpper();
-        probabilityChanceText.text = chance >= 100
-            ? "성공 범위  00~99  ·  성공률 100%"
-            : "성공 범위  00~" + Mathf.Max(0, chance - 1).ToString("00") +
-              "  ·  성공률 " + chance + "%";
+        probabilityChanceText.text = "성공률 " + chance + "%  ·  성공 / 실패";
         probabilityPhaseText.text = "룰렛 회전 중";
         probabilityResultText.text = "";
-        probabilityRollText.text = "X";
+        probabilityRollText.text = "판정";
         probabilityRollText.color = new Color(1f, .78f, .20f, 1f);
 
         // Pick the exact real result once. The wheel only reveals this number.
@@ -844,12 +848,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
             yield return null;
         }
 
-        const int sectorCount = 10;
-        float segment = 360f / sectorCount;
-        int targetSector = Mathf.Clamp(finalRoll / 10, 0, sectorCount - 1);
-
+        // The hidden 00-99 roll decides the outcome. The visible wheel only
+        // lands on one of two result plates.
         float startAngle = NormalizeSignedAngle(probabilityWheel.localEulerAngles.z);
-        float targetAngle = targetSector * segment;
+        float targetAngle = success ? 0f : 180f;
         float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
         float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
 
@@ -882,8 +884,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (probabilityWheelCore != null)
             probabilityWheelCore.rectTransform.localScale = Vector3.one;
 
-        // Reveal the exact 00-99 value in the center after the wheel stops.
-        probabilityRollText.text = finalRoll.ToString("00");
+        // Never expose the hidden 00-99 roll. Only reveal the binary outcome.
+        probabilityRollText.text = success ? "성공" : "실패";
         probabilityRollText.color = success
             ? new Color(.62f, 1f, .52f, 1f)
             : new Color(1f, .34f, .28f, 1f);
@@ -896,7 +898,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             ? new Color(1f, .34f, .26f, 1f)
             : new Color(.90f, .82f, .62f, 1f);
 
-        probabilityResultText.text = success ? "성공!" : "실패";
+        probabilityResultText.text = success ? "성공" : "실패";
         probabilityResultText.color = success
             ? new Color(.58f, 1f, .58f, 1f)
             : new Color(1f, .42f, .38f, 1f);
