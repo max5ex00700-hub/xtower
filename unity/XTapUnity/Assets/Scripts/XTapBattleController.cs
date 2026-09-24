@@ -37,6 +37,7 @@ public sealed class XTapBattleController : MonoBehaviour
     XTapInventory inventory;
     XTapBlacksmith blacksmith;
     XTapJail jail;
+    XTapCodex codex;
     Coroutine bubbleAnimRoutine;
 
     GameObject mainOverlay;
@@ -227,6 +228,9 @@ public sealed class XTapBattleController : MonoBehaviour
             ShowBubble("전투 이미지 데이터를 불러오지 못했습니다.", 10f);
             yield break;
         }
+
+        codex = gameObject.AddComponent<XTapCodex>();
+        codex.Initialize(root, koreanFont, assets, inventory, RefreshMainProgressUi);
 
         SetStartupProgress(.90f);
         yield return PreloadCurrentImages();
@@ -496,6 +500,13 @@ public sealed class XTapBattleController : MonoBehaviour
         optionButton.targetGraphic = optionButtonImage;
         optionButton.onClick.AddListener(OpenOptions);
 
+        Button codexButton = MakeNavButton(mainOverlay.transform, "▤", "도감");
+        RectTransform codexButtonRect = codexButton.GetComponent<RectTransform>();
+        codexButtonRect.anchorMin = new Vector2(.865f, .835f);
+        codexButtonRect.anchorMax = new Vector2(.975f, .915f);
+        codexButtonRect.offsetMin = codexButtonRect.offsetMax = Vector2.zero;
+        codexButton.onClick.AddListener(OpenCodex);
+
         // Approved composition: no large outer box. FLOOR and player stats are
         // independent compact ornate panels so the character stays visible.
         GameObject infoRootGo = new GameObject("MainInfoDrawer", typeof(RectTransform));
@@ -647,7 +658,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.02  (1102)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.03  (1103)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1067,6 +1078,11 @@ public sealed class XTapBattleController : MonoBehaviour
         if (jail != null) jail.Open();
     }
 
+    void OpenCodex()
+    {
+        if (codex != null) codex.Open();
+    }
+
     void ReturnToMain()
     {
         ResetFight();
@@ -1373,8 +1389,9 @@ public sealed class XTapBattleController : MonoBehaviour
             HideWeakPoint();
 
             int clearedCharacterId = CurrentCharacterId();
-            var cap = assets.GetSprite("assets/f" + CurrentVisualFloor() + "_cap.jpg");
-            if (cap != null) SetSprite(cap);
+
+            // _cap is reserved for successful capture reveal only.
+            // A normal battle victory must never display the capture illustration.
 
             // Winning advances the player's actual current progress.
             int clearedStep = currentStep;
@@ -1496,13 +1513,23 @@ public sealed class XTapBattleController : MonoBehaviour
     void SetStageOrFallback(int stage)
     {
         // Floor battles must only use that floor's character art.
-        // The original generic assets/s0..s4 are unrelated characters and caused
-        // different women to appear between hits on floor 1.
+        // Every image actually shown is registered in the codex.
         int visualFloor = CurrentVisualFloor();
-        Sprite s = TryFloorStageSprite(visualFloor, stage);
+        int index = Mathf.Clamp(stage, 0, 4) * 2;
+        string code = "p" + index.ToString("00");
+        Sprite s = assets.GetSprite("assets/f" + visualFloor + "_" + code + ".jpg");
+
         if (s == null)
+        {
+            code = "p00";
             s = assets.GetSprite("assets/f" + visualFloor + "_p00.jpg");
-        if (s != null) SetSprite(s);
+        }
+
+        if (s != null)
+        {
+            XTapCodex.MarkImageDiscovered(visualFloor, code, inventory);
+            SetSprite(s);
+        }
     }
 
     Sprite TryFloorStageSprite(int floor, int stage)
@@ -1516,8 +1543,14 @@ public sealed class XTapBattleController : MonoBehaviour
     void SetActionSprite(string prefix)
     {
         int i = UnityEngine.Random.Range(0, 10);
-        Sprite s = assets.GetSprite("assets/f" + CurrentVisualFloor() + "_" + prefix + i.ToString("00") + ".jpg");
-        if (s != null) SetSprite(s);
+        int visualFloor = CurrentVisualFloor();
+        string code = prefix + i.ToString("00");
+        Sprite s = assets.GetSprite("assets/f" + visualFloor + "_" + code + ".jpg");
+        if (s != null)
+        {
+            XTapCodex.MarkImageDiscovered(visualFloor, code, inventory);
+            SetSprite(s);
+        }
     }
 
     void SetSprite(Sprite s)

@@ -442,12 +442,32 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         if (outcome.captureAttempt)
         {
-            title.text = "CAPTURE BALL";
+            title.text = outcome.captureSucceeded ? "CAPTURE SUCCESS" : "CAPTURE BALL";
             nameText.text = outcome.captureSucceeded ? "포획 성공!" : "포획 실패";
             statsText.text = outcome.captureSucceeded
-                ? activeCharacterId + "층 캐릭터 포획 상태 저장"
+                ? "캐릭터 " + activeCharacterId + " 포획 완료"
                 : "포획 확률 1%";
-            DrawCaptureBall(outcome.captureSucceeded);
+
+            if (outcome.captureSucceeded)
+            {
+                Sprite cap = XTapOriginalApkAssets.Instance != null
+                    ? XTapOriginalApkAssets.Instance.GetSprite("assets/f" + activeCharacterId + "_cap.jpg")
+                    : null;
+
+                if (cap != null)
+                {
+                    DrawCaptureSuccessImage(cap);
+                    XTapCodex.MarkImageDiscovered(activeCharacterId, "cap", bag);
+                }
+                else
+                {
+                    DrawCaptureBall(true);
+                }
+            }
+            else
+            {
+                DrawCaptureBall(false);
+            }
             return;
         }
 
@@ -473,6 +493,22 @@ public sealed class XTapGachaMachine : MonoBehaviour
         if (count == 2) return 1.5d;
         if (count == 1) return 1.25d;
         return 1d;
+    }
+
+    void DrawCaptureSuccessImage(Sprite sprite)
+    {
+        GameObject go = new GameObject("CaptureSuccessArt", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        go.transform.SetParent(rewardRoot, false);
+        Image image = go.GetComponent<Image>();
+        image.sprite = sprite;
+        image.color = Color.white;
+        image.preserveAspect = true;
+        image.raycastTarget = false;
+
+        RectTransform rt = image.rectTransform;
+        rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
+        rt.sizeDelta = new Vector2(420f, 560f);
+        rt.anchoredPosition = new Vector2(0f, 70f);
     }
 
     void DrawCaptureBall(bool success)
@@ -597,17 +633,32 @@ public sealed class XTapGachaMachine : MonoBehaviour
         Vector2 end = rewardRoot.anchoredPosition;
         Vector2 start = end + Vector2.up * 160f;
         rewardRoot.anchoredPosition = start;
-        rewardRoot.localScale = Vector3.one * .55f;
+        bool capturePop = pendingOutcome != null &&
+                          pendingOutcome.captureAttempt &&
+                          pendingOutcome.captureSucceeded;
+        rewardRoot.localScale = Vector3.one * (capturePop ? .28f : .55f);
 
         float t = 0f;
-        while (t < .42f)
+        while (t < (capturePop ? .58f : .42f))
         {
             t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / .42f);
+            float duration = capturePop ? .58f : .42f;
+            float p = Mathf.Clamp01(t / duration);
             float e = 1f - Mathf.Pow(1f - p, 3f);
-            float bounce = Mathf.Sin(p * Mathf.PI * 2f) * (1f - p) * 18f;
+            float bounce = Mathf.Sin(p * Mathf.PI * 2f) * (1f - p) * (capturePop ? 28f : 18f);
             rewardRoot.anchoredPosition = Vector2.Lerp(start, end, e) + Vector2.up * bounce;
-            rewardRoot.localScale = Vector3.one * Mathf.Lerp(.55f, 1f, e);
+
+            if (capturePop)
+            {
+                float scale = p < .72f
+                    ? Mathf.Lerp(.28f, 1.16f, p / .72f)
+                    : Mathf.Lerp(1.16f, 1f, (p - .72f) / .28f);
+                rewardRoot.localScale = Vector3.one * scale;
+            }
+            else
+            {
+                rewardRoot.localScale = Vector3.one * Mathf.Lerp(.55f, 1f, e);
+            }
             yield return null;
         }
 
