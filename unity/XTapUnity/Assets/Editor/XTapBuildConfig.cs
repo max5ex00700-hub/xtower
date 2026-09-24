@@ -30,7 +30,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         {
             string path = Path.Combine(baseDir, required[i]);
             if (!File.Exists(path))
-                throw new BuildFailedException("X탑 11.11 필수 메인 UI 자산 누락: " + required[i]);
+                throw new BuildFailedException("X탑 11.13 필수 메인 UI 자산 누락: " + required[i]);
 
             try
             {
@@ -42,11 +42,11 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             }
             catch (Exception e)
             {
-                throw new BuildFailedException("X탑 11.11 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
+                throw new BuildFailedException("X탑 11.13 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
             }
         }
 
-        Debug.Log("X탑 11.11 메인 UI 검증 완료: 기준 이미지 버튼 9개 정상.");
+        Debug.Log("X탑 11.13 메인 UI 검증 완료: 기준 이미지 버튼 9개 정상.");
     }
 
     public void OnPreprocessBuild(BuildReport report)
