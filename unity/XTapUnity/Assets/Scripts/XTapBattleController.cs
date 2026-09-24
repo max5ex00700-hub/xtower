@@ -53,6 +53,11 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainAttackText;
     Text mainDefenseText;
     Text mainHpText;
+    Image mainProgressToast;
+    Text mainProgressToastFloorText;
+    Text mainProgressToastStageText;
+    CanvasGroup mainProgressToastGroup;
+    Coroutine mainProgressToastRoutine;
     Image mainSpeechBubble;
     Text mainSpeechText;
     Coroutine mainSpeechRoutine;
@@ -565,6 +570,35 @@ public sealed class XTapBattleController : MonoBehaviour
         mainInfoTabText.color = new Color(1f, .82f, .42f, 1f);
         Anchor(mainInfoTabText.rectTransform, .05f, .05f, .95f, .95f);
 
+        // Brief floor/stage indicator shown after a successful section move.
+        mainProgressToast = new GameObject(
+            "MainProgressToast",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(CanvasGroup)
+        ).GetComponent<Image>();
+        mainProgressToast.transform.SetParent(mainOverlay.transform, false);
+        mainProgressToast.color = new Color(.018f, .014f, .014f, .96f);
+        mainProgressToast.raycastTarget = false;
+        ApplyGothicPanel(mainProgressToast, XTapMainSkin.FloorPanel, Color.white);
+        Anchor(mainProgressToast.rectTransform, .030f, .815f, .265f, .930f);
+
+        mainProgressToastGroup = mainProgressToast.GetComponent<CanvasGroup>();
+        mainProgressToastGroup.alpha = 0f;
+        mainProgressToastGroup.interactable = false;
+        mainProgressToastGroup.blocksRaycasts = false;
+
+        mainProgressToastFloorText = MakeOutlinedText(
+            mainProgressToast.transform, "", 24, TextAnchor.MiddleCenter, true);
+        mainProgressToastFloorText.color = new Color(1f, .72f, .22f, 1f);
+        Anchor(mainProgressToastFloorText.rectTransform, .07f, .43f, .93f, .92f);
+
+        mainProgressToastStageText = MakeOutlinedText(
+            mainProgressToast.transform, "", 15, TextAnchor.MiddleCenter, true);
+        mainProgressToastStageText.color = new Color(.96f, .92f, .84f, 1f);
+        Anchor(mainProgressToastStageText.rectTransform, .07f, .08f, .93f, .45f);
+
         Button tabButton = tabGo.GetComponent<Button>();
         tabButton.targetGraphic = tabBg;
         tabButton.onClick.AddListener(ToggleMainInfoDrawer);
@@ -658,7 +692,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.04  (1104)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.05  (1105)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1120,6 +1154,56 @@ public sealed class XTapBattleController : MonoBehaviour
         ResetFight();
         SetStageOrFallback(0);
         RefreshMainProgressUi();
+        ShowMainProgressToast();
+    }
+
+    void ShowMainProgressToast()
+    {
+        if (mainProgressToast == null ||
+            mainProgressToastGroup == null ||
+            mainProgressToastFloorText == null ||
+            mainProgressToastStageText == null)
+            return;
+
+        mainProgressToastFloorText.text = TowerFloor() + "층";
+        mainProgressToastStageText.text = StageLabel();
+
+        if (mainProgressToastRoutine != null)
+            StopCoroutine(mainProgressToastRoutine);
+
+        mainProgressToast.transform.SetAsLastSibling();
+        mainProgressToastRoutine = StartCoroutine(AnimateMainProgressToast());
+    }
+
+    IEnumerator AnimateMainProgressToast()
+    {
+        const float fadeIn = .10f;
+        const float hold = .85f;
+        const float fadeOut = .24f;
+
+        float t = 0f;
+        mainProgressToastGroup.alpha = 0f;
+
+        while (t < fadeIn)
+        {
+            t += Time.unscaledDeltaTime;
+            mainProgressToastGroup.alpha = Mathf.Clamp01(t / fadeIn);
+            yield return null;
+        }
+
+        mainProgressToastGroup.alpha = 1f;
+        yield return new WaitForSecondsRealtime(hold);
+
+        t = 0f;
+        while (t < fadeOut)
+        {
+            t += Time.unscaledDeltaTime;
+            mainProgressToastGroup.alpha = 1f - Mathf.Clamp01(t / fadeOut);
+            yield return null;
+        }
+
+        mainProgressToastGroup.alpha = 0f;
+        mainProgressToastRoutine = null;
     }
 
     void RefreshMainProgressUi()
