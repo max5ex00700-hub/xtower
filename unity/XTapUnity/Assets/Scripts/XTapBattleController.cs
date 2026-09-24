@@ -562,7 +562,7 @@ public sealed class XTapBattleController : MonoBehaviour
         tabGo.transform.SetParent(mainOverlay.transform, false);
         Image tabBg = tabGo.GetComponent<Image>();
         tabBg.color = Color.white;
-        ApplyMainButtonSkin(tabBg, XTapMainSkin.UtilityButton);
+        ApplyMainButtonSkin(tabBg, XTapMainSkin.InfoTabButton);
         mainInfoTabRect = tabBg.rectTransform;
         Anchor(mainInfoTabRect, 0f, .535f, .052f, .670f);
 
@@ -692,7 +692,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.07  (1107)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.08  (1108)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
