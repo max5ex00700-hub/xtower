@@ -53,6 +53,7 @@ public sealed class XTapInventory : MonoBehaviour
     public const int SharedStoragePageSize = StoragePageSize;
     const string SaveKey = "xtap_bag_v1";
     const string ExpansionKey = "xtap_bag_extra_cells";
+    const string CodexRewardKeyPrefix = "xtap_codex_complete_reward_";
 
     [Serializable]
     sealed class SaveData
@@ -1125,6 +1126,34 @@ public sealed class XTapInventory : MonoBehaviour
 
         if (IsOpen)
             Render();
+    }
+
+    public bool HasCodexCompletionReward(int characterId)
+    {
+        int slot = CharacterSlot(characterId);
+        if (slot <= 0) return false;
+        return PlayerPrefs.GetInt(CodexRewardKeyPrefix + slot, 0) == 1;
+    }
+
+    public bool GrantCodexCompletionReward(int characterId)
+    {
+        int slot = CharacterSlot(characterId);
+        if (slot <= 0) return false;
+
+        string key = CodexRewardKeyPrefix + slot;
+        if (PlayerPrefs.GetInt(key, 0) == 1)
+            return false;
+
+        // Completing every image for one character permanently expands only the
+        // player's bag by one full row (8 cells). Captured-character bags stay 8x3.
+        PlayerPrefs.SetInt(key, 1);
+        PlayerPrefs.SetInt(ExpansionKey, ExpansionBonus + 8);
+        PlayerPrefs.Save();
+
+        if (IsOpen)
+            Render();
+
+        return true;
     }
 
     void SetupTouch(GameObject go, string itemId)
