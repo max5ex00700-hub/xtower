@@ -390,7 +390,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         cr.anchorMin = cr.anchorMax = new Vector2(.5f, .5f);
         cr.sizeDelta = new Vector2(200f, 200f);
 
-        probabilityRollText = MakeText(coreGo.transform, "X", 46, TextAnchor.MiddleCenter, true);
+        probabilityRollText = MakeText(coreGo.transform, "판정", 30, TextAnchor.MiddleCenter, true);
         probabilityRollText.color = new Color(1f, .78f, .20f, 1f);
         Anchor(probabilityRollText.rectTransform, 0f, 0f, 1f, 1f);
 
@@ -830,7 +830,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityRollText.text = "판정";
         probabilityRollText.color = new Color(1f, .78f, .20f, 1f);
 
-        // Pick the exact real result once. The wheel only reveals this number.
+        // Pick the exact hidden 00-99 result once. The player only sees success or failure.
         int finalRoll = UnityEngine.Random.Range(0, 100);
         bool success = finalRoll < chance;
 
