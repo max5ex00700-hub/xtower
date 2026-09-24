@@ -505,11 +505,10 @@ public sealed class XTapBattleController : MonoBehaviour
         optionButton.targetGraphic = optionButtonImage;
         optionButton.onClick.AddListener(OpenOptions);
 
-        Button codexButton = MakeNavButton(mainOverlay.transform, "▤", "도감");
-        ApplyMainButtonSkin(codexButton.GetComponent<Image>(), XTapMainSkin.UtilityButton);
+        Button codexButton = MakeUtilityButton(mainOverlay.transform, "▤", "도감");
         RectTransform codexButtonRect = codexButton.GetComponent<RectTransform>();
         codexButtonRect.anchorMin = new Vector2(.865f, .835f);
-        codexButtonRect.anchorMax = new Vector2(.975f, .915f);
+        codexButtonRect.anchorMax = new Vector2(.975f, .895f);
         codexButtonRect.offsetMin = codexButtonRect.offsetMax = Vector2.zero;
         codexButton.onClick.AddListener(OpenCodex);
 
@@ -624,8 +623,8 @@ public sealed class XTapBattleController : MonoBehaviour
         // Large central action button.
         Button fight = MakeGothicButton(mainOverlay.transform, "전투", 24);
         RectTransform fr = fight.GetComponent<RectTransform>();
-        fr.anchorMin = new Vector2(.250f, .145f);
-        fr.anchorMax = new Vector2(.750f, .245f);
+        fr.anchorMin = new Vector2(.235f, .140f);
+        fr.anchorMax = new Vector2(.765f, .250f);
         fr.offsetMin = fr.offsetMax = Vector2.zero;
         fight.onClick.AddListener(BeginBattle);
 
@@ -693,7 +692,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.06  (1106)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.07  (1107)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -991,6 +990,35 @@ public sealed class XTapBattleController : MonoBehaviour
         colors.normalColor = Color.white;
         colors.highlightedColor = new Color(1.10f, 1.04f, .96f, 1f);
         colors.pressedColor = new Color(.68f, .58f, .50f, 1f);
+        colors.selectedColor = Color.white;
+        colors.fadeDuration = .06f;
+        button.colors = colors;
+        return button;
+    }
+
+    Button MakeUtilityButton(Transform parent, string icon, string label)
+    {
+        GameObject go = new GameObject(label + "UtilityButton", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        go.transform.SetParent(parent, false);
+
+        Image bg = go.GetComponent<Image>();
+        bg.color = Color.white;
+        ApplyMainButtonSkin(bg, XTapMainSkin.UtilityButton);
+
+        Text iconText = MakeOutlinedText(go.transform, icon, 16, TextAnchor.MiddleCenter, true);
+        iconText.color = new Color(1f, .78f, .34f, 1f);
+        Anchor(iconText.rectTransform, .10f, .40f, .90f, .84f);
+
+        Text labelText = MakeOutlinedText(go.transform, label, 9, TextAnchor.MiddleCenter, true);
+        labelText.color = new Color(.98f, .93f, .84f, 1f);
+        Anchor(labelText.rectTransform, .08f, .10f, .92f, .41f);
+
+        Button button = go.GetComponent<Button>();
+        button.targetGraphic = bg;
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1.06f, 1.06f, 1.06f, 1f);
+        colors.pressedColor = new Color(.76f, .76f, .76f, 1f);
         colors.selectedColor = Color.white;
         colors.fadeDuration = .06f;
         button.colors = colors;
