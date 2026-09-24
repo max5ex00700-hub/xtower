@@ -286,7 +286,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(splashPromptText.rectTransform, .08f, .140f, .92f, .190f);
         splashPromptText.gameObject.SetActive(false);
 
-        Text credit = MakeOutlinedText(splashOverlay.transform, "제작: 포시즌Jo", 14, TextAnchor.MiddleCenter, true);
+        Text credit = MakeOutlinedText(splashOverlay.transform, "제작:포시즌Jo", 14, TextAnchor.MiddleCenter, true);
         credit.color = new Color(.90f, .82f, .70f, 1f);
         Anchor(credit.rectTransform, .08f, .035f, .92f, .082f);
 
@@ -649,7 +649,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.91  (1091)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.92  (1092)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
