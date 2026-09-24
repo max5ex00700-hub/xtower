@@ -63,6 +63,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
     GameObject probabilityOverlay;
     RectTransform probabilityMachine;
     RectTransform probabilityWheel;
+    Image probabilityWheelCore;
     Text probabilityTitleText;
     Text probabilityChanceText;
     Text probabilityRollText;
@@ -302,63 +303,115 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityOverlay.transform.SetParent(overlay.transform, false);
 
         Image dim = probabilityOverlay.GetComponent<Image>();
-        dim.color = new Color(0f, 0f, 0f, .86f);
+        dim.color = new Color(0f, 0f, 0f, .82f);
         dim.raycastTarget = true;
         Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
 
-        probabilityMachine = MakePanel(probabilityOverlay.transform, "ProbabilityMachine", new Color(.035f, .020f, .014f, .99f));
-        Anchor(probabilityMachine, .08f, .215f, .92f, .785f);
-        ApplyPanelSkin(probabilityMachine, panelSkin);
-        if (panelSkin == null)
-            Frame(probabilityMachine, new Color(.76f, .45f, .18f, 1f), 5f);
+        // Reuse the BLOCK reward machine composition. Forge only changes the
+        // numeric ranges and operation labels.
+        probabilityMachine = new GameObject(
+            "ForgeBlockMachine",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image)
+        ).GetComponent<RectTransform>();
+        probabilityMachine.SetParent(probabilityOverlay.transform, false);
 
-        probabilityTitleText = MakeText(probabilityMachine, "확률 머신", 27, TextAnchor.MiddleCenter, true);
-        probabilityTitleText.color = new Color(1f, .78f, .34f, 1f);
-        Anchor(probabilityTitleText.rectTransform, .08f, .82f, .92f, .96f);
+        Image body = probabilityMachine.GetComponent<Image>();
+        body.color = new Color(.075f, .085f, .11f, 1f);
+        body.raycastTarget = true;
 
-        RectTransform chanceBar = MakePanel(probabilityMachine, "ChanceBar", new Color(.07f, .045f, .030f, .96f));
-        Anchor(chanceBar, .10f, .705f, .90f, .815f);
-        ApplyPanelSkin(chanceBar, statusBarSkin);
+        probabilityMachine.anchorMin = probabilityMachine.anchorMax = new Vector2(.5f, .5f);
+        probabilityMachine.pivot = new Vector2(.5f, .5f);
+        probabilityMachine.sizeDelta = new Vector2(900f, 1600f);
+        probabilityMachine.anchoredPosition = Vector2.zero;
+        Frame(probabilityMachine, new Color(.84f, .60f, .13f, 1f), 18f);
 
-        probabilityChanceText = MakeText(chanceBar, "", 18, TextAnchor.MiddleCenter, true);
-        probabilityChanceText.color = new Color(1f, .88f, .62f, 1f);
-        Anchor(probabilityChanceText.rectTransform, .05f, .05f, .95f, .95f);
+        probabilityTitleText = MakeText(probabilityMachine, "X-TOWER  FORGE", 28, TextAnchor.MiddleCenter, true);
+        probabilityTitleText.color = new Color(1f, .84f, .39f, 1f);
+        Anchor(probabilityTitleText.rectTransform, .06f, .905f, .94f, .985f);
 
-        RectTransform lampRail = MakePanel(probabilityMachine, "MachineLamps", new Color(.025f, .018f, .016f, .92f));
-        Anchor(lampRail, .20f, .625f, .80f, .685f);
-        for (int i = 0; i < probabilityLamps.Length; i++)
+        probabilityChanceText = MakeText(probabilityMachine, "", 20, TextAnchor.MiddleCenter, true);
+        probabilityChanceText.color = new Color(.96f, .76f, .25f, 1f);
+        Anchor(probabilityChanceText.rectTransform, .12f, .830f, .88f, .905f);
+
+        RectTransform window = MakePanel(probabilityMachine, "WheelWindow", new Color(.025f, .03f, .045f, 1f));
+        Anchor(window, .17f, .455f, .83f, .820f);
+        Frame(window, new Color(.42f, .44f, .50f, 1f), 8f);
+
+        probabilityWheel = new GameObject("Wheel", typeof(RectTransform)).GetComponent<RectTransform>();
+        probabilityWheel.SetParent(window, false);
+        probabilityWheel.anchorMin = probabilityWheel.anchorMax = new Vector2(.5f, .5f);
+        probabilityWheel.sizeDelta = new Vector2(430f, 430f);
+        probabilityWheel.anchoredPosition = Vector2.zero;
+
+        // Ten visual sectors represent exact 00-99 rolls.
+        // 00~09, 10~19 ... 90~99.
+        const int sectorCount = 10;
+        float segment = 360f / sectorCount;
+        for (int i = 0; i < sectorCount; i++)
         {
-            RectTransform lamp = MakePanel(lampRail, "Lamp" + (i + 1), new Color(.16f, .055f, .035f, 1f));
-            float x1 = .04f + i * .325f;
-            Anchor(lamp, x1, .18f, x1 + .285f, .82f);
-            probabilityLamps[i] = lamp.GetComponent<Image>();
+            float a = i * segment * Mathf.Deg2Rad;
+
+            GameObject slot = new GameObject("Slot" + i, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+            slot.transform.SetParent(probabilityWheel, false);
+            Image si = slot.GetComponent<Image>();
+            si.color = i % 2 == 0
+                ? new Color(.20f, .28f, .38f, 1f)
+                : new Color(.76f, .45f, .10f, 1f);
+            si.raycastTarget = false;
+
+            RectTransform sr = si.rectTransform;
+            sr.anchorMin = sr.anchorMax = new Vector2(.5f, .5f);
+            sr.sizeDelta = new Vector2(92f, 66f);
+            sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 176f;
+
+            int min = i * 10;
+            int max = min + 9;
+            Text lt = MakeText(slot.transform, min.ToString("00") + "-" + max.ToString("00"), 10, TextAnchor.MiddleCenter, true);
+            lt.color = Color.white;
+            Anchor(lt.rectTransform, 0f, 0f, 1f, 1f);
         }
 
-        RectTransform chargeTrack = MakePanel(probabilityMachine, "ChargeTrack", new Color(.055f, .035f, .028f, .98f));
-        Anchor(chargeTrack, .14f, .585f, .86f, .612f);
-        probabilityChargeFill = MakePanel(chargeTrack, "ChargeFill", new Color(1f, .30f, .055f, .98f)).GetComponent<Image>();
-        probabilityChargeFill.raycastTarget = false;
-        Anchor(probabilityChargeFill.rectTransform, .015f, .16f, .015f, .84f);
+        GameObject coreGo = new GameObject("WheelCore", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        coreGo.transform.SetParent(probabilityWheel, false);
+        probabilityWheelCore = coreGo.GetComponent<Image>();
+        probabilityWheelCore.color = new Color(.13f, .15f, .20f, 1f);
+        probabilityWheelCore.raycastTarget = false;
 
-        probabilityWheel = MakePanel(probabilityMachine, "NumberDrum", new Color(.025f, .020f, .018f, 1f));
-        Anchor(probabilityWheel, .20f, .285f, .80f, .565f);
-        ApplyPanelSkin(probabilityWheel, slotSkin);
+        RectTransform cr = probabilityWheelCore.rectTransform;
+        cr.anchorMin = cr.anchorMax = new Vector2(.5f, .5f);
+        cr.sizeDelta = new Vector2(200f, 200f);
 
-        probabilityRollText = MakeText(probabilityWheel, "00", 66, TextAnchor.MiddleCenter, true);
-        probabilityRollText.color = new Color(1f, .74f, .24f, 1f);
-        Anchor(probabilityRollText.rectTransform, .05f, .06f, .95f, .94f);
+        probabilityRollText = MakeText(coreGo.transform, "X", 46, TextAnchor.MiddleCenter, true);
+        probabilityRollText.color = new Color(1f, .78f, .20f, 1f);
+        Anchor(probabilityRollText.rectTransform, 0f, 0f, 1f, 1f);
 
-        probabilityPhaseText = MakeText(probabilityMachine, "", 17, TextAnchor.MiddleCenter, true);
-        probabilityPhaseText.color = new Color(1f, .82f, .46f, 1f);
-        Anchor(probabilityPhaseText.rectTransform, .08f, .205f, .92f, .275f);
+        RectTransform arrow = MakePanel(window, "Pointer", new Color(1f, .78f, .18f, 1f));
+        arrow.anchorMin = arrow.anchorMax = new Vector2(.5f, 1f);
+        arrow.pivot = new Vector2(.5f, 1f);
+        arrow.sizeDelta = new Vector2(42f, 72f);
+        arrow.anchoredPosition = new Vector2(0f, -7f);
 
-        probabilityResultText = MakeText(probabilityMachine, "", 22, TextAnchor.MiddleCenter, true);
-        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
-        Anchor(probabilityResultText.rectTransform, .08f, .105f, .92f, .195f);
+        RectTransform resultChute = MakePanel(probabilityMachine, "ResultChute", new Color(.025f, .03f, .04f, 1f));
+        Anchor(resultChute, .25f, .285f, .75f, .420f);
+        Frame(resultChute, new Color(.50f, .52f, .58f, 1f), 7f);
 
-        Text guide = MakeText(probabilityMachine, "실제 결과는 00~99 중 한 번만 결정됩니다", 13, TextAnchor.MiddleCenter, false);
-        guide.color = new Color(.74f, .66f, .58f, 1f);
-        Anchor(guide.rectTransform, .08f, .025f, .92f, .095f);
+        probabilityPhaseText = MakeText(resultChute, "", 18, TextAnchor.MiddleCenter, true);
+        probabilityPhaseText.color = new Color(.90f, .82f, .62f, 1f);
+        Anchor(probabilityPhaseText.rectTransform, .04f, .54f, .96f, .94f);
+
+        probabilityResultText = MakeText(resultChute, "", 26, TextAnchor.MiddleCenter, true);
+        probabilityResultText.color = Color.white;
+        Anchor(probabilityResultText.rectTransform, .04f, .06f, .96f, .56f);
+
+        Text guide = MakeText(probabilityMachine, "포인터 숫자가 성공 범위 안이면 성공", 15, TextAnchor.MiddleCenter, false);
+        guide.color = new Color(.72f, .74f, .80f, 1f);
+        Anchor(guide.rectTransform, .05f, .105f, .95f, .185f);
+
+        Text touchGuide = MakeText(probabilityMachine, "블록 머신과 같은 방식으로 판정됩니다", 13, TextAnchor.MiddleCenter, false);
+        touchGuide.color = new Color(.58f, .60f, .66f, 1f);
+        Anchor(touchGuide.rectTransform, .05f, .025f, .95f, .095f);
 
         probabilityOverlay.SetActive(false);
     }
@@ -763,168 +816,95 @@ public sealed class XTapBlacksmith : MonoBehaviour
             : null;
         bool destructiveEnhance = enhanceTarget != null && enhanceTarget.enhanceLevel >= 10;
 
-        probabilityTitleText.text = operationName + " 판정로";
+        probabilityTitleText.text = "X-TOWER  " + operationName.ToUpper();
         probabilityChanceText.text = chance >= 100
-            ? "성공률 100%  ·  확정 성공"
-            : "성공률 " + chance + "%  ·  00~" + Mathf.Max(0, chance - 1).ToString("00") + " 성공";
+            ? "성공 범위  00~99  ·  성공률 100%"
+            : "성공 범위  00~" + Mathf.Max(0, chance - 1).ToString("00") +
+              "  ·  성공률 " + chance + "%";
+        probabilityPhaseText.text = "룰렛 회전 중";
         probabilityResultText.text = "";
-        probabilityResultText.color = new Color(.94f, .88f, .78f, 1f);
-        probabilityRollText.text = "--";
-        probabilityRollText.color = new Color(1f, .74f, .24f, 1f);
-        probabilityRollText.transform.localScale = Vector3.one;
-        SetProbabilityCharge(0f);
-        SetProbabilityLamps(0);
+        probabilityRollText.text = "X";
+        probabilityRollText.color = new Color(1f, .78f, .20f, 1f);
 
-        // The real 00-99 result is picked exactly once. Everything before the reveal
-        // is presentation only and never changes the configured probability.
+        // Pick the exact real result once. The wheel only reveals this number.
         int finalRoll = UnityEngine.Random.Range(0, 100);
         bool success = finalRoll < chance;
 
-        // Phase 1: load the selected blocks into the machine.
-        probabilityPhaseText.text = "재료 투입";
+        probabilityMachine.localScale = Vector3.one * .90f;
+        probabilityMachine.anchoredPosition = new Vector2(0f, -40f);
+
+        float intro = 0f;
+        while (intro < .22f)
+        {
+            intro += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(intro / .22f);
+            float e = 1f - Mathf.Pow(1f - p, 3f);
+            probabilityMachine.localScale = Vector3.one * Mathf.Lerp(.90f, 1f, e);
+            probabilityMachine.anchoredPosition = new Vector2(0f, Mathf.Lerp(-40f, 0f, e));
+            yield return null;
+        }
+
+        const int sectorCount = 10;
+        float segment = 360f / sectorCount;
+        int targetSector = Mathf.Clamp(finalRoll / 10, 0, sectorCount - 1);
+
+        float startAngle = NormalizeSignedAngle(probabilityWheel.localEulerAngles.z);
+        float targetAngle = targetSector * segment;
+        float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
+        float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
+
+        float duration = 1.85f;
         float t = 0f;
-        const float loadTime = .42f;
-        while (t < loadTime)
+
+        while (t < duration)
         {
             t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / loadTime);
-            SetProbabilityCharge(.18f * p);
-            probabilityWheel.localScale = Vector3.one * (1f + Mathf.Sin(p * Mathf.PI) * .025f);
-            yield return null;
-        }
-        SetProbabilityLamps(1);
-        probabilityWheel.localScale = Vector3.one;
+            float p = Mathf.Clamp01(t / duration);
+            float e = 1f - Mathf.Pow(1f - p, 4f);
+            float angle = startAngle - totalSpin * e;
+            probabilityWheel.localRotation = Quaternion.Euler(0f, 0f, angle);
 
-        // Phase 2: three relays arm one by one while the charge bar climbs.
-        probabilityPhaseText.text = "동력 충전";
-        t = 0f;
-        const float chargeTime = .72f;
-        int lastLamp = 1;
-        while (t < chargeTime)
-        {
-            t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / chargeTime);
-            SetProbabilityCharge(Mathf.Lerp(.18f, 1f, p));
+            float shake = Mathf.Sin(Time.unscaledTime * 72f) * (1f - p) * 5f;
+            probabilityMachine.anchoredPosition = new Vector2(shake, 0f);
 
-            int lamps = p < .36f ? 1 : (p < .72f ? 2 : 3);
-            if (lamps != lastLamp)
+            if (probabilityWheelCore != null)
             {
-                lastLamp = lamps;
-                SetProbabilityLamps(lamps);
-                probabilityMachine.localScale = Vector3.one * 1.008f;
-            }
-            else
-            {
-                probabilityMachine.localScale = Vector3.Lerp(probabilityMachine.localScale, Vector3.one, .18f);
+                float pulse = 1f + Mathf.Sin(Time.unscaledTime * 17f) * .05f;
+                probabilityWheelCore.rectTransform.localScale = Vector3.one * pulse;
             }
 
-            probabilityRollText.text = p < .50f ? "--" : "##";
-            yield return null;
-        }
-        SetProbabilityCharge(1f);
-        SetProbabilityLamps(3);
-        probabilityMachine.localScale = Vector3.one;
-
-        // Phase 3: high-speed drum. These are only rolling display numbers.
-        probabilityPhaseText.text = "고속 회전";
-        t = 0f;
-        const float spinTime = .88f;
-        int lastTick = -1;
-        while (t < spinTime)
-        {
-            t += Time.unscaledDeltaTime;
-            int tick = Mathf.FloorToInt(t / .032f);
-            if (tick != lastTick)
-            {
-                lastTick = tick;
-                probabilityRollText.text = UnityEngine.Random.Range(0, 100).ToString("00");
-            }
-
-            float wobble = Mathf.Sin(Time.unscaledTime * 48f) * 10f;
-            probabilityWheel.anchoredPosition = new Vector2(wobble, probabilityWheel.anchoredPosition.y);
-            probabilityRollText.transform.localScale =
-                Vector3.one * (1f + Mathf.Abs(Mathf.Sin(Time.unscaledTime * 32f)) * .08f);
             yield return null;
         }
 
-        // Phase 4: long deceleration. The drum gets slower enough to make each
-        // passing number readable, but the true roll is still hidden.
-        probabilityPhaseText.text = "감속 중...";
-        t = 0f;
-        const float brakeTime = 1.18f;
-        float nextChange = 0f;
-        while (t < brakeTime)
-        {
-            t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / brakeTime);
+        // Same snap behavior as the block reward machine.
+        probabilityWheel.localRotation = Quaternion.Euler(0f, 0f, targetAngle);
+        probabilityMachine.anchoredPosition = Vector2.zero;
+        if (probabilityWheelCore != null)
+            probabilityWheelCore.rectTransform.localScale = Vector3.one;
 
-            if (t >= nextChange)
-            {
-                probabilityRollText.text = UnityEngine.Random.Range(0, 100).ToString("00");
-                nextChange = t + Mathf.Lerp(.055f, .30f, p * p);
-                probabilityRollText.transform.localScale = Vector3.one * (1.10f - p * .06f);
-            }
-
-            float wobble = Mathf.Sin(Time.unscaledTime * Mathf.Lerp(32f, 13f, p)) *
-                           Mathf.Lerp(7f, 1.2f, p);
-            probabilityWheel.anchoredPosition = new Vector2(wobble, probabilityWheel.anchoredPosition.y);
-            yield return null;
-        }
-
-        // Phase 5: hide the drum for a short lock interval. Destructive enhancement
-        // gets an explicit danger warning here, not after the outcome.
-        probabilityWheel.anchoredPosition = new Vector2(0f, probabilityWheel.anchoredPosition.y);
-        probabilityRollText.transform.localScale = Vector3.one;
-        probabilityRollText.text = "??";
-        probabilityPhaseText.text = "판정 잠금";
-
-        if (destructiveEnhance)
-        {
-            probabilityResultText.text = "경고  ·  실패 시 대상 파괴";
-            probabilityResultText.color = new Color(1f, .30f, .22f, 1f);
-        }
-        else
-        {
-            probabilityResultText.text = "결과 고정 중...";
-            probabilityResultText.color = new Color(1f, .82f, .52f, 1f);
-        }
-
-        t = 0f;
-        const float lockTime = .58f;
-        while (t < lockTime)
-        {
-            t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / lockTime);
-            float pulse = .94f + Mathf.Abs(Mathf.Sin(p * Mathf.PI * 4f)) * .13f;
-            probabilityRollText.transform.localScale = Vector3.one * pulse;
-
-            if (destructiveEnhance)
-            {
-                Color c = probabilityResultText.color;
-                c.a = .50f + Mathf.Abs(Mathf.Sin(p * Mathf.PI * 5f)) * .50f;
-                probabilityResultText.color = c;
-            }
-            yield return null;
-        }
-
-        // Final reveal.
-        probabilityRollText.transform.localScale = Vector3.one * 1.28f;
+        // Reveal the exact 00-99 value in the center after the wheel stops.
         probabilityRollText.text = finalRoll.ToString("00");
         probabilityRollText.color = success
             ? new Color(.62f, 1f, .52f, 1f)
             : new Color(1f, .34f, .28f, 1f);
-        probabilityPhaseText.text = "판정 완료";
+        probabilityRollText.transform.localScale = Vector3.one * 1.24f;
+
+        probabilityPhaseText.text = destructiveEnhance
+            ? "실패 시 대상 파괴"
+            : operationName + " 판정";
+        probabilityPhaseText.color = destructiveEnhance
+            ? new Color(1f, .34f, .26f, 1f)
+            : new Color(.90f, .82f, .62f, 1f);
+
         probabilityResultText.text = success ? "성공!" : "실패";
         probabilityResultText.color = success
             ? new Color(.58f, 1f, .58f, 1f)
             : new Color(1f, .42f, .38f, 1f);
 
-        probabilityMachine.localScale = Vector3.one * 1.015f;
         VibrateForgeResult();
 
         yield return new WaitForSecondsRealtime(.16f);
         probabilityRollText.transform.localScale = Vector3.one;
-        probabilityMachine.localScale = Vector3.one;
         yield return new WaitForSecondsRealtime(.72f);
 
         if (operationMode == ForgeMode.Enhance)
@@ -940,26 +920,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Refresh();
     }
 
-    void SetProbabilityCharge(float value)
+    static float NormalizeSignedAngle(float angle)
     {
-        if (probabilityChargeFill == null) return;
-        float p = Mathf.Clamp01(value);
-        RectTransform r = probabilityChargeFill.rectTransform;
-        r.anchorMin = new Vector2(.015f, .16f);
-        r.anchorMax = new Vector2(Mathf.Lerp(.015f, .985f, p), .84f);
-        r.offsetMin = Vector2.zero;
-        r.offsetMax = Vector2.zero;
-    }
-
-    void SetProbabilityLamps(int litCount)
-    {
-        for (int i = 0; i < probabilityLamps.Length; i++)
-        {
-            if (probabilityLamps[i] == null) continue;
-            probabilityLamps[i].color = i < litCount
-                ? new Color(1f, .30f, .055f, 1f)
-                : new Color(.16f, .055f, .035f, 1f);
-        }
+        return Mathf.Repeat(angle + 180f, 360f) - 180f;
     }
 
     void VibrateForgeResult()
