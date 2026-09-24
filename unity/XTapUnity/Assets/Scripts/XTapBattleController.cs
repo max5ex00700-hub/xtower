@@ -488,7 +488,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Image optionButtonImage = optionButtonGo.GetComponent<Image>();
         optionButtonImage.color = new Color(.025f, .020f, .020f, .94f);
         ApplyGothicPanel(optionButtonImage, XTapMainSkin.UtilityButton, Color.white);
-        Anchor(optionButtonImage.rectTransform, .820f, .935f, .980f, .990f);
+        Anchor(optionButtonImage.rectTransform, .865f, .925f, .975f, .985f);
         Text optionButtonText = MakeOutlinedText(optionButtonGo.transform, "⚙", 22, TextAnchor.MiddleCenter, true);
         optionButtonText.color = new Color(.96f, .90f, .80f, 1f);
         Anchor(optionButtonText.rectTransform, .04f, .04f, .96f, .96f);
@@ -496,12 +496,14 @@ public sealed class XTapBattleController : MonoBehaviour
         optionButton.targetGraphic = optionButtonImage;
         optionButton.onClick.AddListener(OpenOptions);
 
-        // Fixed compact info panel matching the approved main-screen composition.
-        Image drawerImage = MakePanel(mainOverlay.transform, "MainInfoDrawer", new Color(.018f, .015f, .014f, .94f), .020f, .650f, .305f, .960f);
-        mainInfoDrawer = drawerImage.rectTransform;
-        ApplyGothicPanel(drawerImage, XTapMainSkin.PlayerPanel, Color.white);
+        // Approved composition: no large outer box. FLOOR and player stats are
+        // independent compact ornate panels so the character stays visible.
+        GameObject infoRootGo = new GameObject("MainInfoDrawer", typeof(RectTransform));
+        infoRootGo.transform.SetParent(mainOverlay.transform, false);
+        mainInfoDrawer = infoRootGo.GetComponent<RectTransform>();
+        Anchor(mainInfoDrawer, .018f, .655f, .300f, .965f);
 
-        Image floorPanel = MakePanel(mainInfoDrawer, "FloorPanel", new Color(.025f, .020f, .018f, .94f), .045f, .565f, .955f, .965f);
+        Image floorPanel = MakePanel(mainInfoDrawer, "FloorPanel", new Color(.018f, .014f, .014f, .96f), 0f, .565f, 1f, 1f);
         ApplyGothicPanel(floorPanel, XTapMainSkin.FloorPanel, Color.white);
 
         Text floorWord = MakeOutlinedText(floorPanel.transform, "FLOOR", 18, TextAnchor.MiddleCenter, true);
@@ -516,32 +518,28 @@ public sealed class XTapBattleController : MonoBehaviour
         mainFloorSubText.color = new Color(.96f, .92f, .84f, 1f);
         Anchor(mainFloorSubText.rectTransform, .08f, .02f, .92f, .29f);
 
-        Image statPanel = MakePanel(mainInfoDrawer, "PlayerStats", new Color(.025f, .020f, .018f, .94f), .045f, .035f, .955f, .545f);
+        Image statPanel = MakePanel(mainInfoDrawer, "PlayerStats", new Color(.018f, .014f, .014f, .96f), 0f, 0f, 1f, .535f);
         ApplyGothicPanel(statPanel, XTapMainSkin.PlayerPanel, Color.white);
 
         Text playerTitle = MakeOutlinedText(statPanel.transform, "플레이어", 20, TextAnchor.MiddleLeft, true);
         playerTitle.color = new Color(.98f, .92f, .80f, 1f);
         Anchor(playerTitle.rectTransform, .08f, .82f, .92f, .98f);
 
-        mainMoveText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainMoveText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainMoveText.color = new Color(.96f, .90f, .76f, 1f);
-        Anchor(mainMoveText.rectTransform, .10f, .62f, .92f, .79f);
+        Anchor(mainMoveText.rectTransform, .10f, .61f, .92f, .79f);
 
-        Text gearTitle = MakeOutlinedText(statPanel.transform, "현재 능력", 14, TextAnchor.MiddleLeft, true);
-        gearTitle.color = new Color(.80f, .78f, .72f, 1f);
-        Anchor(gearTitle.rectTransform, .10f, .47f, .92f, .61f);
-
-        mainAttackText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainAttackText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainAttackText.color = new Color(1f, .70f, .22f, 1f);
-        Anchor(mainAttackText.rectTransform, .10f, .32f, .92f, .48f);
+        Anchor(mainAttackText.rectTransform, .10f, .40f, .94f, .59f);
 
-        mainDefenseText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainDefenseText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainDefenseText.color = new Color(.48f, .76f, 1f, 1f);
-        Anchor(mainDefenseText.rectTransform, .10f, .16f, .92f, .33f);
+        Anchor(mainDefenseText.rectTransform, .10f, .21f, .94f, .40f);
 
-        mainHpText = MakeOutlinedText(statPanel.transform, "", 15, TextAnchor.MiddleLeft, true);
+        mainHpText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainHpText.color = new Color(1f, .46f, .46f, 1f);
-        Anchor(mainHpText.rectTransform, .10f, .00f, .92f, .17f);
+        Anchor(mainHpText.rectTransform, .10f, .02f, .94f, .21f);
 
         // Thin edge tab is the only persistent hint that the drawer exists.
         GameObject tabGo = new GameObject("MainInfoTab", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
@@ -649,7 +647,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.92  (1092)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   10.93  (1093)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -883,11 +881,10 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image outer = go.GetComponent<Image>();
-        outer.color = new Color(.20f, .008f, .012f, .98f);
-        AddFrame(outer.rectTransform, new Color(.82f, .38f, .12f, 1f), 3f);
+        outer.color = Color.white;
+        ApplyGothicPanel(outer, XTapMainSkin.FightButton, Color.white);
 
-        Image inner = MakePanel(go.transform, "Inset", new Color(.10f, .006f, .008f, .80f), .018f, .08f, .982f, .92f);
-        AddFrame(inner.rectTransform, new Color(.55f, .18f, .10f, .95f), 2f);
+        Image inner = MakePanel(go.transform, "Inset", new Color(.10f, .006f, .008f, .32f), .045f, .12f, .955f, .88f);
 
         Text kicker = MakeOutlinedText(inner.transform, "BATTLE", 10, TextAnchor.MiddleCenter, true);
         kicker.color = new Color(.82f, .58f, .34f, 1f);
@@ -918,8 +915,8 @@ public sealed class XTapBattleController : MonoBehaviour
         go.transform.SetParent(parent, false);
 
         Image bg = go.GetComponent<Image>();
-        bg.color = new Color(.030f, .026f, .026f, .96f);
-        AddFrame(bg.rectTransform, new Color(.42f, .32f, .22f, .95f), 2f);
+        bg.color = Color.white;
+        ApplyGothicPanel(bg, XTapMainSkin.NavButton, Color.white);
 
         Image topAccent = MakePanel(go.transform, "TypeTopAccent", new Color(.72f, .49f, .24f, .95f), .18f, .915f, .82f, .93f);
         topAccent.raycastTarget = false;
@@ -1127,13 +1124,13 @@ public sealed class XTapBattleController : MonoBehaviour
         double hp = CurrentPlayerMaxHp();
 
         if (mainAttackText != null)
-            mainAttackText.text = "공격력    " + XTapStatFormat.Compact(atk);
+            mainAttackText.text = "공격력  " + XTapStatFormat.Compact(atk);
 
         if (mainDefenseText != null)
-            mainDefenseText.text = "방어력    " + XTapStatFormat.Compact(def);
+            mainDefenseText.text = "방어력  " + XTapStatFormat.Compact(def);
 
         if (mainHpText != null)
-            mainHpText.text = "체력      " + XTapStatFormat.Compact(hp);
+            mainHpText.text = "체력    " + XTapStatFormat.Compact(hp);
     }
 
     void LoadProgress()
