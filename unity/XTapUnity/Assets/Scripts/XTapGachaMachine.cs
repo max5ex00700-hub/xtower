@@ -334,6 +334,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
         }
 
         ClearReward();
+        if (ticketStatusText != null)
+        {
+            ticketStatusText.text = "";
+            ticketStatusText.gameObject.SetActive(false);
+        }
         readyToCollect = false;
         IsOpen = false;
         pendingOutcome = null;
@@ -354,6 +359,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         ClearReward();
         correctionText.text = "";
+        if (ticketStatusText != null)
+        {
+            ticketStatusText.text = "";
+            ticketStatusText.gameObject.SetActive(false);
+        }
         nameText.text = "";
         statsText.text = "";
         hintText.text = "보정 룰렛 회전 중";
