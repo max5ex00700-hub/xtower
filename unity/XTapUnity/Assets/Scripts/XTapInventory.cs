@@ -49,6 +49,75 @@ public sealed class XTapGearBlockData
     public double synthesisHp;
 }
 
+public static class XTapGearNameColor
+{
+    struct DescriptorStyle
+    {
+        public string word;
+        public string hex;
+
+        public DescriptorStyle(string descriptorWord, string colorHex)
+        {
+            word = descriptorWord;
+            hex = colorHex;
+        }
+    }
+
+    static DescriptorStyle StyleFor(string id)
+    {
+        switch (id)
+        {
+            case "splendid":   return new DescriptorStyle("화려한", "#FFD166"); // gold
+            case "solid":      return new DescriptorStyle("단단한", "#A9C7D8"); // steel blue
+            case "fine":       return new DescriptorStyle("멋진", "#D6A3FF"); // violet
+            case "sharp":      return new DescriptorStyle("날카로운", "#FF665E"); // red
+            case "sturdy":     return new DescriptorStyle("견고한", "#D29A5B"); // bronze
+            case "vital":      return new DescriptorStyle("생명력 넘치는", "#71E39A"); // green
+            case "balanced":   return new DescriptorStyle("균형 잡힌", "#61D8FF"); // cyan
+            case "precise":    return new DescriptorStyle("정교한", "#7FA8FF"); // blue
+            case "guardian":   return new DescriptorStyle("수호의", "#DCE6F1"); // silver
+            case "fierce":     return new DescriptorStyle("맹렬한", "#FF914D"); // orange
+            case "unyielding": return new DescriptorStyle("불굴의", "#F27AC8"); // magenta
+            case "heavy":      return new DescriptorStyle("묵직한", "#C5A27D"); // brown-gold
+            default:             return new DescriptorStyle("", "");
+        }
+    }
+
+    static string ColorizeFirst(string source, string word, string hex)
+    {
+        if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(word) || string.IsNullOrEmpty(hex))
+            return source;
+
+        int index = source.IndexOf(word, StringComparison.Ordinal);
+        if (index < 0)
+            return source;
+
+        return source.Substring(0, index) +
+               "<color=" + hex + ">" + word + "</color>" +
+               source.Substring(index + word.Length);
+    }
+
+    public static string Rich(XTapGearBlockData item)
+    {
+        if (item == null || string.IsNullOrEmpty(item.displayName))
+            return "";
+
+        string result = item.displayName;
+        if (item.descriptorCount <= 0 || string.IsNullOrEmpty(item.descriptorIds))
+            return result;
+
+        string[] ids = item.descriptorIds.Split(',');
+        int max = Mathf.Min(3, ids.Length);
+        for (int i = 0; i < max; i++)
+        {
+            DescriptorStyle style = StyleFor(ids[i]);
+            result = ColorizeFirst(result, style.word, style.hex);
+        }
+
+        return result;
+    }
+}
+
 public sealed class XTapInventory : MonoBehaviour
 {
     const float UiFontScale = 2.15f;
@@ -741,7 +810,7 @@ public sealed class XTapInventory : MonoBehaviour
         DrawShape(shapeRoot, item, MiniCell, BlockColor(item), false, false);
 
         string forgeSuffix = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
-        Text name = MakeText(root, item.displayName + forgeSuffix, 13, TextAnchor.MiddleLeft, true);
+        Text name = MakeText(root, XTapGearNameColor.Rich(item) + forgeSuffix, 13, TextAnchor.MiddleLeft, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
         name.resizeTextMinSize = 16;
@@ -849,7 +918,7 @@ public sealed class XTapInventory : MonoBehaviour
         DrawShape(shapeRoot, item, MiniCell, BlockColor(item), true, false);
 
         string forgeSuffix = item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "";
-        Text name = MakeText(root, item.displayName + forgeSuffix, 15, TextAnchor.MiddleCenter, true);
+        Text name = MakeText(root, XTapGearNameColor.Rich(item) + forgeSuffix, 15, TextAnchor.MiddleCenter, true);
         name.color = new Color(.92f, .89f, .82f, 1f);
         name.resizeTextForBestFit = true;
         name.resizeTextMinSize = 18;
@@ -1822,7 +1891,7 @@ public sealed class XTapInventory : MonoBehaviour
             : (item.location == XTapGearBlockData.LocationHeld ? "소지품" : "바닥");
 
         detailText.text =
-            zone + " · " + item.displayName +
+            zone + " · " + XTapGearNameColor.Rich(item) +
             (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
             "  [" + item.cellCount + "칸 / " + corr + "]\n" +
             XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "     ") +

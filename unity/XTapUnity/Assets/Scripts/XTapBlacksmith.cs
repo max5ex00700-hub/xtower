@@ -597,7 +597,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         {
             targetSlotText.text = target == null
                 ? "+"
-                : target.displayName +
+                : XTapGearNameColor.Rich(target) +
                   (target.enhanceLevel > 0 ? "  +" + target.enhanceLevel : "") +
                   "\n" + XTapStatFormat.BlockTriplet(target.attack, target.defense, target.hp, "   ");
         }
@@ -630,7 +630,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             else if (sacrificeCount == 1 && singleSacrifice != null)
             {
                 materialSlotText.text =
-                    singleSacrifice.displayName +
+                    XTapGearNameColor.Rich(singleSacrifice) +
                     (singleSacrifice.enhanceLevel > 0 ? "  +" + singleSacrifice.enhanceLevel : "") +
                     "\n" + XTapStatFormat.BlockTriplet(singleSacrifice.attack, singleSacrifice.defense, singleSacrifice.hp, "   ");
             }
@@ -996,7 +996,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         }
         else if (destructive)
         {
-            string destroyedName = target.displayName;
+            string destroyedName = XTapGearNameColor.Rich(target);
             inventory.RemoveForgeItem(target.id);
             inventory.CommitForgeChanges();
             resultText.text =
@@ -1031,7 +1031,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         double addDefense;
         double addHp;
         inventory.GetPreDescriptorStats(material, out addAttack, out addDefense, out addHp);
-        string consumedName = material.displayName;
+        string consumedName = XTapGearNameColor.Rich(material);
 
         inventory.RemoveForgeItem(material.id);
 

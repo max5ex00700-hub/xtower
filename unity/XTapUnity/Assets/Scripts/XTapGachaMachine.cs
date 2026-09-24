@@ -365,7 +365,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         XTapGearBlockData r = outcome.block;
         title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "BLOCK GEAR";
-        nameText.text = r.displayName + "  ·  " + r.cellCount + "칸";
+        nameText.text = XTapGearNameColor.Rich(r) + "  ·  " + r.cellCount + "칸";
         double descriptorMultiplier = DescriptorFinalMultiplier(r.descriptorCount);
         statsText.text =
             XTapStatFormat.BlockTriplet(
