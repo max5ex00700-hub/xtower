@@ -585,7 +585,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         // Bottom navigation bar.
         Image navRail = MakePanel(mainOverlay.transform, "BottomRail", new Color(.010f, .008f, .010f, .985f), 0f, 0f, 1f, .125f);
-        ApplyGothicPanel(navRail, XTapMainSkin.BottomRail, Color.white);
+        ApplyGothicPanel(navRail, XTapMainSkin.BottomRail, new Color(.025f, .018f, .018f, 1f));
 
         string[] icons = {"↓", "▣", "▥", "⚒", "↑"};
         string[] labels = {"이전 구간", "가방", "감옥", "대장간", "다음 구간"};
@@ -647,7 +647,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.01  (1101)", 14, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   11.02  (1102)", 14, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -769,7 +769,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (mainInfoTabRect != null)
         {
             if (open)
-                Anchor(mainInfoTabRect, .445f, .535f, .500f, .670f);
+                Anchor(mainInfoTabRect, .300f, .535f, .352f, .670f);
             else
                 Anchor(mainInfoTabRect, 0f, .535f, .052f, .670f);
         }
@@ -882,9 +882,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image outer = go.GetComponent<Image>();
         outer.color = Color.white;
-        ApplyGothicPanel(outer, XTapMainSkin.FightButton, Color.white);
+        ApplyGothicPanel(outer, XTapMainSkin.FightButton, new Color(.16f, .035f, .025f, 1f));
 
-        Image inner = MakePanel(go.transform, "Inset", new Color(.10f, .006f, .008f, .32f), .045f, .12f, .955f, .88f);
+        Image inner = MakePanel(go.transform, "Inset", new Color(.065f, .004f, .008f, .78f), .045f, .12f, .955f, .88f);
 
         Text kicker = MakeOutlinedText(inner.transform, "BATTLE", 10, TextAnchor.MiddleCenter, true);
         kicker.color = new Color(.82f, .58f, .34f, 1f);
@@ -901,8 +901,8 @@ public sealed class XTapBattleController : MonoBehaviour
         button.targetGraphic = outer;
         ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, .92f, .86f, 1f);
-        colors.pressedColor = new Color(.72f, .48f, .44f, 1f);
+        colors.highlightedColor = new Color(1.08f, 1.02f, .98f, 1f);
+        colors.pressedColor = new Color(.72f, .58f, .52f, 1f);
         colors.selectedColor = Color.white;
         colors.fadeDuration = .06f;
         button.colors = colors;
@@ -916,7 +916,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Image bg = go.GetComponent<Image>();
         bg.color = Color.white;
-        ApplyGothicPanel(bg, XTapMainSkin.NavButton, Color.white);
+        ApplyGothicPanel(bg, XTapMainSkin.NavButton, new Color(.055f, .043f, .034f, 1f));
 
         Image topAccent = MakePanel(go.transform, "TypeTopAccent", new Color(.72f, .49f, .24f, .95f), .18f, .915f, .82f, .93f);
         topAccent.raycastTarget = false;
@@ -933,8 +933,8 @@ public sealed class XTapBattleController : MonoBehaviour
         button.targetGraphic = bg;
         ColorBlock colors = button.colors;
         colors.normalColor = Color.white;
-        colors.highlightedColor = new Color(1f, .93f, .82f, 1f);
-        colors.pressedColor = new Color(.62f, .50f, .42f, 1f);
+        colors.highlightedColor = new Color(1.10f, 1.04f, .96f, 1f);
+        colors.pressedColor = new Color(.68f, .58f, .50f, 1f);
         colors.selectedColor = Color.white;
         colors.fadeDuration = .06f;
         button.colors = colors;
