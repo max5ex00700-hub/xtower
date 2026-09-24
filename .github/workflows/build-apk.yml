@@ -1,4 +1,4 @@
-name: Build XTower APK
+name: LEGACY Android APK - NOT Unity XTap
 
 on:
   push:
@@ -77,17 +77,17 @@ jobs:
         if: steps.build.outputs.exit_code != '0'
         uses: actions/upload-artifact@v4
         with:
-          name: XTower-Build-Diagnostics
+          name: LEGACY-Android-Build-Diagnostics
           path: build-errors.txt
       - name: Fail when build failed
         if: steps.build.outputs.exit_code != '0'
         run: exit 1
       - name: Rename APK
         if: steps.build.outputs.exit_code == '0'
-        run: cp app/build/outputs/apk/debug/app-debug.apk XTower.apk
+        run: cp app/build/outputs/apk/debug/app-debug.apk LEGACY-NOT-UNITY-XTower.apk
       - uses: actions/upload-artifact@v4
         if: steps.build.outputs.exit_code == '0'
         with:
-          name: XTower-APK
-          path: XTower.apk
+          name: LEGACY-Android-APK-NOT-UNITY
+          path: LEGACY-NOT-UNITY-XTower.apk
           if-no-files-found: error
