@@ -527,11 +527,10 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(optionButton.GetComponent<RectTransform>(), .885f, .936f, .993f, .996f);
         optionButton.onClick.AddListener(OpenOptions);
 
-        Button codexButton = MakeReferenceImageButton(mainOverlay.transform, "CodexButton", XTapMainSkin.CodexButton);
+        // Codex did not exist in the reference image, so build it from robust
+        // Unity UI primitives instead of depending on a cropped PNG.
+        Button codexButton = MakeCodexUtilityButton(mainOverlay.transform);
         Anchor(codexButton.GetComponent<RectTransform>(), .885f, .852f, .993f, .922f);
-        Text codexLabel = MakeOutlinedText(codexButton.transform, "도감", 8, TextAnchor.LowerCenter, true);
-        codexLabel.color = new Color(.98f, .92f, .80f, 1f);
-        Anchor(codexLabel.rectTransform, .08f, .02f, .92f, .28f);
         codexButton.onClick.AddListener(OpenCodex);
 
         // Hourly offline gacha ticket card. Tickets accrue from UTC time even
@@ -639,7 +638,12 @@ public sealed class XTapBattleController : MonoBehaviour
         ApplyMainButtonSkin(tabBg, XTapMainSkin.InfoTabButton);
         mainInfoTabRect = tabBg.rectTransform;
         Anchor(mainInfoTabRect, 0f, .749f, .058f, .815f);
-        mainInfoTabText = null;
+
+        // Keep the chevron as a Unity text layer. The cropped tab art may lose
+        // its center pixels on some imports, but the control must never look blank.
+        mainInfoTabText = MakeOutlinedText(tabGo.transform, "›", 24, TextAnchor.MiddleCenter, true);
+        mainInfoTabText.color = new Color(1f, .78f, .34f, 1f);
+        Anchor(mainInfoTabText.rectTransform, .08f, .10f, .92f, .90f);
 
         // Brief floor/stage indicator shown after a successful section move.
         mainProgressToast = new GameObject(
@@ -691,9 +695,9 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(mainSpeechText.rectTransform, .06f, .18f, .95f, .92f);
         mainSpeechBubble.gameObject.SetActive(false);
 
-        // Exact central battle button from the reference image. The artwork
-        // already contains crossed swords and the Korean label, so no text is overlaid.
-        Button fight = MakeReferenceImageButton(mainOverlay.transform, "MainFightButton", XTapMainSkin.FightButton);
+        // Preserve the reference fight artwork but render the Korean title as
+        // a separate Unity text layer so a cropped/optimized PNG can never erase it.
+        Button fight = MakeGothicButton(mainOverlay.transform, "전투", 24);
         Anchor(fight.GetComponent<RectTransform>(), .287f, .115f, .713f, .271f);
         fight.onClick.AddListener(BeginBattle);
 
@@ -720,6 +724,20 @@ public sealed class XTapBattleController : MonoBehaviour
             br.anchorMin = new Vector2(navX1[i], .035f);
             br.anchorMax = new Vector2(navX2[i], .985f);
             br.offsetMin = br.offsetMax = Vector2.zero;
+
+            // The current next-section crop contains a correct frame but its
+            // arrow/title layer can be absent. Draw those two critical pieces
+            // independently so the button remains readable on every build.
+            if (i == 4)
+            {
+                Text nextArrow = MakeOutlinedText(b.transform, "↑", 23, TextAnchor.MiddleCenter, true);
+                nextArrow.color = new Color(1f, .78f, .34f, 1f);
+                Anchor(nextArrow.rectTransform, .10f, .48f, .90f, .84f);
+
+                Text nextLabel = MakeOutlinedText(b.transform, "다음 구간", 9, TextAnchor.MiddleCenter, true);
+                nextLabel.color = new Color(.98f, .93f, .84f, 1f);
+                Anchor(nextLabel.rectTransform, .06f, .08f, .94f, .36f);
+            }
 
             if (i == 0)
                 b.onClick.AddListener(delegate { MoveProgress(-1); });
@@ -768,7 +786,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1115)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1116)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -891,10 +909,11 @@ public sealed class XTapBattleController : MonoBehaviour
             else
                 Anchor(mainInfoTabRect, 0f, .749f, .058f, .815f);
 
-            // The reference art already contains the chevron. Mirror the full
-            // button when the drawer is open instead of drawing a second text glyph.
-            mainInfoTabRect.localScale = new Vector3(open ? -1f : 1f, 1f, 1f);
+            mainInfoTabRect.localScale = Vector3.one;
         }
+
+        if (mainInfoTabText != null)
+            mainInfoTabText.text = open ? "‹" : "›";
 
         if (mainInfoDrawer == null)
             return;
@@ -1013,6 +1032,55 @@ public sealed class XTapBattleController : MonoBehaviour
         left.rectTransform.sizeDelta = new Vector2(thickness, 0f);
         Image right = MakePanel(parent, "FrameRight", color, 1f, 0f, 1f, 1f);
         right.rectTransform.sizeDelta = new Vector2(thickness, 0f);
+    }
+
+    Button MakeCodexUtilityButton(Transform parent)
+    {
+        GameObject go = new GameObject(
+            "CodexButton",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Button)
+        );
+        go.transform.SetParent(parent, false);
+
+        Image bg = go.GetComponent<Image>();
+        bg.color = new Color(.025f, .020f, .020f, .98f);
+        AddFrame(bg.rectTransform, new Color(.67f, .43f, .20f, 1f), 2.5f);
+
+        // Inner iron plate.
+        Image inner = MakePanel(go.transform, "CodexInner", new Color(.045f, .036f, .032f, .98f), .12f, .18f, .88f, .88f);
+        AddFrame(inner.rectTransform, new Color(.38f, .29f, .20f, 1f), 1.5f);
+
+        // Book icon built from simple rectangles, no font/PNG dependency.
+        Image leftPage = MakePanel(inner.transform, "BookLeft", new Color(.08f, .065f, .050f, 1f), .18f, .40f, .48f, .78f);
+        AddFrame(leftPage.rectTransform, new Color(.92f, .70f, .31f, 1f), 1.5f);
+        Image rightPage = MakePanel(inner.transform, "BookRight", new Color(.08f, .065f, .050f, 1f), .52f, .40f, .82f, .78f);
+        AddFrame(rightPage.rectTransform, new Color(.92f, .70f, .31f, 1f), 1.5f);
+        MakePanel(inner.transform, "BookSpine", new Color(.92f, .70f, .31f, 1f), .493f, .39f, .507f, .79f);
+
+        for (int i = 0; i < 2; i++)
+        {
+            float y = .63f - i * .12f;
+            MakePanel(leftPage.transform, "LeftLine" + i, new Color(.78f, .58f, .28f, 1f), .20f, y, .80f, y + .025f);
+            MakePanel(rightPage.transform, "RightLine" + i, new Color(.78f, .58f, .28f, 1f), .20f, y, .80f, y + .025f);
+        }
+
+        Text label = MakeOutlinedText(go.transform, "도감", 8, TextAnchor.MiddleCenter, true);
+        label.color = new Color(.98f, .92f, .80f, 1f);
+        Anchor(label.rectTransform, .08f, .02f, .92f, .27f);
+
+        Button button = go.GetComponent<Button>();
+        button.targetGraphic = bg;
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1.08f, 1.04f, .98f, 1f);
+        colors.pressedColor = new Color(.72f, .62f, .52f, 1f);
+        colors.selectedColor = Color.white;
+        colors.fadeDuration = .06f;
+        button.colors = colors;
+        return button;
     }
 
     Button MakeReferenceImageButton(Transform parent, string objectName, Sprite sprite)
