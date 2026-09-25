@@ -201,17 +201,19 @@ public sealed class XTapBattleController : MonoBehaviour
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
-        XTapMainSkin.EnsureLoaded();
-        if (!XTapMainSkin.Ready)
-            throw new InvalidOperationException("X탑 메인 기준 이미지 버튼 자산 로드 실패. 잘못된 UI로 계속 실행하지 않습니다.");
 
+        // 11.15: create the Canvas and X탑 loading screen first. No later
+        // asset/UI exception is allowed to leave the player staring at a blank
+        // screen after the Unity logo.
         BuildBattleOnlyUi();
-        BuildMainUi();
-
-        // Canvas/root must exist before the startup splash is attached.
         BuildStartupSplash();
         SetStartupProgress(.06f);
         yield return null;
+
+        XTapMainSkin.EnsureLoaded();
+        SetStartupProgress(.12f);
+
+        BuildMainUi();
         SetStartupProgress(.16f);
 
         inventory = gameObject.AddComponent<XTapInventory>();
@@ -243,7 +245,14 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (!assets.Ready)
         {
-            ShowBubble("전투 이미지 데이터를 불러오지 못했습니다.", 10f);
+            if (splashPromptText != null)
+            {
+                splashPromptText.text = "이미지 데이터 로드 실패 · 다시 실행해 주세요";
+                splashPromptText.color = new Color(1f, .36f, .28f, 1f);
+                splashPromptText.gameObject.SetActive(true);
+            }
+            SetStartupProgress(1f);
+            Debug.LogError("X탑 시작 실패: 전투/메인 이미지 데이터를 불러오지 못했습니다.");
             yield break;
         }
 
@@ -759,7 +768,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1114)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1115)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
