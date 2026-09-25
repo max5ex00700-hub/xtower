@@ -1,17 +1,24 @@
 plugins { id 'com.android.application' }
 
 android {
-    namespace 'com.xtower.engine'
+    namespace 'com.xtower.game'
     compileSdk 35
+
     defaultConfig {
-        applicationId "com.xtower.game"
+        applicationId "com.xtower.game.native"
         minSdk 26
         targetSdk 35
-        versionCode 4
-        versionName "0.4.0"
+        versionCode 100
+        versionName "1.0.0-native"
     }
+
     buildTypes {
-        debug { debuggable true; minifyEnabled false }
-        release { minifyEnabled false }
+        debug {
+            debuggable true
+            minifyEnabled false
+        }
+        release {
+            minifyEnabled false
+        }
     }
 }
