@@ -1,0 +1,60 @@
+name: XTop Native Engine APK
+
+on:
+  push:
+    branches: [ native-engine ]
+    paths:
+      - 'app/**'
+      - 'assets_parts/**'
+      - 'settings.gradle'
+      - 'build.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/build-native-engine.yml'
+  workflow_dispatch:
+
+jobs:
+  build-native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
+      - name: Restore native engine assets
+        run: |
+          set -euxo pipefail
+          mkdir -p app/src/main/res/drawable-nodpi app/src/main/res/raw /tmp/xtower-assets
+          cat assets_parts/p* > /tmp/xtower-assets.b64
+          base64 -d /tmp/xtower-assets.b64 > /tmp/xtower-assets.zip
+          unzip -t /tmp/xtower-assets.zip
+          unzip -o /tmp/xtower-assets.zip -d /tmp/xtower-assets
+          for f in s0 s1 s2 s3 s4; do
+            cp "/tmp/xtower-assets/$f.jpg" "app/src/main/res/drawable-nodpi/$f.jpg"
+          done
+          for f in hit hurt sparkle win; do
+            cp "/tmp/xtower-assets/$f.ogg" "app/src/main/res/raw/$f.ogg"
+          done
+
+      - name: Build native engine APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk XTop-NativeEngine-1.0.0.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XTop-NativeEngine-1.0.0
+          path: XTop-NativeEngine-1.0.0.apk
+          if-no-files-found: error
+          retention-days: 14
