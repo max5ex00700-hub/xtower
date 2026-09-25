@@ -17,6 +17,8 @@ public sealed class XTapBattleController : MonoBehaviour
     const float CharacterDodgeChance = .20f;
     const float ShieldCueChance = .30f;
     const float CombatCueSeconds = 1.05f;
+    const float FollowupHitCueSeconds = CombatCueSeconds / 1.5f;
+    const double FollowupHitAttackMultiplier = 5d;
     const double ShieldMissAttackMultiplier = 2d;
     const int StagesPerFloor = 10;
     const string CurrentStepKey = "xtap_current_progress_step";
@@ -132,6 +134,7 @@ public sealed class XTapBattleController : MonoBehaviour
     float weakUntil;
     Vector2 weakNorm;
     Vector2 weakVelocity;
+    bool followupWeakActive;
 
     bool shieldActive;
     float shieldUntil;
@@ -842,7 +845,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1124)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1125)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1780,6 +1783,7 @@ public sealed class XTapBattleController : MonoBehaviour
         won = false;
         busy = false;
         weakActive = false;
+        followupWeakActive = false;
         if (weakPoint != null) weakPoint.gameObject.SetActive(false);
         shieldActive = false;
         if (shieldPoint != null) shieldPoint.gameObject.SetActive(false);
@@ -1839,6 +1843,7 @@ public sealed class XTapBattleController : MonoBehaviour
         bool weakHit = weakActive && Vector2.Distance(
             new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height), impact
         ) <= Mathf.Max(58f, Screen.width * .06f);
+        bool followupWeakHit = weakHit && followupWeakActive;
 
         bool dodged = !weakHit && UnityEngine.Random.value < CharacterDodgeChance;
 
@@ -1874,7 +1879,9 @@ public sealed class XTapBattleController : MonoBehaviour
         string prefix = PrefixFor(zone, swipe, swipeDelta);
         SetActionSprite(prefix);
 
-        double attackMultiplier = weakHit ? 3.6d : (swipe ? 1.6d : 1d);
+        double attackMultiplier = weakHit
+            ? (followupWeakHit ? FollowupHitAttackMultiplier : 3.6d)
+            : (swipe ? 1.6d : 1d);
         double rawAttack = SafeMultiply(CurrentPlayerAttack(), attackMultiplier);
         double damage = Math.Max(1d, Math.Floor(rawAttack - enemyDefense));
         enemyHp = Math.Max(0d, enemyHp - damage);
@@ -1894,6 +1901,15 @@ public sealed class XTapBattleController : MonoBehaviour
             HideWeakPoint();
             yield return TouchPulse(impact, true, swipe);
             yield return CharacterRecoil(impact, true, false);
+
+            // A normal weak-point success opens one harder, faster follow-up HIT.
+            // The follow-up is 1.5x tighter and deals exactly 5x player attack.
+            if (!followupWeakHit && enemyHp > 0d)
+            {
+                StartFollowupWeakPoint();
+                busy = false;
+                yield break;
+            }
         }
         else
         {
@@ -2277,10 +2293,27 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         if (shieldActive) return;
 
+        followupWeakActive = false;
         weakActive = true;
         weakUntil = Time.unscaledTime + CombatCueSeconds;
         weakNorm = new Vector2(UnityEngine.Random.Range(.34f, .66f), UnityEngine.Random.Range(.34f, .68f));
         weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
+        if (weakPointHitText != null) weakPointHitText.text = "HIT";
+        weakPoint.gameObject.SetActive(true);
+        weakPoint.transform.SetAsLastSibling();
+        PositionWeakPoint();
+    }
+
+    void StartFollowupWeakPoint()
+    {
+        if (shieldActive || won || weakPoint == null) return;
+
+        followupWeakActive = true;
+        weakActive = true;
+        weakUntil = Time.unscaledTime + FollowupHitCueSeconds;
+        weakNorm = new Vector2(UnityEngine.Random.Range(.31f, .69f), UnityEngine.Random.Range(.31f, .71f));
+        weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * (.34f * 1.5f);
+        if (weakPointHitText != null) weakPointHitText.text = "HIT!!";
         weakPoint.gameObject.SetActive(true);
         weakPoint.transform.SetAsLastSibling();
         PositionWeakPoint();
@@ -2327,11 +2360,13 @@ public sealed class XTapBattleController : MonoBehaviour
     void HideWeakPoint()
     {
         weakActive = false;
+        followupWeakActive = false;
         if (weakPoint != null)
         {
             weakPoint.rectTransform.localScale = Vector3.one;
             weakPoint.gameObject.SetActive(false);
         }
+        if (weakPointHitText != null) weakPointHitText.text = "HIT";
     }
 
     bool TryStartShieldWindow()
