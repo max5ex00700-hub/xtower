@@ -30,23 +30,23 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         {
             string path = Path.Combine(baseDir, required[i]);
             if (!File.Exists(path))
-                throw new BuildFailedException("X탑 11.13 필수 메인 UI 자산 누락: " + required[i]);
+                throw new BuildFailedException("X탑 11.14 필수 메인 UI 자산 누락: " + required[i]);
 
             try
             {
-                string encoded = File.ReadAllText(path).Trim();
-                byte[] png = Convert.FromBase64String(encoded);
+                byte[] png = File.ReadAllBytes(path);
                 if (png.Length < 128 ||
-                    png[0] != 0x89 || png[1] != 0x50 || png[2] != 0x4E || png[3] != 0x47)
+                    png[0] != 0x89 || png[1] != 0x50 || png[2] != 0x4E || png[3] != 0x47 ||
+                    png[4] != 0x0D || png[5] != 0x0A || png[6] != 0x1A || png[7] != 0x0A)
                     throw new Exception("PNG signature invalid");
             }
             catch (Exception e)
             {
-                throw new BuildFailedException("X탑 11.13 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
+                throw new BuildFailedException("X탑 11.14 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
             }
         }
 
-        Debug.Log("X탑 11.13 메인 UI 검증 완료: 기준 이미지 버튼 9개 정상.");
+        Debug.Log("X탑 11.14 메인 UI 검증 완료: 기준 이미지 버튼 9개 정상.");
     }
 
     public void OnPreprocessBuild(BuildReport report)
@@ -55,6 +55,8 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         string gitBranch = Environment.GetEnvironmentVariable("GIT_BRANCH");
         string gitCommit = Environment.GetEnvironmentVariable("GIT_COMMIT");
+        if (string.IsNullOrEmpty(gitCommit))
+            gitCommit = Environment.GetEnvironmentVariable("BUILD_REVISION");
 
         if (!string.IsNullOrEmpty(gitBranch) &&
             gitBranch.IndexOf("unity-prototype", StringComparison.OrdinalIgnoreCase) < 0)
@@ -67,7 +69,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         PlayerSettings.productName = "X탑";
         PlayerSettings.companyName = "XTap";
-        PlayerSettings.bundleVersion = "11.13-hourly-ticket-" + shortCommit;
+        PlayerSettings.bundleVersion = "11.14-raw-ui-assets-" + shortCommit;
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.xtower.game.unity");
 
         Debug.Log("X탑 BUILD FINGERPRINT / branch=" + (gitBranch ?? "local") + " / commit=" + (gitCommit ?? "local"));
@@ -76,7 +78,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         PlayerSettings.SplashScreen.showUnityLogo = true;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
-        PlayerSettings.Android.bundleVersionCode = 1113;
+        PlayerSettings.Android.bundleVersionCode = 1114;
 
         // 64-bit Android is required for current 64-bit-only devices.
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
