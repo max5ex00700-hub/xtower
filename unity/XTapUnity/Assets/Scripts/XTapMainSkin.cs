@@ -58,8 +58,24 @@ public static class XTapMainSkin
         NavForgeButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_forge_runtime", "XTapReferenceNavForge");
         NavNextButton = LoadReferenceButtonSprite("XTapMainUI/ref_nav_next_runtime", "XTapReferenceNavNext");
 
-        if (!Ready)
-            Debug.LogError("X탑 기준 이미지 버튼 자산이 하나 이상 누락되었습니다. 11.11부터 절차 생성 버튼으로 대체하지 않습니다.");
+        // 11.15 safety rule: a UI asset problem must never strand the player
+        // on a black screen after the Unity splash. Exact reference art stays
+        // primary; procedural skin is used only for an individual failed asset.
+        bool usedFallback = false;
+
+        if (FightButton == null) { FightButton = CreateFightButton(); usedFallback = true; }
+        if (OptionButton == null) { OptionButton = CreateUtilityButton(); usedFallback = true; }
+        if (CodexButton == null) { CodexButton = CreateUtilityButton(); usedFallback = true; }
+        if (InfoTabButton == null) { InfoTabButton = CreateInfoTabButton(); usedFallback = true; }
+
+        if (NavPrevButton == null) { NavPrevButton = CreateNavButton(); usedFallback = true; }
+        if (NavBagButton == null) { NavBagButton = CreateNavButton(); usedFallback = true; }
+        if (NavJailButton == null) { NavJailButton = CreateNavButton(); usedFallback = true; }
+        if (NavForgeButton == null) { NavForgeButton = CreateNavButton(); usedFallback = true; }
+        if (NavNextButton == null) { NavNextButton = CreateNavButton(); usedFallback = true; }
+
+        if (usedFallback)
+            Debug.LogError("X탑 기준 이미지 버튼 일부 로드 실패. 검은 화면 방지를 위해 해당 버튼만 안전 스킨으로 대체했습니다.");
 
         // Compatibility aliases for older callers/fallback paths.
         UtilityButton = OptionButton;
