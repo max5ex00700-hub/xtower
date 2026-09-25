@@ -94,7 +94,23 @@ public class MainActivity extends Activity {
 
         void drawRouletteToast(Canvas c,long now){ int w=getWidth(); float y=122; RectF r=new RectF(22,y,w-22,y+92); round(c,r,20,0xee21181d);textCenter(c,"룰렛 결과  "+(rouletteMod>0?"+":"")+rouletteMod+"%",w/2f,y+38,22,rouletteMod>0?0xff9ae3ac:0xffff91a2,true);textCenter(c,"전리품이 주머니에 들어왔습니다",w/2f,y+68,14,0xffd5c5cc,false); }
 
-        void drawBubble(Canvas c,long now,boolean mad){ int w=getWidth(); float l=w*.08f,r=w*.92f,t=getHeight()*.06f; p.setColor(mad?0xff3a1418:0xfffff6ea);RectF box=new RectF(l,t,r,t+92);c.drawRoundRect(box,18,18,p); if(mad){p.setStyle(Paint.Style.STROKE);p.setStrokeWidth(2);p.setColor(0xffc45c6a);c.drawRoundRect(box,18,18,p);p.setStyle(Paint.Style.FILL);} drawWrapped(c,bubbleText,l+16,t+28,r-l-32,15,mad?0xffffd6dc:0xff3a2428); }
+        void drawBubble(Canvas c,long now,boolean mad){
+            int w=getWidth();
+            float left=w*0.08f;
+            float right=w*0.92f;
+            float top=getHeight()*0.06f;
+            p.setColor(mad?0xff3a1418:0xfffff6ea);
+            RectF bubbleBox=new RectF(left,top,right,top+92);
+            c.drawRoundRect(bubbleBox,18,18,p);
+            if(mad){
+                p.setStyle(Paint.Style.STROKE);
+                p.setStrokeWidth(2);
+                p.setColor(0xffc45c6a);
+                c.drawRoundRect(bubbleBox,18,18,p);
+                p.setStyle(Paint.Style.FILL);
+            }
+            drawWrapped(c,bubbleText,left+16,top+28,right-left-32,15,mad?0xffffd6dc:0xff3a2428);
+        }
 
         void drawAttackFx(Canvas c,long now){ int w=getWidth(),h=getHeight(); float cx=fxX*w,cy=fxY*h; float age=1f-(fxUntil-now)/500f; age=Math.max(0,Math.min(1,age)); float fade=1f-age; p.setStyle(Paint.Style.STROKE);p.setStrokeCap(Paint.Cap.ROUND);p.setStrokeWidth(fxKind==1?9:6);p.setColor(((int)(fade*255)<<24)|0x00fff0d0); if(fxKind==0){c.drawCircle(cx,cy,30+80*age,p);c.drawLine(cx-80*age,cy+55*age,cx+80*age,cy-55*age,p);}else if(fxKind==1){c.drawCircle(cx,cy,40+170*age,p);c.drawCircle(cx,cy,18+90*age,p);}else{for(int i=0;i<3;i++)c.drawCircle(cx,cy,25+(70*i+120)*age,p);}p.setStyle(Paint.Style.FILL);textCenter(c,atkName,w/2f,h*.13f,28,0xffffe08a,true);textCenter(c,"-"+fxDeal,cx,cy-60*age,32,0xffffe7a8,true); }
 
