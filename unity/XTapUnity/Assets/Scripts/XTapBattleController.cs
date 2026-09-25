@@ -47,6 +47,7 @@ public sealed class XTapBattleController : MonoBehaviour
     RectTransform mainInfoDrawer;
     RectTransform mainInfoTabRect;
     Text mainInfoTabText;
+    RectTransform mainInfoTabChevron;
     Coroutine mainInfoDrawerRoutine;
     bool mainInfoDrawerOpen;
     Text mainFloorText;
@@ -639,11 +640,9 @@ public sealed class XTapBattleController : MonoBehaviour
         mainInfoTabRect = tabBg.rectTransform;
         Anchor(mainInfoTabRect, 0f, .749f, .058f, .815f);
 
-        // Keep the chevron as a Unity text layer. The cropped tab art may lose
-        // its center pixels on some imports, but the control must never look blank.
-        mainInfoTabText = MakeOutlinedText(tabGo.transform, "›", 24, TextAnchor.MiddleCenter, true);
-        mainInfoTabText.color = new Color(1f, .78f, .34f, 1f);
-        Anchor(mainInfoTabText.rectTransform, .08f, .10f, .92f, .90f);
+        // Draw the chevron from UI metal bars instead of a font glyph.
+        mainInfoTabText = null;
+        mainInfoTabChevron = MakeMetalChevron(tabGo.transform);
 
         // Brief floor/stage indicator shown after a successful section move.
         mainProgressToast = new GameObject(
@@ -730,9 +729,7 @@ public sealed class XTapBattleController : MonoBehaviour
             // independently so the button remains readable on every build.
             if (i == 4)
             {
-                Text nextArrow = MakeOutlinedText(b.transform, "↑", 23, TextAnchor.MiddleCenter, true);
-                nextArrow.color = new Color(1f, .78f, .34f, 1f);
-                Anchor(nextArrow.rectTransform, .10f, .48f, .90f, .84f);
+                MakeMetalUpArrow(b.transform);
 
                 Text nextLabel = MakeOutlinedText(b.transform, "다음 구간", 9, TextAnchor.MiddleCenter, true);
                 nextLabel.color = new Color(.98f, .93f, .84f, 1f);
@@ -912,8 +909,8 @@ public sealed class XTapBattleController : MonoBehaviour
             mainInfoTabRect.localScale = Vector3.one;
         }
 
-        if (mainInfoTabText != null)
-            mainInfoTabText.text = open ? "‹" : "›";
+        if (mainInfoTabChevron != null)
+            mainInfoTabChevron.localScale = new Vector3(open ? -1f : 1f, 1f, 1f);
 
         if (mainInfoDrawer == null)
             return;
@@ -1032,6 +1029,52 @@ public sealed class XTapBattleController : MonoBehaviour
         left.rectTransform.sizeDelta = new Vector2(thickness, 0f);
         Image right = MakePanel(parent, "FrameRight", color, 1f, 0f, 1f, 1f);
         right.rectTransform.sizeDelta = new Vector2(thickness, 0f);
+    }
+
+    RectTransform MakeMetalChevron(Transform parent)
+    {
+        GameObject rootGo = new GameObject("MetalChevron", typeof(RectTransform));
+        rootGo.transform.SetParent(parent, false);
+        RectTransform rr = rootGo.GetComponent<RectTransform>();
+        Anchor(rr, .24f, .31f, .76f, .69f);
+
+        Color shadow = new Color(.15f, .08f, .025f, 1f);
+        Color gold = new Color(1f, .73f, .28f, 1f);
+
+        Image shadowTop = MakePanel(rr, "ChevronShadowTop", shadow, .38f, .48f, .62f, .58f);
+        shadowTop.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -42f);
+        Image shadowBottom = MakePanel(rr, "ChevronShadowBottom", shadow, .38f, .42f, .62f, .52f);
+        shadowBottom.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 42f);
+
+        Image top = MakePanel(rr, "ChevronTop", gold, .40f, .50f, .60f, .57f);
+        top.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -42f);
+        Image bottom = MakePanel(rr, "ChevronBottom", gold, .40f, .43f, .60f, .50f);
+        bottom.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 42f);
+        return rr;
+    }
+
+    void MakeMetalUpArrow(Transform parent)
+    {
+        GameObject rootGo = new GameObject("NextMetalArrow", typeof(RectTransform));
+        rootGo.transform.SetParent(parent, false);
+        RectTransform rr = rootGo.GetComponent<RectTransform>();
+        Anchor(rr, .28f, .47f, .72f, .84f);
+
+        Color dark = new Color(.18f, .09f, .025f, 1f);
+        Color gold = new Color(1f, .72f, .26f, 1f);
+
+        Image shadowShaft = MakePanel(rr, "ArrowShadowShaft", dark, .44f, .08f, .59f, .73f);
+        Image shaft = MakePanel(rr, "ArrowShaft", gold, .465f, .10f, .565f, .70f);
+
+        Image shadowLeft = MakePanel(rr, "ArrowShadowLeft", dark, .18f, .59f, .53f, .72f);
+        shadowLeft.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 43f);
+        Image shadowRight = MakePanel(rr, "ArrowShadowRight", dark, .49f, .59f, .84f, .72f);
+        shadowRight.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -43f);
+
+        Image left = MakePanel(rr, "ArrowLeft", gold, .20f, .61f, .52f, .69f);
+        left.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 43f);
+        Image right = MakePanel(rr, "ArrowRight", gold, .50f, .61f, .82f, .69f);
+        right.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -43f);
     }
 
     Button MakeCodexUtilityButton(Transform parent)
