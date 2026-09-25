@@ -41,6 +41,11 @@ public sealed class XTapBattleController : MonoBehaviour
     Image weakPoint;
     Text weakPointHitText;
     Image shieldPoint;
+    Image shieldMissFlash;
+    Image shieldMissVignette;
+    Image deathOverlay;
+    CanvasGroup deathOverlayGroup;
+    Text deathText;
     XTapGachaMachine gachaMachine;
     XTapInventory inventory;
     XTapBlacksmith blacksmith;
@@ -94,6 +99,7 @@ public sealed class XTapBattleController : MonoBehaviour
     Font koreanFont;
     Sprite ringSprite;
     Sprite shieldSprite;
+    Sprite vignetteSprite;
     Sprite speechBubbleSprite;
     Material jellyMaterial;
     Coroutine jellyRoutine;
@@ -212,6 +218,7 @@ public sealed class XTapBattleController : MonoBehaviour
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
         shieldSprite = CreateShieldSprite(128);
+        vignetteSprite = CreateVignetteSprite(256);
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
 
         // 11.15: create the Canvas and X탑 loading screen first. No later
@@ -513,6 +520,36 @@ public sealed class XTapBattleController : MonoBehaviour
         shieldPoint.gameObject.SetActive(false);
         SetSize(shieldPoint.rectTransform, 94, 94);
 
+        shieldMissFlash = new GameObject("ShieldMissFlash", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        shieldMissFlash.transform.SetParent(root, false);
+        shieldMissFlash.color = new Color(.88f, .03f, .025f, 0f);
+        shieldMissFlash.raycastTarget = false;
+        Anchor(shieldMissFlash.rectTransform, 0f, 0f, 1f, 1f);
+
+        shieldMissVignette = new GameObject("ShieldMissVignette", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        shieldMissVignette.transform.SetParent(root, false);
+        shieldMissVignette.sprite = vignetteSprite;
+        shieldMissVignette.color = new Color(.16f, 0f, 0f, 0f);
+        shieldMissVignette.raycastTarget = false;
+        shieldMissVignette.preserveAspect = false;
+        Anchor(shieldMissVignette.rectTransform, 0f, 0f, 1f, 1f);
+
+        deathOverlay = new GameObject("DeathOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup)).GetComponent<Image>();
+        deathOverlay.transform.SetParent(root, false);
+        deathOverlay.color = new Color(.015f, 0f, 0f, .88f);
+        deathOverlay.raycastTarget = false;
+        Anchor(deathOverlay.rectTransform, 0f, 0f, 1f, 1f);
+        deathOverlayGroup = deathOverlay.GetComponent<CanvasGroup>();
+        deathOverlayGroup.alpha = 0f;
+        deathOverlay.gameObject.SetActive(false);
+
+        deathText = MakeText(deathOverlay.transform, "DIE", 72, TextAnchor.MiddleCenter, true);
+        deathText.color = new Color(.96f, .08f, .055f, 1f);
+        deathText.resizeTextForBestFit = true;
+        deathText.resizeTextMinSize = 120;
+        deathText.resizeTextMaxSize = 210;
+        Anchor(deathText.rectTransform, .08f, .32f, .92f, .68f);
+
         bubblePanel = new GameObject("SpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup)).GetComponent<Image>();
         bubblePanel.transform.SetParent(root, false);
         bubblePanel.sprite = speechBubbleSprite;
@@ -805,7 +842,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1123)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1124)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1746,6 +1783,10 @@ public sealed class XTapBattleController : MonoBehaviour
         if (weakPoint != null) weakPoint.gameObject.SetActive(false);
         shieldActive = false;
         if (shieldPoint != null) shieldPoint.gameObject.SetActive(false);
+        if (shieldMissFlash != null) shieldMissFlash.color = new Color(.88f, .03f, .025f, 0f);
+        if (shieldMissVignette != null) shieldMissVignette.color = new Color(.11f, 0f, 0f, 0f);
+        if (deathOverlayGroup != null) deathOverlayGroup.alpha = 0f;
+        if (deathOverlay != null) deathOverlay.gameObject.SetActive(false);
         ResetJelly();
         HideBubble();
         SetStageOrFallback(0);
@@ -1823,7 +1864,6 @@ public sealed class XTapBattleController : MonoBehaviour
 
             if (ApplyEnemyCounterAttack())
             {
-                busy = false;
                 yield break;
             }
 
@@ -1910,7 +1950,6 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (ApplyEnemyCounterAttack())
         {
-            busy = false;
             yield break;
         }
 
@@ -1925,6 +1964,185 @@ public sealed class XTapBattleController : MonoBehaviour
         busy = false;
     }
 
+    IEnumerator ShieldMissPenalty(Vector2 shieldScreen)
+    {
+        busy = true;
+
+        double rawEnemyAttack = SafeMultiply(enemyAttack, ShieldMissAttackMultiplier);
+        double damage = Math.Max(1d, Math.Floor(rawEnemyAttack - CurrentPlayerDefense()));
+        playerHp = Math.Max(0d, playerHp - damage);
+        RefreshBattleStatUi();
+
+        VibrateTouch(true);
+        PlayCombatSfx("fight_smash_heavy", 1f);
+
+        StartCoroutine(ShieldBreakBurst(shieldScreen));
+        yield return ShieldMissScreenFx();
+
+        if (playerHp <= 0d)
+        {
+            yield return PlayerDeathScreenFx();
+            HandlePlayerDeath();
+            yield break;
+        }
+
+        if (!weakActive && hitCount >= 4)
+        {
+            hitCount = 0;
+            StartWeakPoint();
+        }
+
+        busy = false;
+    }
+
+    IEnumerator ShieldMissScreenFx()
+    {
+        if (shieldMissFlash == null || shieldMissVignette == null || battleImage == null)
+            yield break;
+
+        shieldMissFlash.transform.SetAsLastSibling();
+        shieldMissVignette.transform.SetAsLastSibling();
+
+        RectTransform character = battleImage.rectTransform;
+        Vector2 basePos = character.anchoredPosition;
+
+        const float total = .26f;
+        float t = 0f;
+
+        while (t < total)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / total);
+
+            float flashAlpha = p < .32f
+                ? Mathf.Lerp(0f, .72f, p / .32f)
+                : Mathf.Lerp(.72f, 0f, (p - .32f) / .68f);
+            shieldMissFlash.color = new Color(.88f, .03f, .025f, flashAlpha);
+
+            float vignetteAlpha = p < .22f
+                ? Mathf.Lerp(0f, .92f, p / .22f)
+                : Mathf.Lerp(.92f, 0f, (p - .22f) / .78f);
+            shieldMissVignette.color = new Color(.11f, 0f, 0f, vignetteAlpha);
+
+            float shake = (1f - p) * 31f;
+            character.anchoredPosition = basePos + new Vector2(
+                UnityEngine.Random.Range(-shake, shake),
+                UnityEngine.Random.Range(-shake * .70f, shake * .70f)
+            );
+
+            yield return null;
+        }
+
+        character.anchoredPosition = basePos;
+        shieldMissFlash.color = new Color(.88f, .03f, .025f, 0f);
+        shieldMissVignette.color = new Color(.11f, 0f, 0f, 0f);
+    }
+
+    IEnumerator ShieldBreakBurst(Vector2 screenPos)
+    {
+        const int shardCount = 7;
+        RectTransform[] shards = new RectTransform[shardCount];
+        Image[] shardImages = new Image[shardCount];
+        Vector2[] velocities = new Vector2[shardCount];
+
+        Vector2 local;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screenPos, null, out local);
+
+        for (int i = 0; i < shardCount; i++)
+        {
+            Image shard = new GameObject("ShieldShard", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+            shard.transform.SetParent(root, false);
+            shard.sprite = shieldSprite;
+            shard.color = new Color(.42f, .80f, 1f, .96f);
+            shard.raycastTarget = false;
+            shard.transform.SetAsLastSibling();
+
+            RectTransform r = shard.rectTransform;
+            SetSize(r, 26f, 26f);
+            r.anchoredPosition = local;
+
+            float a = (Mathf.PI * 2f * i / shardCount) + UnityEngine.Random.Range(-.24f, .24f);
+            float speed = UnityEngine.Random.Range(170f, 300f);
+            velocities[i] = new Vector2(Mathf.Cos(a), Mathf.Sin(a)) * speed;
+            shards[i] = r;
+            shardImages[i] = shard;
+        }
+
+        float t = 0f;
+        const float total = .28f;
+        while (t < total)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / total);
+
+            for (int i = 0; i < shardCount; i++)
+            {
+                if (shards[i] == null) continue;
+                shards[i].anchoredPosition += velocities[i] * Time.unscaledDeltaTime;
+                shards[i].Rotate(0f, 0f, (i % 2 == 0 ? 1f : -1f) * 520f * Time.unscaledDeltaTime);
+                shards[i].localScale = Vector3.one * Mathf.Lerp(1f, .45f, p);
+
+                Color c = shardImages[i].color;
+                c.a = 1f - p;
+                shardImages[i].color = c;
+            }
+
+            yield return null;
+        }
+
+        for (int i = 0; i < shardCount; i++)
+            if (shards[i] != null) Destroy(shards[i].gameObject);
+    }
+
+    IEnumerator PlayerDeathSequence()
+    {
+        busy = true;
+        yield return PlayerDeathScreenFx();
+        HandlePlayerDeath();
+    }
+
+    IEnumerator PlayerDeathScreenFx()
+    {
+        if (deathOverlay == null || deathOverlayGroup == null || deathText == null)
+            yield break;
+
+        HideWeakPoint();
+        HideShieldPoint();
+        deathOverlay.gameObject.SetActive(true);
+        deathOverlay.transform.SetAsLastSibling();
+        deathOverlayGroup.alpha = 0f;
+
+        RectTransform tr = deathText.rectTransform;
+        tr.localScale = Vector3.one * 1.35f;
+
+        float t = 0f;
+        const float fadeIn = .18f;
+        while (t < fadeIn)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / fadeIn);
+            deathOverlayGroup.alpha = p;
+            tr.localScale = Vector3.one * Mathf.Lerp(1.35f, 1f, p);
+            yield return null;
+        }
+
+        deathOverlayGroup.alpha = 1f;
+        tr.localScale = Vector3.one;
+        yield return new WaitForSecondsRealtime(.78f);
+
+        t = 0f;
+        const float fadeOut = .22f;
+        while (t < fadeOut)
+        {
+            t += Time.unscaledDeltaTime;
+            deathOverlayGroup.alpha = 1f - Mathf.Clamp01(t / fadeOut);
+            yield return null;
+        }
+
+        deathOverlayGroup.alpha = 0f;
+        deathOverlay.gameObject.SetActive(false);
+    }
+
     bool ApplyEnemyCounterAttack(double attackMultiplier = 1d)
     {
         double rawEnemyAttack = SafeMultiply(enemyAttack, Math.Max(1d, attackMultiplier));
@@ -1935,7 +2153,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (playerHp > 0d)
             return false;
 
-        HandlePlayerDeath();
+        StartCoroutine(PlayerDeathSequence());
         return true;
     }
 
@@ -2144,10 +2362,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (Time.unscaledTime >= shieldUntil)
         {
+            Vector2 shieldScreen = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
             HideShieldPoint();
-            VibrateTouch(true);
-            PlayCombatSfx("fight_smash_heavy", 1f);
-            ApplyEnemyCounterAttack(ShieldMissAttackMultiplier);
+            StartCoroutine(ShieldMissPenalty(shieldScreen));
             return;
         }
 
@@ -2949,6 +3166,31 @@ public sealed class XTapBattleController : MonoBehaviour
                 }
 
                 pixels[y * size + x] = inside ? solid : clear;
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply(false, false);
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(.5f, .5f), 100f);
+    }
+
+    Sprite CreateVignetteSprite(int size)
+    {
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color[] pixels = new Color[size * size];
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float nx = (x + .5f) / size;
+                float ny = (y + .5f) / size;
+                float edge = Mathf.Min(Mathf.Min(nx, 1f - nx), Mathf.Min(ny, 1f - ny));
+                float alpha = 1f - Mathf.SmoothStep(.03f, .30f, edge);
+                alpha = Mathf.Pow(alpha, 1.35f);
+                pixels[y * size + x] = new Color(1f, 1f, 1f, alpha);
             }
         }
 
