@@ -724,18 +724,6 @@ public sealed class XTapBattleController : MonoBehaviour
             br.anchorMax = new Vector2(navX2[i], .985f);
             br.offsetMin = br.offsetMax = Vector2.zero;
 
-            // The current next-section crop contains a correct frame but its
-            // arrow/title layer can be absent. Draw those two critical pieces
-            // independently so the button remains readable on every build.
-            if (i == 4)
-            {
-                MakeMetalUpArrow(b.transform);
-
-                Text nextLabel = MakeOutlinedText(b.transform, "다음 구간", 12, TextAnchor.MiddleCenter, true);
-                nextLabel.color = new Color(.98f, .93f, .84f, 1f);
-                Anchor(nextLabel.rectTransform, .08f, .13f, .92f, .39f);
-            }
-
             if (i == 0)
                 b.onClick.AddListener(delegate { MoveProgress(-1); });
             else if (i == 1)
@@ -783,7 +771,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1118)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1119)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1051,32 +1039,6 @@ public sealed class XTapBattleController : MonoBehaviour
         Image bottom = MakePanel(rr, "ChevronBottom", gold, .40f, .43f, .60f, .50f);
         bottom.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 42f);
         return rr;
-    }
-
-    void MakeMetalUpArrow(Transform parent)
-    {
-        GameObject rootGo = new GameObject("NextMetalArrow", typeof(RectTransform));
-        rootGo.transform.SetParent(parent, false);
-        RectTransform rr = rootGo.GetComponent<RectTransform>();
-
-        // Same visual scale as the down-arrow on the approved previous-section button.
-        Anchor(rr, .34f, .50f, .66f, .78f);
-
-        Color dark = new Color(.18f, .09f, .025f, 1f);
-        Color gold = new Color(1f, .72f, .26f, 1f);
-
-        Image shadowShaft = MakePanel(rr, "ArrowShadowShaft", dark, .44f, .10f, .58f, .70f);
-        Image shaft = MakePanel(rr, "ArrowShaft", gold, .475f, .12f, .545f, .68f);
-
-        Image shadowLeft = MakePanel(rr, "ArrowShadowLeft", dark, .22f, .58f, .52f, .70f);
-        shadowLeft.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 42f);
-        Image shadowRight = MakePanel(rr, "ArrowShadowRight", dark, .48f, .58f, .78f, .70f);
-        shadowRight.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -42f);
-
-        Image left = MakePanel(rr, "ArrowLeft", gold, .25f, .60f, .51f, .67f);
-        left.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 42f);
-        Image right = MakePanel(rr, "ArrowRight", gold, .49f, .60f, .75f, .67f);
-        right.rectTransform.localRotation = Quaternion.Euler(0f, 0f, -42f);
     }
 
     Button MakeCodexUtilityButton(Transform parent)
