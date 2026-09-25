@@ -15,6 +15,9 @@ public sealed class XTapBattleController : MonoBehaviour
     const double BaseEnemyAttack = 3d;
     const double BaseEnemyDefense = 1d;
     const float CharacterDodgeChance = .20f;
+    const float ShieldCueChance = .30f;
+    const float CombatCueSeconds = 1.05f;
+    const double ShieldMissAttackMultiplier = 2d;
     const int StagesPerFloor = 10;
     const string CurrentStepKey = "xtap_current_progress_step";
     const string MaxUnlockedStepKey = "xtap_max_unlocked_progress_step";
@@ -36,6 +39,8 @@ public sealed class XTapBattleController : MonoBehaviour
     Text bubbleText;
     CanvasGroup bubbleGroup;
     Image weakPoint;
+    Text weakPointHitText;
+    Image shieldPoint;
     XTapGachaMachine gachaMachine;
     XTapInventory inventory;
     XTapBlacksmith blacksmith;
@@ -88,6 +93,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     Font koreanFont;
     Sprite ringSprite;
+    Sprite shieldSprite;
     Sprite speechBubbleSprite;
     Material jellyMaterial;
     Coroutine jellyRoutine;
@@ -120,6 +126,10 @@ public sealed class XTapBattleController : MonoBehaviour
     float weakUntil;
     Vector2 weakNorm;
     Vector2 weakVelocity;
+
+    bool shieldActive;
+    float shieldUntil;
+    Vector2 shieldNorm;
 
     readonly string[][] zoneTalk =
     {
@@ -201,6 +211,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
+        shieldSprite = CreateShieldSprite(128);
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
 
         // 11.15: create the Canvas and X탑 loading screen first. No later
@@ -397,6 +408,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (assets == null || !assets.Ready) return;
 
         UpdateWeakPoint();
+        UpdateShieldPoint();
 
         if (mainOverlay != null && mainOverlay.activeSelf)
         {
@@ -485,6 +497,21 @@ public sealed class XTapBattleController : MonoBehaviour
         weakPoint.raycastTarget = false;
         weakPoint.gameObject.SetActive(false);
         SetSize(weakPoint.rectTransform, 94, 94);
+
+        weakPointHitText = MakeText(weakPoint.transform, "HIT", 12, TextAnchor.MiddleCenter, true);
+        weakPointHitText.color = new Color(1f, .92f, .48f, 1f);
+        weakPointHitText.resizeTextForBestFit = true;
+        weakPointHitText.resizeTextMinSize = 20;
+        weakPointHitText.resizeTextMaxSize = 34;
+        Anchor(weakPointHitText.rectTransform, .12f, .20f, .88f, .80f);
+
+        shieldPoint = new GameObject("ShieldPoint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        shieldPoint.transform.SetParent(root, false);
+        shieldPoint.sprite = shieldSprite;
+        shieldPoint.color = new Color(.28f, .72f, 1f, .98f);
+        shieldPoint.raycastTarget = false;
+        shieldPoint.gameObject.SetActive(false);
+        SetSize(shieldPoint.rectTransform, 94, 94);
 
         bubblePanel = new GameObject("SpeechBubble", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(CanvasGroup)).GetComponent<Image>();
         bubblePanel.transform.SetParent(root, false);
@@ -778,7 +805,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1122)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1123)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1716,7 +1743,9 @@ public sealed class XTapBattleController : MonoBehaviour
         won = false;
         busy = false;
         weakActive = false;
-        weakPoint.gameObject.SetActive(false);
+        if (weakPoint != null) weakPoint.gameObject.SetActive(false);
+        shieldActive = false;
+        if (shieldPoint != null) shieldPoint.gameObject.SetActive(false);
         ResetJelly();
         HideBubble();
         SetStageOrFallback(0);
@@ -1727,6 +1756,21 @@ public sealed class XTapBattleController : MonoBehaviour
     {
         if (won)
         {
+            return;
+        }
+
+        if (shieldActive)
+        {
+            Vector2 shieldScreen = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
+            float shieldRadius = Mathf.Max(58f, Screen.width * .06f);
+            if (Vector2.Distance(shieldScreen, end) <= shieldRadius)
+            {
+                ResolveShieldBlock(shieldScreen);
+            }
+            else
+            {
+                StartCoroutine(TouchPulse(end, false, false));
+            }
             return;
         }
 
@@ -1770,6 +1814,12 @@ public sealed class XTapBattleController : MonoBehaviour
             yield return CharacterRecoil(impact, false, true);
             yield return new WaitForSecondsRealtime(.10f);
             SetStageOrFallback(Stage());
+
+            if (TryStartShieldWindow())
+            {
+                busy = false;
+                yield break;
+            }
 
             if (ApplyEnemyCounterAttack())
             {
@@ -1851,6 +1901,13 @@ public sealed class XTapBattleController : MonoBehaviour
             yield break;
         }
 
+        if (TryStartShieldWindow())
+        {
+            SetStageOrFallback(Stage());
+            busy = false;
+            yield break;
+        }
+
         if (ApplyEnemyCounterAttack())
         {
             busy = false;
@@ -1868,9 +1925,10 @@ public sealed class XTapBattleController : MonoBehaviour
         busy = false;
     }
 
-    bool ApplyEnemyCounterAttack()
+    bool ApplyEnemyCounterAttack(double attackMultiplier = 1d)
     {
-        double damage = Math.Max(1d, Math.Floor(enemyAttack - CurrentPlayerDefense()));
+        double rawEnemyAttack = SafeMultiply(enemyAttack, Math.Max(1d, attackMultiplier));
+        double damage = Math.Max(1d, Math.Floor(rawEnemyAttack - CurrentPlayerDefense()));
         playerHp = Math.Max(0d, playerHp - damage);
         RefreshBattleStatUi();
 
@@ -1884,6 +1942,7 @@ public sealed class XTapBattleController : MonoBehaviour
     void HandlePlayerDeath()
     {
         HideWeakPoint();
+        HideShieldPoint();
 
         int lost = inventory != null ? inventory.LoseHeldAndGroundOnDeath() : 0;
 
@@ -1998,11 +2057,14 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void StartWeakPoint()
     {
+        if (shieldActive) return;
+
         weakActive = true;
-        weakUntil = Time.unscaledTime + 1.05f;
+        weakUntil = Time.unscaledTime + CombatCueSeconds;
         weakNorm = new Vector2(UnityEngine.Random.Range(.34f, .66f), UnityEngine.Random.Range(.34f, .68f));
         weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
         weakPoint.gameObject.SetActive(true);
+        weakPoint.transform.SetAsLastSibling();
         PositionWeakPoint();
     }
 
@@ -2047,7 +2109,88 @@ public sealed class XTapBattleController : MonoBehaviour
     void HideWeakPoint()
     {
         weakActive = false;
-        if (weakPoint != null) weakPoint.gameObject.SetActive(false);
+        if (weakPoint != null)
+        {
+            weakPoint.rectTransform.localScale = Vector3.one;
+            weakPoint.gameObject.SetActive(false);
+        }
+    }
+
+    bool TryStartShieldWindow()
+    {
+        if (won || weakActive || shieldActive || shieldPoint == null)
+            return false;
+
+        if (UnityEngine.Random.value >= ShieldCueChance)
+            return false;
+
+        shieldActive = true;
+        shieldUntil = Time.unscaledTime + CombatCueSeconds;
+        shieldNorm = new Vector2(
+            UnityEngine.Random.Range(.30f, .70f),
+            UnityEngine.Random.Range(.32f, .70f)
+        );
+
+        shieldPoint.rectTransform.localScale = Vector3.one;
+        shieldPoint.gameObject.SetActive(true);
+        shieldPoint.transform.SetAsLastSibling();
+        PositionShieldPoint();
+        return true;
+    }
+
+    void UpdateShieldPoint()
+    {
+        if (!shieldActive) return;
+
+        if (Time.unscaledTime >= shieldUntil)
+        {
+            HideShieldPoint();
+            VibrateTouch(true);
+            PlayCombatSfx("fight_smash_heavy", 1f);
+            ApplyEnemyCounterAttack(ShieldMissAttackMultiplier);
+            return;
+        }
+
+        float phase = (Mathf.Sin(Time.unscaledTime * 10f) + 1f) * .5f;
+        float pulse = Mathf.Lerp(.82f, 1.18f, phase);
+        shieldPoint.rectTransform.localScale = Vector3.one * pulse;
+        PositionShieldPoint();
+    }
+
+    void PositionShieldPoint()
+    {
+        if (shieldPoint == null) return;
+
+        Vector2 screen = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
+        Vector2 local;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screen, null, out local);
+        shieldPoint.rectTransform.anchoredPosition = local;
+    }
+
+    void ResolveShieldBlock(Vector2 shieldScreen)
+    {
+        if (!shieldActive) return;
+
+        HideShieldPoint();
+        VibrateTouch(false);
+        PlayCombatSfx("fight_punch_medium", .82f);
+        StartCoroutine(TouchPulse(shieldScreen, true, false));
+
+        if (!weakActive && hitCount >= 4)
+        {
+            hitCount = 0;
+            StartWeakPoint();
+        }
+    }
+
+    void HideShieldPoint()
+    {
+        shieldActive = false;
+        if (shieldPoint != null)
+        {
+            shieldPoint.rectTransform.localScale = Vector3.one;
+            shieldPoint.gameObject.SetActive(false);
+        }
     }
 
     void SetupJellyMaterial()
@@ -2766,6 +2909,51 @@ public sealed class XTapBattleController : MonoBehaviour
         tex.SetPixels(pixels);
         tex.Apply(false, false);
 
+        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(.5f, .5f), 100f);
+    }
+
+    Sprite CreateShieldSprite(int size)
+    {
+        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color clear = new Color(1f, 1f, 1f, 0f);
+        Color solid = Color.white;
+        Color[] pixels = new Color[size * size];
+
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float nx = (x + .5f) / size;
+                float ny = (y + .5f) / size;
+
+                bool inside = false;
+                if (ny >= .08f && ny <= .92f)
+                {
+                    float halfWidth;
+                    if (ny >= .60f)
+                        halfWidth = Mathf.Lerp(.34f, .38f, (ny - .60f) / .32f);
+                    else
+                        halfWidth = Mathf.Lerp(.03f, .34f, (ny - .08f) / .52f);
+
+                    // Slightly clipped upper corners make the silhouette read as a shield,
+                    // while the tapered lower half forms the protective point.
+                    inside = Mathf.Abs(nx - .5f) <= halfWidth;
+                    if (ny > .82f)
+                    {
+                        float cornerCut = (ny - .82f) / .10f;
+                        inside &= Mathf.Abs(nx - .5f) <= Mathf.Lerp(.38f, .29f, cornerCut);
+                    }
+                }
+
+                pixels[y * size + x] = inside ? solid : clear;
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply(false, false);
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(.5f, .5f), 100f);
     }
 
