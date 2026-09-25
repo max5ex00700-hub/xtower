@@ -30,7 +30,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         {
             string path = Path.Combine(baseDir, required[i]);
             if (!File.Exists(path))
-                throw new BuildFailedException("X탑 11.16 필수 메인 UI 자산 누락: " + required[i]);
+                throw new BuildFailedException("X탑 11.17 필수 메인 UI 자산 누락: " + required[i]);
 
             try
             {
@@ -42,11 +42,11 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             }
             catch (Exception e)
             {
-                throw new BuildFailedException("X탑 11.16 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
+                throw new BuildFailedException("X탑 11.17 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
             }
         }
 
-        Debug.Log("X탑 11.16 메인 UI 검증 완료: 기준 이미지 버튼 9개 정상.");
+        Debug.Log("X탑 11.17 메인 UI 검증 완료: 기준 이미지 버튼 9개 정상.");
     }
 
     public void OnPreprocessBuild(BuildReport report)
@@ -69,7 +69,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         PlayerSettings.productName = "X탑";
         PlayerSettings.companyName = "XTap";
-        PlayerSettings.bundleVersion = "11.16-ui-content-repair-" + shortCommit;
+        PlayerSettings.bundleVersion = "11.17-challenge-button-" + shortCommit;
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.xtower.game.unity");
 
         Debug.Log("X탑 BUILD FINGERPRINT / branch=" + (gitBranch ?? "local") + " / commit=" + (gitCommit ?? "local"));
@@ -78,7 +78,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         PlayerSettings.SplashScreen.showUnityLogo = true;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
-        PlayerSettings.Android.bundleVersionCode = 1116;
+        PlayerSettings.Android.bundleVersionCode = 1117;
 
         // 64-bit Android is required for current 64-bit-only devices.
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
