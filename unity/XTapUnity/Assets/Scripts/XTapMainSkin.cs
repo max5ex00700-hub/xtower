@@ -8,6 +8,7 @@ public static class XTapMainSkin
 
     public static Sprite FloorPanel { get; private set; }
     public static Sprite FightButton { get; private set; }
+    public static Sprite ChallengeButton { get; private set; }
     public static Sprite OptionButton { get; private set; }
     public static Sprite CodexButton { get; private set; }
     public static Sprite UtilityButton { get; private set; }
@@ -26,7 +27,7 @@ public static class XTapMainSkin
         get
         {
             EnsureLoaded();
-            return FightButton != null &&
+            return ChallengeButton != null &&
                    OptionButton != null &&
                    CodexButton != null &&
                    InfoTabButton != null &&
@@ -48,6 +49,7 @@ public static class XTapMainSkin
         // 11.10: use the actual button artwork extracted from the approved
         // reference image. Procedural art is fallback only.
         FightButton = LoadReferenceButtonSprite("XTapMainUI/ref_fight_runtime", "XTapReferenceFight");
+        ChallengeButton = LoadReferenceButtonSprite("XTapMainUI/ref_challenge_runtime", "XTapReferenceChallenge");
         OptionButton = LoadReferenceButtonSprite("XTapMainUI/ref_option_runtime", "XTapReferenceOption");
         CodexButton = LoadReferenceButtonSprite("XTapMainUI/ref_codex_runtime", "XTapReferenceCodex");
         InfoTabButton = LoadReferenceButtonSprite("XTapMainUI/ref_tab_runtime", "XTapReferenceInfoTab");
@@ -64,6 +66,7 @@ public static class XTapMainSkin
         bool usedFallback = false;
 
         if (FightButton == null) { FightButton = CreateFightButton(); usedFallback = true; }
+        if (ChallengeButton == null) { ChallengeButton = FightButton; usedFallback = true; }
         if (OptionButton == null) { OptionButton = CreateUtilityButton(); usedFallback = true; }
         if (CodexButton == null) { CodexButton = CreateUtilityButton(); usedFallback = true; }
         if (InfoTabButton == null) { InfoTabButton = CreateInfoTabButton(); usedFallback = true; }
