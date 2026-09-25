@@ -1352,6 +1352,10 @@ public sealed class XTapInventory : MonoBehaviour
 
     Color BlockColor(XTapGearBlockData item)
     {
+        // Any block with at least one descriptor uses the same gold as the
+        // final (3rd) descriptor text tier (#FFD166), so descriptor gear is
+        // immediately distinguishable in inventory, ground and drag previews.
+        if (item != null && item.descriptorCount > 0) return new Color(1f, .8196079f, .4f, 1f);
         if (item.exclusive) return new Color(.65f, .22f, .80f, .98f);
         if (item.correction > 0) return new Color(.88f, .58f, .14f, 1f);
         if (item.correction < 0) return new Color(.34f, .42f, .52f, 1f);
