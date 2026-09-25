@@ -71,10 +71,12 @@ public static class XTapMainSkin
         try
         {
             TextAsset encoded = Resources.Load<TextAsset>(resourcePath);
-            if (encoded == null || string.IsNullOrWhiteSpace(encoded.text))
+            if (encoded == null || encoded.bytes == null || encoded.bytes.Length < 128)
                 return null;
 
-            byte[] bytes = Convert.FromBase64String(encoded.text.Trim());
+            // 11.14: button assets are stored as raw PNG bytes. This removes
+            // the fragile Base64 text conversion that broke cloud build 41.
+            byte[] bytes = encoded.bytes;
             Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
             texture.name = spriteName + "Texture";
             texture.wrapMode = TextureWrapMode.Clamp;
