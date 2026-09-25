@@ -696,7 +696,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         // Preserve the reference fight artwork but render the Korean title as
         // a separate Unity text layer so a cropped/optimized PNG can never erase it.
-        Button fight = MakeGothicButton(mainOverlay.transform, "전투", 24);
+        Button fight = MakeGothicButton(mainOverlay.transform, "도전", 24);
         Anchor(fight.GetComponent<RectTransform>(), .287f, .115f, .713f, .271f);
         fight.onClick.AddListener(BeginBattle);
 
@@ -783,7 +783,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1116)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1117)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
