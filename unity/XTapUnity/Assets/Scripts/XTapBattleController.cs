@@ -56,7 +56,7 @@ public sealed class XTapBattleController : MonoBehaviour
     XTapInventory inventory;
     XTapBlacksmith blacksmith;
     XTapJail jail;
-    XTapReinaParryMiniGame reinaParryMiniGame;
+    XTapFingerClashMiniGame fingerClashMiniGame;
     XTapCodex codex;
     Coroutine bubbleAnimRoutine;
 
@@ -270,8 +270,8 @@ public sealed class XTapBattleController : MonoBehaviour
         PreloadCombatVoices();
         PreloadCombatSfx();
 
-        reinaParryMiniGame = gameObject.AddComponent<XTapReinaParryMiniGame>();
-        reinaParryMiniGame.Initialize(root, koreanFont, assets, OnReinaParryMiniGameClosed);
+        fingerClashMiniGame = gameObject.AddComponent<XTapFingerClashMiniGame>();
+        fingerClashMiniGame.Initialize(root, koreanFont, assets, OnFingerClashMiniGameClosed);
         if (jail != null) jail.SetMiniGameLauncher(OpenCharacterMiniGame);
         SetStartupProgress(.84f);
 
@@ -426,7 +426,7 @@ public sealed class XTapBattleController : MonoBehaviour
         }
 
         if (assets == null || !assets.Ready) return;
-        if (reinaParryMiniGame != null && reinaParryMiniGame.IsOpen) return;
+        if (fingerClashMiniGame != null && fingerClashMiniGame.IsOpen) return;
 
         UpdateWeakPoint();
         UpdateShieldPoint();
@@ -1478,11 +1478,11 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void OpenCharacterMiniGame(int characterId)
     {
-        if (reinaParryMiniGame == null) return;
-        reinaParryMiniGame.Open(characterId);
+        if (fingerClashMiniGame == null) return;
+        fingerClashMiniGame.Open(characterId);
     }
 
-    void OnReinaParryMiniGameClosed()
+    void OnFingerClashMiniGameClosed()
     {
         RefreshMainProgressUi();
         if (jail != null) jail.Open();
