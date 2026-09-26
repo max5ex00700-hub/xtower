@@ -1414,6 +1414,42 @@ public sealed class XTapInventory : MonoBehaviour
         Render();
     }
 
+    public bool IsGridItem(string id)
+    {
+        XTapGearBlockData item = Find(id);
+        return item != null && item.location == XTapGearBlockData.LocationBag;
+    }
+
+    public void InitializeGridScroll(PointerEventData eventData)
+    {
+        if (gridScroll == null || eventData == null) return;
+        gridScroll.OnInitializePotentialDrag(eventData);
+    }
+
+    public void BeginGridScroll(PointerEventData eventData)
+    {
+        if (gridScroll == null || eventData == null) return;
+
+        // A quick swipe on top of a placed block belongs to the bag ScrollRect,
+        // not to block movement. Any stale block drag is cancelled first.
+        if (!string.IsNullOrEmpty(draggingId) || dragGhost != null)
+            CancelDrag(false);
+
+        gridScroll.OnBeginDrag(eventData);
+    }
+
+    public void UpdateGridScroll(PointerEventData eventData)
+    {
+        if (gridScroll == null || eventData == null) return;
+        gridScroll.OnDrag(eventData);
+    }
+
+    public void EndGridScroll(PointerEventData eventData)
+    {
+        if (gridScroll == null || eventData == null) return;
+        gridScroll.OnEndDrag(eventData);
+    }
+
     public void BeginDrag(string id, Vector2 screen)
     {
         XTapGearBlockData item = Find(id);
@@ -2319,28 +2355,86 @@ public sealed class XTapStorageSelectTouch : MonoBehaviour, IPointerClickHandler
     }
 }
 
-public sealed class XTapBagItemTouch : MonoBehaviour, IPointerClickHandler, IBeginDragHandler, IDragHandler, IEndDragHandler
+public sealed class XTapBagItemTouch : MonoBehaviour,
+    IPointerDownHandler,
+    IPointerClickHandler,
+    IInitializePotentialDragHandler,
+    IBeginDragHandler,
+    IDragHandler,
+    IEndDragHandler
 {
+    const float GridBlockHoldSeconds = .20f;
+
+    enum GestureMode
+    {
+        None,
+        BlockDrag,
+        GridScroll
+    }
+
     public XTapInventory owner;
     public string itemId;
 
+    float pointerDownTime;
+    GestureMode gestureMode;
+
+    public void OnPointerDown(PointerEventData eventData)
+    {
+        pointerDownTime = Time.unscaledTime;
+        gestureMode = GestureMode.None;
+    }
+
     public void OnPointerClick(PointerEventData eventData)
     {
+        if (gestureMode != GestureMode.None) return;
         if (owner != null) owner.TapBlock(itemId);
+    }
+
+    public void OnInitializePotentialDrag(PointerEventData eventData)
+    {
+        if (owner != null && owner.IsGridItem(itemId))
+            owner.InitializeGridScroll(eventData);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (owner != null) owner.BeginDrag(itemId, eventData.position);
+        if (owner == null) return;
+
+        bool placedInGrid = owner.IsGridItem(itemId);
+        float heldSeconds = Mathf.Max(0f, Time.unscaledTime - pointerDownTime);
+
+        // Placed bag blocks use mobile-friendly gesture arbitration:
+        // quick swipe = scroll, hold briefly then move = drag the block.
+        if (placedInGrid && heldSeconds < GridBlockHoldSeconds)
+        {
+            gestureMode = GestureMode.GridScroll;
+            owner.BeginGridScroll(eventData);
+            return;
+        }
+
+        gestureMode = GestureMode.BlockDrag;
+        owner.BeginDrag(itemId, eventData.position);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (owner != null) owner.UpdateDrag(itemId, eventData.position);
+        if (owner == null) return;
+
+        if (gestureMode == GestureMode.GridScroll)
+            owner.UpdateGridScroll(eventData);
+        else if (gestureMode == GestureMode.BlockDrag)
+            owner.UpdateDrag(itemId, eventData.position);
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        if (owner != null) owner.EndDrag(itemId, eventData.position);
+        if (owner == null) return;
+
+        if (gestureMode == GestureMode.GridScroll)
+            owner.EndGridScroll(eventData);
+        else if (gestureMode == GestureMode.BlockDrag)
+            owner.EndDrag(itemId, eventData.position);
+
+        gestureMode = GestureMode.None;
     }
 }
