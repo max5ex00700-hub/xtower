@@ -257,7 +257,7 @@ public sealed class XTapJail : MonoBehaviour
         bool reinaGameReady = selectedCharacterId == 1 && openMiniGame != null;
         if (openMiniGameButton != null) openMiniGameButton.interactable = reinaGameReady;
         if (openMiniGameButtonText != null)
-            openMiniGameButtonText.text = reinaGameReady ? "핑거클래쉬" : "미니게임 준비 중";
+            openMiniGameButtonText.text = reinaGameReady ? "X SIGIL BEAT" : "미니게임 준비 중";
     }
 
     void OpenSelectedMiniGame()

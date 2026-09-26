@@ -4,7 +4,7 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public sealed class XTapFingerClashInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+public sealed class XTapSigilBeatInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     public Action<Vector2, Vector2> Released;
     Vector2 down;
@@ -24,14 +24,14 @@ public sealed class XTapFingerClashInput : MonoBehaviour, IPointerDownHandler, I
     }
 }
 
-public sealed class XTapFingerClashMiniGame : MonoBehaviour
+public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 {
     const float UiFontScale = 2.15f;
     const int ReinaCharacterId = 1;
-    const string BestScoreKey = "xtap_minigame_finger_clash_best_score";
-    const string BestComboKey = "xtap_minigame_finger_clash_best_combo";
-    const string PlaysKey = "xtap_minigame_finger_clash_plays";
-    const string ClearsKey = "xtap_minigame_finger_clash_clears";
+    const string BestScoreKey = "xtap_minigame_x_sigil_beat_best_score";
+    const string BestComboKey = "xtap_minigame_x_sigil_beat_best_combo";
+    const string PlaysKey = "xtap_minigame_x_sigil_beat_plays";
+    const string ClearsKey = "xtap_minigame_x_sigil_beat_clears";
 
     const double Bpm = 120.0;
     const double BeatSeconds = 60.0 / Bpm;
@@ -78,7 +78,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
     RectTransform gameArea;
     Image portrait;
     Image inputSurface;
-    XTapFingerClashInput inputReceiver;
+    XTapSigilBeatInput inputReceiver;
     Text scoreText;
     Text comboText;
     Text accuracyText;
@@ -226,7 +226,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
 
     void BuildUi()
     {
-        overlay = new GameObject("FingerClashMiniGame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        overlay = new GameObject("SigilBeatMiniGame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         overlay.transform.SetParent(host, false);
         Image bg = overlay.GetComponent<Image>();
         bg.color = new Color(.006f, .006f, .012f, .998f);
@@ -248,7 +248,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
         Image bottomShade = MakeImage(overlay.transform, "BottomHudShade", new Color(.006f, .005f, .012f, .94f), 0f, 0f, 1f, .18f);
         bottomShade.raycastTarget = false;
 
-        Text title = MakeText(overlay.transform, "FINGER CLASH  ·  1F", 24, TextAnchor.MiddleLeft, true);
+        Text title = MakeText(overlay.transform, "X SIGIL BEAT  ·  1F", 24, TextAnchor.MiddleLeft, true);
         title.color = new Color(1f, .86f, .56f, 1f);
         Anchor(title.rectTransform, .045f, .936f, .72f, .992f);
 
@@ -268,7 +268,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
         accuracyText.color = new Color(.72f, .95f, .88f, 1f);
         Anchor(accuracyText.rectTransform, .66f, .875f, .955f, .928f);
 
-        gameArea = new GameObject("FingerClashGameArea", typeof(RectTransform)).GetComponent<RectTransform>();
+        gameArea = new GameObject("SigilBeatGameArea", typeof(RectTransform)).GetComponent<RectTransform>();
         gameArea.SetParent(overlay.transform, false);
         Anchor(gameArea, .02f, .17f, .98f, .86f);
 
@@ -276,17 +276,17 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
         BuildTargets();
 
         inputSurface = new GameObject(
-            "FingerClashInput",
+            "SigilBeatInput",
             typeof(RectTransform),
             typeof(CanvasRenderer),
             typeof(Image),
-            typeof(XTapFingerClashInput)
+            typeof(XTapSigilBeatInput)
         ).GetComponent<Image>();
         inputSurface.transform.SetParent(gameArea, false);
         inputSurface.color = new Color(1f, 1f, 1f, .001f);
         inputSurface.raycastTarget = true;
         Anchor(inputSurface.rectTransform, 0f, 0f, 1f, 1f);
-        inputReceiver = inputSurface.GetComponent<XTapFingerClashInput>();
+        inputReceiver = inputSurface.GetComponent<XTapSigilBeatInput>();
         inputReceiver.Released = HandleGesture;
         inputSurface.gameObject.SetActive(false);
 
@@ -314,7 +314,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
         recordText.color = new Color(.66f, .72f, .82f, 1f);
         Anchor(recordText.rectTransform, .07f, .025f, .93f, .072f);
 
-        startButton = MakeButton(overlay.transform, "핑거클래쉬 시작", 20, new Color(.29f, .065f, .19f, .98f));
+        startButton = MakeButton(overlay.transform, "X SIGIL BEAT 시작", 20, new Color(.29f, .065f, .19f, .98f));
         Anchor(startButton.GetComponent<RectTransform>(), .20f, .185f, .80f, .245f);
         startButton.onClick.AddListener(StartGame);
         startButtonText = startButton.GetComponentInChildren<Text>();
@@ -388,7 +388,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
         score = combo = maxCombo = perfectCount = goodCount = missCount = resolvedCount = 0;
         RefreshHud();
 
-        judgementText.text = "FINGER CLASH";
+        judgementText.text = "X SIGIL BEAT";
         judgementText.color = new Color(1f, .82f, .42f, 1f);
         guideText.text = "룬의 타이밍 링이 판정 문양과 겹치는 순간\n표시 방향으로 손가락을 베십시오";
         recordText.text =
@@ -397,7 +397,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
 
         startButton.gameObject.SetActive(true);
         startButton.interactable = true;
-        startButtonText.text = "핑거클래쉬 시작";
+        startButtonText.text = "X SIGIL BEAT 시작";
         inputSurface.gameObject.SetActive(false);
 
         for (int i = 0; i < targetRings.Length; i++)
@@ -798,7 +798,7 @@ public sealed class XTapFingerClashMiniGame : MonoBehaviour
             data[i] = Mathf.Clamp(sample, -.8f, .8f);
         }
 
-        AudioClip clip = AudioClip.Create("FingerClashPrototype120BPM", frames, 1, sampleRate, false);
+        AudioClip clip = AudioClip.Create("SigilBeatPrototype120BPM", frames, 1, sampleRate, false);
         clip.SetData(data, 0);
         return clip;
     }
