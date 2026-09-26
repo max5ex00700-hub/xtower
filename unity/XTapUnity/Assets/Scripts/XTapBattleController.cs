@@ -17,6 +17,7 @@ public sealed class XTapBattleController : MonoBehaviour
     const float CharacterDodgeChance = .20f;
     const float DedicatedCombatDialogueChance = .75f;
     const float DedicatedDodgeDialogueChance = .75f;
+    const float DedicatedSurrenderDialogueChance = .75f;
     const float DedicatedTouchDialogueChance = .90f;
     const float ShieldCueChance = .30f;
     const float CombatCueSeconds = 1.05f;
@@ -2036,7 +2037,7 @@ public sealed class XTapBattleController : MonoBehaviour
             SaveProgress();
             RefreshMainProgressUi();
 
-            ShowBubble("…끝났어.", 30f);
+            ShowBubble(MixedSurrenderLine(clearedCharacterId), 30f);
             Play("assets/win.wav");
             yield return new WaitForSecondsRealtime(.45f);
 
@@ -3091,6 +3092,23 @@ public sealed class XTapBattleController : MonoBehaviour
             return RandomLine(dedicated);
 
         return RandomLine(dodgeTalk);
+    }
+
+    string MixedSurrenderLine(int characterId)
+    {
+        string[] dedicated = XTapCharacterDialogue.Surrender(characterId);
+        string[] common = XTapCharacterDialogue.CommonSurrender();
+
+        if (HasLines(dedicated) && UnityEngine.Random.value < DedicatedSurrenderDialogueChance)
+            return RandomLine(dedicated);
+
+        if (HasLines(common))
+            return RandomLine(common);
+
+        if (HasLines(dedicated))
+            return RandomLine(dedicated);
+
+        return "항복한다. 내가 졌어.";
     }
 
     string RandomLine(string[] lines)

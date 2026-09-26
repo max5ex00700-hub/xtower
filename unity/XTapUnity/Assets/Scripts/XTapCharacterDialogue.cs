@@ -22,6 +22,7 @@ public static class XTapCharacterDialogue
         public string personality;
         public string[] combat;
         public string[] dodge;
+        public string[] surrender;
         public TouchLines touch;
     }
 
@@ -29,6 +30,7 @@ public static class XTapCharacterDialogue
     public sealed class DialogueRoot
     {
         public string version;
+        public string[] commonSurrender;
         public CharacterEntry[] characters;
     }
 
@@ -83,6 +85,18 @@ public static class XTapCharacterDialogue
     {
         CharacterEntry entry = Find(characterId);
         return entry != null ? entry.dodge : null;
+    }
+
+    public static string[] Surrender(int characterId)
+    {
+        CharacterEntry entry = Find(characterId);
+        return entry != null ? entry.surrender : null;
+    }
+
+    public static string[] CommonSurrender()
+    {
+        EnsureLoaded();
+        return data != null ? data.commonSurrender : null;
     }
 
     public static string[] Touch(int characterId, string zone)
