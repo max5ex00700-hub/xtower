@@ -15,6 +15,9 @@ public sealed class XTapBattleController : MonoBehaviour
     const double BaseEnemyAttack = 3d;
     const double BaseEnemyDefense = 1d;
     const float CharacterDodgeChance = .20f;
+    const float DedicatedCombatDialogueChance = .75f;
+    const float DedicatedDodgeDialogueChance = .75f;
+    const float DedicatedTouchDialogueChance = .90f;
     const float ShieldCueChance = .30f;
     const float CombatCueSeconds = 1.05f;
     const float FollowupHitCueSeconds = CombatCueSeconds / 1.5f;
@@ -845,7 +848,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1130)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1131)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1331,7 +1334,11 @@ public sealed class XTapBattleController : MonoBehaviour
         else if (zone == "thigh") pool = mainThighTalk;
         else if (zone == "boot") pool = mainBootTalk;
 
-        string line = pool[UnityEngine.Random.Range(0, pool.Length)];
+        string[] dedicatedTouch = XTapCharacterDialogue.Touch(CurrentCharacterId(), zone);
+        if (zone != "general" && HasLines(dedicatedTouch) && UnityEngine.Random.value < DedicatedTouchDialogueChance)
+            pool = dedicatedTouch;
+
+        string line = RandomLine(pool);
         ShowMainSpeech(line, screen);
 
         StartCoroutine(TouchPulse(screen, zone == "groin", false));
@@ -1892,7 +1899,7 @@ public sealed class XTapBattleController : MonoBehaviour
         int zone = ZoneOf(impact);
         if (zone == 6)
         {
-            ShowBubble(RandomLine(zoneTalk[zone]), 1.0f, impact);
+            ShowBubble(MixedDodgeLine(), 1.0f, impact);
             VibrateTouch(false);
             StartCoroutine(TouchPulse(impact, false, false));
             return;
@@ -1916,7 +1923,7 @@ public sealed class XTapBattleController : MonoBehaviour
         {
             HideWeakPoint();
             SetActionSprite("d");
-            ShowBubble(RandomLine(dodgeTalk), 1.0f, impact);
+            ShowBubble(MixedDodgeLine(), 1.0f, impact);
             // Dodge should read as fast body movement, not a UI/game "boing".
             // Reuse the clean light whoosh already bundled for combat movement.
             PlayCombatSfx("fight_swing_light", .62f);
@@ -1958,7 +1965,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (weakHit)
         {
             weakActive = false;
-            ShowBubble(RandomLine(criticalTalk), 1.25f, impact);
+            ShowBubble(MixedCriticalLine(), 1.25f, impact);
             VibrateTouch(true);
             PlayCombatImpact(prefix, swipe, true);
             PlayRandomVoice(criticalHitVoices, .84f);
@@ -1978,7 +1985,7 @@ public sealed class XTapBattleController : MonoBehaviour
         }
         else
         {
-            ShowBubble(RandomLine(zoneTalk[zone]), 1.05f, impact);
+            ShowBubble(MixedCombatLine(zone), 1.05f, impact);
             VibrateTouch(false);
             PlayCombatImpact(prefix, swipe, false);
             if (enemyHp <= enemyMaxHp * .25d && UnityEngine.Random.value < .45f)
@@ -3035,8 +3042,42 @@ public sealed class XTapBattleController : MonoBehaviour
         return -1;
     }
 
+    bool HasLines(string[] lines)
+    {
+        return lines != null && lines.Length > 0;
+    }
+
+    string MixedCombatLine(int zone)
+    {
+        string[] dedicated = XTapCharacterDialogue.Combat(CurrentCharacterId());
+        if (HasLines(dedicated) && UnityEngine.Random.value < DedicatedCombatDialogueChance)
+            return RandomLine(dedicated);
+
+        int safeZone = Mathf.Clamp(zone, 0, zoneTalk.Length - 1);
+        return RandomLine(zoneTalk[safeZone]);
+    }
+
+    string MixedCriticalLine()
+    {
+        string[] dedicated = XTapCharacterDialogue.Combat(CurrentCharacterId());
+        if (HasLines(dedicated) && UnityEngine.Random.value < DedicatedCombatDialogueChance)
+            return RandomLine(dedicated);
+
+        return RandomLine(criticalTalk);
+    }
+
+    string MixedDodgeLine()
+    {
+        string[] dedicated = XTapCharacterDialogue.Dodge(CurrentCharacterId());
+        if (HasLines(dedicated) && UnityEngine.Random.value < DedicatedDodgeDialogueChance)
+            return RandomLine(dedicated);
+
+        return RandomLine(dodgeTalk);
+    }
+
     string RandomLine(string[] lines)
     {
+        if (!HasLines(lines)) return "";
         return lines[UnityEngine.Random.Range(0, lines.Length)];
     }
 
