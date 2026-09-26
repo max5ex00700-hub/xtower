@@ -845,7 +845,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1129)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1130)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1332,7 +1332,7 @@ public sealed class XTapBattleController : MonoBehaviour
         else if (zone == "boot") pool = mainBootTalk;
 
         string line = pool[UnityEngine.Random.Range(0, pool.Length)];
-        ShowMainSpeech(line);
+        ShowMainSpeech(line, screen);
 
         StartCoroutine(TouchPulse(screen, zone == "groin", false));
         VibrateTouch(zone == "groin");
@@ -1358,7 +1358,7 @@ public sealed class XTapBattleController : MonoBehaviour
         return "boot";
     }
 
-    void ShowMainSpeech(string line)
+    void ShowMainSpeech(string line, Vector2 touchScreen)
     {
         if (mainSpeechBubble == null || mainSpeechText == null) return;
 
@@ -1368,10 +1368,41 @@ public sealed class XTapBattleController : MonoBehaviour
             mainSpeechRoutine = null;
         }
 
+        LayoutMainSpeechBubble(touchScreen);
         mainSpeechText.text = line;
         mainSpeechBubble.gameObject.SetActive(true);
         mainSpeechBubble.transform.SetAsLastSibling();
         mainSpeechRoutine = StartCoroutine(HideMainSpeechLater(1.6f));
+    }
+
+    void LayoutMainSpeechBubble(Vector2 touchScreen)
+    {
+        if (mainSpeechBubble == null || root == null) return;
+
+        float nx = touchScreen.x / Mathf.Max(1f, Screen.width);
+        float ny = touchScreen.y / Mathf.Max(1f, Screen.height);
+
+        // Keep the speech away from the finger/body part that was touched.
+        // Left-side touch -> speech on the right, right-side touch -> speech on the left.
+        // Lower-body touch -> speech higher, head/face touch -> speech lower.
+        float targetNx = nx < .5f ? .72f : .28f;
+        float targetNy;
+        if (ny < .36f)
+            targetNy = .66f;
+        else if (ny > .70f)
+            targetNy = .48f;
+        else
+            targetNy = .72f;
+
+        Vector2 local;
+        Vector2 targetScreen = new Vector2(targetNx * Screen.width, targetNy * Screen.height);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(root, targetScreen, null, out local);
+
+        RectTransform r = mainSpeechBubble.rectTransform;
+        r.anchorMin = r.anchorMax = new Vector2(.5f, .5f);
+        r.pivot = new Vector2(.5f, .5f);
+        r.sizeDelta = new Vector2(465f, 220f);
+        r.anchoredPosition = local;
     }
 
     IEnumerator HideMainSpeechLater(float seconds)
@@ -1861,7 +1892,7 @@ public sealed class XTapBattleController : MonoBehaviour
         int zone = ZoneOf(impact);
         if (zone == 6)
         {
-            ShowBubble(RandomLine(zoneTalk[zone]), 1.0f);
+            ShowBubble(RandomLine(zoneTalk[zone]), 1.0f, impact);
             VibrateTouch(false);
             StartCoroutine(TouchPulse(impact, false, false));
             return;
@@ -1885,7 +1916,7 @@ public sealed class XTapBattleController : MonoBehaviour
         {
             HideWeakPoint();
             SetActionSprite("d");
-            ShowBubble(RandomLine(dodgeTalk), 1.0f);
+            ShowBubble(RandomLine(dodgeTalk), 1.0f, impact);
             // Dodge should read as fast body movement, not a UI/game "boing".
             // Reuse the clean light whoosh already bundled for combat movement.
             PlayCombatSfx("fight_swing_light", .62f);
@@ -1927,7 +1958,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (weakHit)
         {
             weakActive = false;
-            ShowBubble(RandomLine(criticalTalk), 1.25f);
+            ShowBubble(RandomLine(criticalTalk), 1.25f, impact);
             VibrateTouch(true);
             PlayCombatImpact(prefix, swipe, true);
             PlayRandomVoice(criticalHitVoices, .84f);
@@ -1947,7 +1978,7 @@ public sealed class XTapBattleController : MonoBehaviour
         }
         else
         {
-            ShowBubble(RandomLine(zoneTalk[zone]), 1.05f);
+            ShowBubble(RandomLine(zoneTalk[zone]), 1.05f, impact);
             VibrateTouch(false);
             PlayCombatImpact(prefix, swipe, false);
             if (enemyHp <= enemyMaxHp * .25d && UnityEngine.Random.value < .45f)
@@ -2694,6 +2725,12 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void ShowBubble(string text, float seconds)
     {
+        // Non-touch events such as victory use a stable upper-right placement.
+        ShowBubble(text, seconds, new Vector2(Screen.width * .28f, Screen.height * .56f));
+    }
+
+    void ShowBubble(string text, float seconds, Vector2 touchScreen)
+    {
         StopCoroutine("HideBubbleLater");
 
         if (bubbleAnimRoutine != null)
@@ -2702,7 +2739,7 @@ public sealed class XTapBattleController : MonoBehaviour
             bubbleAnimRoutine = null;
         }
 
-        LayoutBattleBubble(text);
+        LayoutBattleBubble(text, touchScreen);
         bubbleGroup.alpha = 1f;
         bubbleAnimRoutine = StartCoroutine(AnimateBubbleIn(text));
 
@@ -2710,17 +2747,37 @@ public sealed class XTapBattleController : MonoBehaviour
             StartCoroutine(HideBubbleLater(seconds));
     }
 
-    void LayoutBattleBubble(string text)
+    void LayoutBattleBubble(string text, Vector2 touchScreen)
     {
-        if (bubblePanel == null) return;
+        if (bubblePanel == null || root == null) return;
 
         int count = string.IsNullOrEmpty(text) ? 1 : text.Length;
         float width = Mathf.Clamp(185f + count * 18f, 250f, 420f);
         float height = count > 16 ? 138f : (count > 10 ? 124f : 110f);
 
+        float nx = touchScreen.x / Mathf.Max(1f, Screen.width);
+        float ny = touchScreen.y / Mathf.Max(1f, Screen.height);
+
+        // Speech appears on the opposite side of the attack point so it does
+        // not cover the finger, HIT marker, shield cue, or the struck body part.
+        float targetNx = nx < .5f ? .73f : .27f;
+        float targetNy;
+        if (ny < .34f)
+            targetNy = .69f;
+        else if (ny > .72f)
+            targetNy = .49f;
+        else
+            targetNy = .76f;
+
+        Vector2 local;
+        Vector2 targetScreen = new Vector2(targetNx * Screen.width, targetNy * Screen.height);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(root, targetScreen, null, out local);
+
         RectTransform r = bubblePanel.rectTransform;
+        r.anchorMin = r.anchorMax = new Vector2(.5f, .5f);
+        r.pivot = new Vector2(.5f, .5f);
         r.sizeDelta = new Vector2(width, height);
-        r.anchoredPosition = new Vector2(-38f, -250f);
+        r.anchoredPosition = local;
     }
 
     IEnumerator AnimateBubbleIn(string text)
