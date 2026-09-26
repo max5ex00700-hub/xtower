@@ -55,6 +55,7 @@ public sealed class XTapBattleController : MonoBehaviour
     XTapInventory inventory;
     XTapBlacksmith blacksmith;
     XTapJail jail;
+    XTapReinaParryMiniGame reinaParryMiniGame;
     XTapCodex codex;
     Coroutine bubbleAnimRoutine;
 
@@ -267,6 +268,10 @@ public sealed class XTapBattleController : MonoBehaviour
         audioSource.volume = 1f;
         PreloadCombatVoices();
         PreloadCombatSfx();
+
+        reinaParryMiniGame = gameObject.AddComponent<XTapReinaParryMiniGame>();
+        reinaParryMiniGame.Initialize(root, koreanFont, assets, OnReinaParryMiniGameClosed);
+        if (jail != null) jail.SetMiniGameLauncher(OpenCharacterMiniGame);
         SetStartupProgress(.84f);
 
         if (!assets.Ready)
@@ -420,6 +425,7 @@ public sealed class XTapBattleController : MonoBehaviour
         }
 
         if (assets == null || !assets.Ready) return;
+        if (reinaParryMiniGame != null && reinaParryMiniGame.IsOpen) return;
 
         UpdateWeakPoint();
         UpdateShieldPoint();
@@ -1466,6 +1472,18 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void OpenJail()
     {
+        if (jail != null) jail.Open();
+    }
+
+    void OpenCharacterMiniGame(int characterId)
+    {
+        if (reinaParryMiniGame == null) return;
+        reinaParryMiniGame.Open(characterId);
+    }
+
+    void OnReinaParryMiniGameClosed()
+    {
+        RefreshMainProgressUi();
         if (jail != null) jail.Open();
     }
 

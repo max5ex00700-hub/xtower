@@ -17,6 +17,9 @@ public sealed class XTapJail : MonoBehaviour
     RectTransform listContent;
     Text detailText;
     Button openBagButton;
+    Button openMiniGameButton;
+    Text openMiniGameButtonText;
+    Action<int> openMiniGame;
 
     int selectedCharacterId;
 
@@ -29,6 +32,12 @@ public sealed class XTapJail : MonoBehaviour
 
         BuildUi();
         overlay.SetActive(false);
+    }
+
+    public void SetMiniGameLauncher(Action<int> launcher)
+    {
+        openMiniGame = launcher;
+        if (IsOpen) RefreshDetail();
     }
 
     public void Open()
@@ -142,12 +151,17 @@ public sealed class XTapJail : MonoBehaviour
         detailText.resizeTextMaxSize = 62;
         Anchor(detailText.rectTransform, .06f, .185f, .94f, .305f);
 
-        openBagButton = MakeButton(panel, "선택 캐릭터 가방 열기", 18, new Color(.12f, .18f, .27f, 1f));
-        Anchor(openBagButton.GetComponent<RectTransform>(), .055f, .055f, .70f, .145f);
+        openMiniGameButton = MakeButton(panel, "전용 미니게임", 17, new Color(.31f, .075f, .07f, 1f));
+        Anchor(openMiniGameButton.GetComponent<RectTransform>(), .055f, .055f, .45f, .145f);
+        openMiniGameButton.onClick.AddListener(OpenSelectedMiniGame);
+        openMiniGameButtonText = openMiniGameButton.GetComponentInChildren<Text>();
+
+        openBagButton = MakeButton(panel, "가방", 17, new Color(.12f, .18f, .27f, 1f));
+        Anchor(openBagButton.GetComponent<RectTransform>(), .47f, .055f, .72f, .145f);
         openBagButton.onClick.AddListener(OpenSelectedBag);
 
         Button closeBottom = MakeButton(panel, "닫기", 17, new Color(.075f, .085f, .105f, 1f));
-        Anchor(closeBottom.GetComponent<RectTransform>(), .73f, .055f, .945f, .145f);
+        Anchor(closeBottom.GetComponent<RectTransform>(), .74f, .055f, .945f, .145f);
         closeBottom.onClick.AddListener(Close);
     }
 
@@ -227,6 +241,8 @@ public sealed class XTapJail : MonoBehaviour
         {
             detailText.text = "아직 포획된 캐릭터가 없습니다.";
             openBagButton.interactable = false;
+            if (openMiniGameButton != null) openMiniGameButton.interactable = false;
+            if (openMiniGameButtonText != null) openMiniGameButtonText.text = "전용 미니게임";
             return;
         }
 
@@ -237,6 +253,19 @@ public sealed class XTapJail : MonoBehaviour
             "   체 +" + XTapStatFormat.Compact(inventory.GetEquippedHp(selectedCharacterId));
 
         openBagButton.interactable = true;
+
+        bool reinaGameReady = selectedCharacterId == 1 && openMiniGame != null;
+        if (openMiniGameButton != null) openMiniGameButton.interactable = reinaGameReady;
+        if (openMiniGameButtonText != null)
+            openMiniGameButtonText.text = reinaGameReady ? "레이나 패링" : "미니게임 준비 중";
+    }
+
+    void OpenSelectedMiniGame()
+    {
+        if (selectedCharacterId != 1 || !IsCaptured(selectedCharacterId) || openMiniGame == null) return;
+        int characterId = selectedCharacterId;
+        Close();
+        openMiniGame(characterId);
     }
 
     void OpenSelectedBag()
