@@ -361,7 +361,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         probabilityWheelCore = wheelArtGo.GetComponent<Image>();
         probabilityWheelCore.sprite = probabilityWheelSkin;
-        probabilityWheelCore.color = Color.white;
+        probabilityWheelCore.color = probabilityWheelSkin != null
+            ? Color.white
+            : new Color(1f, 1f, 1f, 0f);
         probabilityWheelCore.preserveAspect = true;
         probabilityWheelCore.raycastTarget = false;
         Anchor(probabilityWheelCore.rectTransform, 0f, 0f, 1f, 1f);
@@ -1062,8 +1064,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 return;
             }
 
-            probabilityWheelTexture = new Texture2D(2, 2, TextureFormat.RGB24, false);
-            if (!probabilityWheelTexture.LoadImage(wheelBytes.bytes, false))
+            probabilityWheelTexture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!LoadImageBytes(probabilityWheelTexture, wheelBytes))
             {
                 Destroy(probabilityWheelTexture);
                 probabilityWheelTexture = null;
@@ -1073,6 +1075,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
             probabilityWheelTexture.wrapMode = TextureWrapMode.Clamp;
             probabilityWheelTexture.filterMode = FilterMode.Bilinear;
+
+            // The authored forge asset is circular. Force every pixel outside the
+            // circle transparent so a JPEG/opaque source can never rotate as a white square.
+            ApplyCircularAlphaMask(probabilityWheelTexture);
 
             probabilityWheelSkin = Sprite.Create(
                 probabilityWheelTexture,
@@ -1086,6 +1092,65 @@ public sealed class XTapBlacksmith : MonoBehaviour
         {
             Debug.LogWarning("X탑 대장간 SUCCESS/FAIL 룰렛 에셋 로드 실패: " + e.Message);
         }
+    }
+
+    bool LoadImageBytes(Texture2D texture, TextAsset source)
+    {
+        if (texture == null || source == null) return false;
+
+        if (source.bytes != null && source.bytes.Length > 0 &&
+            texture.LoadImage(source.bytes, false))
+            return true;
+
+        try
+        {
+            string encoded = source.text != null ? source.text.Trim() : "";
+            if (string.IsNullOrEmpty(encoded)) return false;
+            byte[] bytes = Convert.FromBase64String(encoded);
+            return texture.LoadImage(bytes, false);
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    static void ApplyCircularAlphaMask(Texture2D texture)
+    {
+        if (texture == null || !texture.isReadable) return;
+
+        Color32[] pixels = texture.GetPixels32();
+        int w = texture.width;
+        int h = texture.height;
+        float cx = (w - 1) * .5f;
+        float cy = (h - 1) * .5f;
+        float radius = Mathf.Min(w, h) * .498f;
+        float feather = Mathf.Max(1f, Mathf.Min(w, h) * .018f);
+        float solidRadius = radius - feather;
+
+        for (int y = 0; y < h; y++)
+        {
+            float dy = y - cy;
+            for (int x = 0; x < w; x++)
+            {
+                float dx = x - cx;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                int i = y * w + x;
+
+                if (d >= radius)
+                {
+                    pixels[i].a = 0;
+                }
+                else if (d > solidRadius)
+                {
+                    float edge = Mathf.Clamp01((radius - d) / feather);
+                    pixels[i].a = (byte)Mathf.RoundToInt(pixels[i].a * edge);
+                }
+            }
+        }
+
+        texture.SetPixels32(pixels);
+        texture.Apply(false, false);
     }
 
     Sprite MakeAtlasSprite(int x, int yFromTop, int width, int height, Vector4 border)

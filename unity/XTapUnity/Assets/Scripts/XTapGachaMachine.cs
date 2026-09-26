@@ -954,7 +954,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
         if (machineSkin == null)
             MakeFrame(machine, new Color(.84f, .60f, .13f, 1f), 18f);
 
-        title = MakeText(machine, "X-TOWER  REWARD", 28, TextAnchor.MiddleCenter, true);
+        // BLOCK GEAR title is part of the full 9:16 background art.
+        // Runtime title is only used for capture/exclusive special outcomes.
+        title = MakeText(machine, "", 28, TextAnchor.MiddleCenter, true);
         title.color = new Color(1f, .84f, .39f, 1f);
         Anchor(title.rectTransform, .06f, .905f, .94f, .985f);
 
@@ -967,11 +969,10 @@ public sealed class XTapGachaMachine : MonoBehaviour
         correctionText.color = new Color(.96f, .76f, .25f, 1f);
         Anchor(correctionText.rectTransform, .12f, .805f, .88f, .855f);
 
-        // Opaque window hides the static wheel painted into the full-screen concept art.
-        // The authored wheel below is the actual rotating gameplay element.
-        RectTransform window = MakePanel(machine, "WheelWindow", new Color(.012f, .014f, .022f, .97f));
-        Anchor(window, .12f, .405f, .88f, .790f);
-        MakeFrame(window, new Color(.66f, .43f, .18f, 1f), 7f);
+        // Keep the entire authored 9:16 background visible.
+        // This transparent stage only positions the live wheel over the wheel painted in the art.
+        RectTransform window = MakePanel(machine, "WheelWindow", new Color(0f, 0f, 0f, 0f));
+        Anchor(window, .12f, .300f, .88f, .720f);
 
         wheel = new GameObject(
             "Wheel",
@@ -981,75 +982,97 @@ public sealed class XTapGachaMachine : MonoBehaviour
         ).GetComponent<RectTransform>();
         wheel.SetParent(window, false);
         wheel.anchorMin = wheel.anchorMax = new Vector2(.5f, .5f);
-        wheel.sizeDelta = new Vector2(520f, 520f);
+        wheel.sizeDelta = new Vector2(620f, 620f);
         wheel.anchoredPosition = Vector2.zero;
 
         wheelCore = wheel.GetComponent<Image>();
         wheelCore.sprite = wheelSkin;
-        wheelCore.color = Color.white;
+        wheelCore.color = wheelSkin != null
+            ? Color.white
+            : new Color(1f, 1f, 1f, 0f);
         wheelCore.preserveAspect = true;
         wheelCore.raycastTarget = false;
 
-        // Fixed jewel pointer. Only the wheel rotates.
-        RectTransform pointer = MakePanel(window, "PointerGem", new Color(1f, .65f, .14f, 1f));
-        pointer.anchorMin = pointer.anchorMax = new Vector2(.5f, 1f);
-        pointer.pivot = new Vector2(.5f, .5f);
-        pointer.sizeDelta = new Vector2(42f, 42f);
-        pointer.anchoredPosition = new Vector2(0f, -22f);
-        pointer.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        // No extra Unity pointer. The pointer/jewel already exists in the full background art.
+        // Only the circular roulette art rotates.
 
-        RectTransform pointerCore = MakePanel(pointer, "Core", new Color(.20f, .62f, 1f, 1f));
-        pointerCore.anchorMin = pointerCore.anchorMax = new Vector2(.5f, .5f);
-        pointerCore.pivot = new Vector2(.5f, .5f);
-        pointerCore.sizeDelta = new Vector2(20f, 20f);
-        pointerCore.anchoredPosition = Vector2.zero;
-
-        chute = MakePanel(machine, "Chute", new Color(.012f, .014f, .020f, .95f));
-        Anchor(chute, .11f, .095f, .89f, .395f);
-        MakeFrame(chute, new Color(.66f, .43f, .18f, 1f), 6f);
+        // Cover only the fixed sample result area so the real block/name/stats can be drawn.
+        // The rest of the authored 9:16 image remains fully visible.
+        chute = MakePanel(machine, "Chute", new Color(.008f, .010f, .016f, .76f));
+        Anchor(chute, .13f, .080f, .87f, .355f);
+        MakeFrame(chute, new Color(.66f, .43f, .18f, .88f), 4f);
 
         rewardRoot = new GameObject("RewardBlock", typeof(RectTransform)).GetComponent<RectTransform>();
         rewardRoot.SetParent(machine, false);
         rewardRoot.anchorMin = rewardRoot.anchorMax = new Vector2(.5f, .5f);
         rewardRoot.sizeDelta = new Vector2(420f, 250f);
-        rewardRoot.anchoredPosition = new Vector2(0f, -410f);
+        rewardRoot.anchoredPosition = new Vector2(0f, -455f);
 
         nameText = MakeText(machine, "", 20, TextAnchor.MiddleCenter, true);
         nameText.color = new Color(1f, .95f, .82f, 1f);
-        Anchor(nameText.rectTransform, .12f, .155f, .88f, .225f);
+        Anchor(nameText.rectTransform, .12f, .125f, .88f, .190f);
 
         statsText = MakeText(machine, "", 18, TextAnchor.MiddleCenter, true);
         statsText.color = new Color(.96f, .82f, .38f, 1f);
         statsText.resizeTextForBestFit = true;
         statsText.resizeTextMinSize = 48;
         statsText.resizeTextMaxSize = 70;
-        Anchor(statsText.rectTransform, .10f, .095f, .90f, .155f);
+        Anchor(statsText.rectTransform, .10f, .075f, .90f, .130f);
 
         hintText = MakeText(machine, "", 15, TextAnchor.MiddleCenter, false);
         hintText.color = new Color(.94f, .86f, .68f, 1f);
-        Anchor(hintText.rectTransform, .08f, .025f, .92f, .080f);
+        Anchor(hintText.rectTransform, .08f, .020f, .92f, .060f);
     }
 
     void LoadVisualAssets()
     {
-        machineSkin = LoadJpegResource("XTapGachaUI/block_gear_machine", out machineSkinTexture);
-        wheelSkin = LoadJpegResource("XTapGachaUI/block_gear_wheel", out wheelSkinTexture);
+        machineSkin = LoadImageResource(
+            "XTapGachaUI/block_gear_machine",
+            false,
+            out machineSkinTexture
+        );
+        wheelSkin = LoadImageResource(
+            "XTapGachaUI/block_gear_wheel",
+            true,
+            out wheelSkinTexture
+        );
     }
 
-    Sprite LoadJpegResource(string resourcePath, out Texture2D texture)
+    Sprite LoadImageResource(string resourcePath, bool circularMask, out Texture2D texture)
     {
         texture = null;
         try
         {
-            TextAsset bytes = Resources.Load<TextAsset>(resourcePath);
-            if (bytes == null || bytes.bytes == null || bytes.bytes.Length < 1024)
+            TextAsset source = Resources.Load<TextAsset>(resourcePath);
+            if (source == null)
             {
                 Debug.LogWarning("X탑 블록 머신 에셋 누락: " + resourcePath);
                 return null;
             }
 
-            texture = new Texture2D(2, 2, TextureFormat.RGB24, false);
-            if (!texture.LoadImage(bytes.bytes, false))
+            texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            bool loaded = false;
+
+            if (source.bytes != null && source.bytes.Length >= 1024)
+                loaded = texture.LoadImage(source.bytes, false);
+
+            // Some repository image assets may be stored as base64 text.
+            // Support both formats so the 9:16 art cannot silently fall back to the plain panel.
+            if (!loaded)
+            {
+                try
+                {
+                    string encoded = source.text != null ? source.text.Trim() : "";
+                    if (!string.IsNullOrEmpty(encoded))
+                        loaded = texture.LoadImage(Convert.FromBase64String(encoded), false);
+                }
+                catch
+                {
+                    loaded = false;
+                }
+            }
+
+            if (!loaded)
             {
                 Destroy(texture);
                 texture = null;
@@ -1060,18 +1083,61 @@ public sealed class XTapGachaMachine : MonoBehaviour
             texture.wrapMode = TextureWrapMode.Clamp;
             texture.filterMode = FilterMode.Bilinear;
 
-            return Sprite.Create(
+            if (circularMask)
+                ApplyCircularAlphaMask(texture);
+
+            Sprite sprite = Sprite.Create(
                 texture,
                 new Rect(0f, 0f, texture.width, texture.height),
                 new Vector2(.5f, .5f),
                 100f
             );
+            sprite.name = circularMask ? "XTapBlockGearWheel" : "XTapBlockGearMachine";
+            return sprite;
         }
         catch (Exception e)
         {
             Debug.LogWarning("X탑 블록 머신 에셋 로드 실패: " + resourcePath + " / " + e.Message);
             return null;
         }
+    }
+
+    static void ApplyCircularAlphaMask(Texture2D texture)
+    {
+        if (texture == null || !texture.isReadable) return;
+
+        Color32[] pixels = texture.GetPixels32();
+        int w = texture.width;
+        int h = texture.height;
+        float cx = (w - 1) * .5f;
+        float cy = (h - 1) * .5f;
+        float radius = Mathf.Min(w, h) * .498f;
+        float feather = Mathf.Max(1f, Mathf.Min(w, h) * .018f);
+        float solidRadius = radius - feather;
+
+        for (int y = 0; y < h; y++)
+        {
+            float dy = y - cy;
+            for (int x = 0; x < w; x++)
+            {
+                float dx = x - cx;
+                float d = Mathf.Sqrt(dx * dx + dy * dy);
+                int i = y * w + x;
+
+                if (d >= radius)
+                {
+                    pixels[i].a = 0;
+                }
+                else if (d > solidRadius)
+                {
+                    float edge = Mathf.Clamp01((radius - d) / feather);
+                    pixels[i].a = (byte)Mathf.RoundToInt(pixels[i].a * edge);
+                }
+            }
+        }
+
+        texture.SetPixels32(pixels);
+        texture.Apply(false, false);
     }
 
     RectTransform MakePanel(Transform parent, string n, Color c)
