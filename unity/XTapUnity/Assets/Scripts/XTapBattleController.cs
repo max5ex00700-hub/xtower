@@ -589,82 +589,22 @@ public sealed class XTapBattleController : MonoBehaviour
         RectTransform mainRoot = mainOverlay.GetComponent<RectTransform>();
         Anchor(mainRoot, 0, 0, 1, 1);
 
-        // Keep the character artwork dominant. Only the action button,
-        // dialogue, options button and bottom navigation are always visible.
+        // Keep the character artwork dominant. Utility controls are grouped
+        // inside the collapsible left information drawer.
         MakePanel(mainOverlay.transform, "TopShade", new Color(0f, 0f, 0f, .10f), 0f, .72f, 1f, 1f);
         MakePanel(mainOverlay.transform, "BottomShade", new Color(.008f, .006f, .008f, .72f), 0f, 0f, 1f, .18f);
 
-        // Exact artwork extracted from the approved reference image.
-        Button optionButton = MakeReferenceImageButton(mainOverlay.transform, "OptionsButton", XTapMainSkin.OptionButton);
-        Anchor(optionButton.GetComponent<RectTransform>(), .885f, .936f, .993f, .996f);
-        optionButton.onClick.AddListener(OpenOptions);
-
-        // Codex did not exist in the reference image, so build it from robust
-        // Unity UI primitives instead of depending on a cropped PNG.
-        Button codexButton = MakeCodexUtilityButton(mainOverlay.transform);
-        Anchor(codexButton.GetComponent<RectTransform>(), .885f, .852f, .993f, .922f);
-        codexButton.onClick.AddListener(OpenCodex);
-
-        // Hourly offline gacha ticket card. Tickets accrue from UTC time even
-        // while the game is not running. Tapping the card settles any pending batch.
-        GameObject ticketGo = new GameObject(
-            "HourlyTicketCard",
-            typeof(RectTransform),
-            typeof(CanvasRenderer),
-            typeof(Image),
-            typeof(Button)
-        );
-        ticketGo.transform.SetParent(mainOverlay.transform, false);
-
-        Image ticketBg = ticketGo.GetComponent<Image>();
-        ticketBg.color = new Color(.030f, .022f, .020f, .96f);
-        Anchor(ticketBg.rectTransform, .690f, .755f, .985f, .838f);
-        AddFrame(ticketBg.rectTransform, new Color(.72f, .47f, .20f, 1f), 2f);
-
-        Image ticketGem = MakePanel(
-            ticketGo.transform,
-            "TicketGem",
-            new Color(.34f, .17f, .055f, 1f),
-            .035f, .23f, .205f, .77f
-        );
-        AddFrame(ticketGem.rectTransform, new Color(.94f, .68f, .26f, 1f), 2f);
-
-        Text ticketIcon = MakeOutlinedText(ticketGem.transform, "T", 15, TextAnchor.MiddleCenter, true);
-        ticketIcon.color = new Color(1f, .84f, .40f, 1f);
-        Anchor(ticketIcon.rectTransform, .05f, .05f, .95f, .95f);
-
-        Text ticketTitle = MakeOutlinedText(ticketGo.transform, "무료 가챠", 9, TextAnchor.MiddleLeft, true);
-        ticketTitle.color = new Color(.95f, .78f, .42f, 1f);
-        Anchor(ticketTitle.rectTransform, .235f, .62f, .95f, .94f);
-
-        mainTicketCountText = MakeOutlinedText(ticketGo.transform, "", 12, TextAnchor.MiddleLeft, true);
-        mainTicketCountText.color = new Color(1f, .94f, .78f, 1f);
-        Anchor(mainTicketCountText.rectTransform, .235f, .29f, .95f, .66f);
-
-        mainTicketTimerText = MakeOutlinedText(ticketGo.transform, "", 8, TextAnchor.MiddleLeft, false);
-        mainTicketTimerText.color = new Color(.73f, .70f, .66f, 1f);
-        Anchor(mainTicketTimerText.rectTransform, .235f, .04f, .95f, .31f);
-
-        mainTicketButton = ticketGo.GetComponent<Button>();
-        mainTicketButton.targetGraphic = ticketBg;
-        ColorBlock ticketColors = mainTicketButton.colors;
-        ticketColors.normalColor = Color.white;
-        ticketColors.highlightedColor = new Color(1.08f, 1.04f, .98f, 1f);
-        ticketColors.pressedColor = new Color(.76f, .65f, .54f, 1f);
-        ticketColors.selectedColor = Color.white;
-        ticketColors.fadeDuration = .06f;
-        mainTicketButton.colors = ticketColors;
-        mainTicketButton.onClick.AddListener(TryStartHourlyTicketPayout);
-        RefreshMainTicketUi();
+        // Options, codex and hourly ticket controls live inside the left
+        // information drawer so the character art stays unobstructed on the right.
 
         // Approved composition: no large outer box. FLOOR and player stats are
         // independent compact ornate panels so the character stays visible.
         GameObject infoRootGo = new GameObject("MainInfoDrawer", typeof(RectTransform));
         infoRootGo.transform.SetParent(mainOverlay.transform, false);
         mainInfoDrawer = infoRootGo.GetComponent<RectTransform>();
-        Anchor(mainInfoDrawer, .018f, .655f, .300f, .965f);
+        Anchor(mainInfoDrawer, .018f, .455f, .300f, .965f);
 
-        Image floorPanel = MakePanel(mainInfoDrawer, "FloorPanel", new Color(.018f, .014f, .014f, .96f), 0f, .565f, 1f, 1f);
+        Image floorPanel = MakePanel(mainInfoDrawer, "FloorPanel", new Color(.018f, .014f, .014f, .96f), 0f, .720f, 1f, 1f);
         ApplyGothicPanel(floorPanel, XTapMainSkin.FloorPanel, Color.white);
 
         Text floorWord = MakeOutlinedText(floorPanel.transform, "FLOOR", 18, TextAnchor.MiddleCenter, true);
@@ -679,7 +619,7 @@ public sealed class XTapBattleController : MonoBehaviour
         mainFloorSubText.color = new Color(.96f, .92f, .84f, 1f);
         Anchor(mainFloorSubText.rectTransform, .08f, .02f, .92f, .29f);
 
-        Image statPanel = MakePanel(mainInfoDrawer, "PlayerStats", new Color(.018f, .014f, .014f, .96f), 0f, 0f, 1f, .535f);
+        Image statPanel = MakePanel(mainInfoDrawer, "PlayerStats", new Color(.018f, .014f, .014f, .96f), 0f, .340f, 1f, .695f);
         ApplyGothicPanel(statPanel, XTapMainSkin.PlayerPanel, Color.white);
 
         Text playerTitle = MakeOutlinedText(statPanel.transform, "플레이어", 20, TextAnchor.MiddleLeft, true);
@@ -701,6 +641,65 @@ public sealed class XTapBattleController : MonoBehaviour
         mainHpText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainHpText.color = new Color(1f, .46f, .46f, 1f);
         Anchor(mainHpText.rectTransform, .10f, .02f, .94f, .21f);
+
+        // Three compact utility buttons are part of the drawer itself.
+        Button drawerOptionButton = MakeDrawerMenuButton(mainInfoDrawer, "DrawerOptionsButton", "옵션", .230f, .320f);
+        drawerOptionButton.onClick.AddListener(OpenOptions);
+
+        Button drawerCodexButton = MakeDrawerMenuButton(mainInfoDrawer, "DrawerCodexButton", "도감", .120f, .210f);
+        drawerCodexButton.onClick.AddListener(OpenCodex);
+
+        // Hourly offline gacha ticket card. It uses the same width and visual
+        // language as the two utility buttons above, and collapses with the drawer.
+        GameObject ticketGo = new GameObject(
+            "HourlyTicketCard",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Button)
+        );
+        ticketGo.transform.SetParent(mainInfoDrawer, false);
+
+        Image ticketBg = ticketGo.GetComponent<Image>();
+        ticketBg.color = new Color(.030f, .022f, .020f, .98f);
+        Anchor(ticketBg.rectTransform, 0f, 0f, 1f, .100f);
+        AddFrame(ticketBg.rectTransform, new Color(.72f, .47f, .20f, 1f), 2f);
+
+        Image ticketGem = MakePanel(
+            ticketGo.transform,
+            "TicketGem",
+            new Color(.34f, .17f, .055f, 1f),
+            .035f, .18f, .205f, .82f
+        );
+        AddFrame(ticketGem.rectTransform, new Color(.94f, .68f, .26f, 1f), 2f);
+
+        Text ticketIcon = MakeOutlinedText(ticketGem.transform, "T", 12, TextAnchor.MiddleCenter, true);
+        ticketIcon.color = new Color(1f, .84f, .40f, 1f);
+        Anchor(ticketIcon.rectTransform, .05f, .05f, .95f, .95f);
+
+        Text ticketTitle = MakeOutlinedText(ticketGo.transform, "무료 가챠", 8, TextAnchor.MiddleLeft, true);
+        ticketTitle.color = new Color(.95f, .78f, .42f, 1f);
+        Anchor(ticketTitle.rectTransform, .245f, .55f, .95f, .95f);
+
+        mainTicketCountText = MakeOutlinedText(ticketGo.transform, "", 9, TextAnchor.MiddleLeft, true);
+        mainTicketCountText.color = new Color(1f, .94f, .78f, 1f);
+        Anchor(mainTicketCountText.rectTransform, .245f, .25f, .95f, .62f);
+
+        mainTicketTimerText = MakeOutlinedText(ticketGo.transform, "", 7, TextAnchor.MiddleLeft, false);
+        mainTicketTimerText.color = new Color(.73f, .70f, .66f, 1f);
+        Anchor(mainTicketTimerText.rectTransform, .245f, .02f, .95f, .29f);
+
+        mainTicketButton = ticketGo.GetComponent<Button>();
+        mainTicketButton.targetGraphic = ticketBg;
+        ColorBlock ticketColors = mainTicketButton.colors;
+        ticketColors.normalColor = Color.white;
+        ticketColors.highlightedColor = new Color(1.08f, 1.04f, .98f, 1f);
+        ticketColors.pressedColor = new Color(.76f, .65f, .54f, 1f);
+        ticketColors.selectedColor = Color.white;
+        ticketColors.fadeDuration = .06f;
+        mainTicketButton.colors = ticketColors;
+        mainTicketButton.onClick.AddListener(TryStartHourlyTicketPayout);
+        RefreshMainTicketUi();
 
         // Thin edge tab is the only persistent hint that the drawer exists.
         GameObject tabGo = new GameObject("MainInfoTab", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
@@ -846,7 +845,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1128)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1129)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -1114,6 +1113,40 @@ public sealed class XTapBattleController : MonoBehaviour
         Image bottom = MakePanel(rr, "ChevronBottom", gold, .40f, .43f, .60f, .50f);
         bottom.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 42f);
         return rr;
+    }
+
+    Button MakeDrawerMenuButton(Transform parent, string objectName, string label, float y1, float y2)
+    {
+        GameObject go = new GameObject(
+            objectName,
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image),
+            typeof(Button)
+        );
+        go.transform.SetParent(parent, false);
+
+        Image bg = go.GetComponent<Image>();
+        bg.color = new Color(.025f, .020f, .020f, .98f);
+        Anchor(bg.rectTransform, 0f, y1, 1f, y2);
+        AddFrame(bg.rectTransform, new Color(.67f, .43f, .20f, 1f), 2f);
+
+        MakePanel(go.transform, "Accent", new Color(1f, .67f, .22f, 1f), .035f, .20f, .055f, .80f);
+
+        Text title = MakeOutlinedText(go.transform, label, 12, TextAnchor.MiddleCenter, true);
+        title.color = new Color(.98f, .92f, .80f, 1f);
+        Anchor(title.rectTransform, .10f, .10f, .90f, .90f);
+
+        Button button = go.GetComponent<Button>();
+        button.targetGraphic = bg;
+        ColorBlock colors = button.colors;
+        colors.normalColor = Color.white;
+        colors.highlightedColor = new Color(1.08f, 1.04f, .98f, 1f);
+        colors.pressedColor = new Color(.72f, .62f, .52f, 1f);
+        colors.selectedColor = Color.white;
+        colors.fadeDuration = .06f;
+        button.colors = colors;
+        return button;
     }
 
     Button MakeCodexUtilityButton(Transform parent)
