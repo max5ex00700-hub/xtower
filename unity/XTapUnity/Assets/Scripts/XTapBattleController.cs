@@ -139,6 +139,7 @@ public sealed class XTapBattleController : MonoBehaviour
     bool shieldActive;
     float shieldUntil;
     Vector2 shieldNorm;
+    Vector2 shieldVelocity;
 
     readonly string[][] zoneTalk =
     {
@@ -845,7 +846,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Anchor(bgmButton.GetComponent<RectTransform>(), .08f, .24f, .92f, .40f);
         bgmButton.onClick.AddListener(ToggleBgmSetting);
 
-        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1127)", 12, TextAnchor.MiddleCenter, true);
+        Text version = MakeOutlinedText(panel.transform, "버전 정보   " + Application.version + "  (1128)", 12, TextAnchor.MiddleCenter, true);
         version.color = new Color(.72f, .69f, .64f, 1f);
         Anchor(version.rectTransform, .08f, .12f, .92f, .22f);
 
@@ -2380,9 +2381,10 @@ public sealed class XTapBattleController : MonoBehaviour
         shieldActive = true;
         shieldUntil = Time.unscaledTime + CombatCueSeconds;
         shieldNorm = new Vector2(
-            UnityEngine.Random.Range(.30f, .70f),
-            UnityEngine.Random.Range(.32f, .70f)
+            UnityEngine.Random.Range(.34f, .66f),
+            UnityEngine.Random.Range(.34f, .68f)
         );
+        shieldVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
 
         shieldPoint.rectTransform.localScale = Vector3.one;
         shieldPoint.gameObject.SetActive(true);
@@ -2403,8 +2405,22 @@ public sealed class XTapBattleController : MonoBehaviour
             return;
         }
 
-        float phase = (Mathf.Sin(Time.unscaledTime * 10f) + 1f) * .5f;
-        float pulse = Mathf.Lerp(.82f, 1.18f, phase);
+        // Shield moves exactly like the normal HIT weak point.
+        shieldNorm += shieldVelocity * Time.unscaledDeltaTime;
+
+        if (shieldNorm.x < .25f || shieldNorm.x > .75f)
+        {
+            shieldVelocity.x *= -1f;
+            shieldNorm.x = Mathf.Clamp(shieldNorm.x, .25f, .75f);
+        }
+        if (shieldNorm.y < .27f || shieldNorm.y > .73f)
+        {
+            shieldVelocity.y *= -1f;
+            shieldNorm.y = Mathf.Clamp(shieldNorm.y, .27f, .73f);
+        }
+
+        float phase = (Mathf.Sin(Time.unscaledTime * 8.5f) + 1f) * .5f;
+        float pulse = Mathf.Lerp(.55f, 1.30f, phase);
         shieldPoint.rectTransform.localScale = Vector3.one * pulse;
         PositionShieldPoint();
     }
