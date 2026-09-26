@@ -1078,7 +1078,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
             // The authored forge asset is circular. Force every pixel outside the
             // circle transparent so a JPEG/opaque source can never rotate as a white square.
-            ApplyCircularAlphaMask(probabilityWheelTexture);
+            probabilityWheelTexture = CreateCircularRgbaTexture(probabilityWheelTexture);
 
             probabilityWheelSkin = Sprite.Create(
                 probabilityWheelTexture,
@@ -1115,13 +1115,16 @@ public sealed class XTapBlacksmith : MonoBehaviour
         }
     }
 
-    static void ApplyCircularAlphaMask(Texture2D texture)
+    static Texture2D CreateCircularRgbaTexture(Texture2D source)
     {
-        if (texture == null || !texture.isReadable) return;
+        if (source == null || !source.isReadable) return source;
 
-        Color32[] pixels = texture.GetPixels32();
-        int w = texture.width;
-        int h = texture.height;
+        int w = source.width;
+        int h = source.height;
+        Color32[] pixels = source.GetPixels32();
+        Texture2D texture = new Texture2D(w, h, TextureFormat.RGBA32, false);
+        texture.wrapMode = TextureWrapMode.Clamp;
+        texture.filterMode = FilterMode.Bilinear;
         float cx = (w - 1) * .5f;
         float cy = (h - 1) * .5f;
         float radius = Mathf.Min(w, h) * .498f;
@@ -1151,6 +1154,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         texture.SetPixels32(pixels);
         texture.Apply(false, false);
+        UnityEngine.Object.Destroy(source);
+        return texture;
     }
 
     Sprite MakeAtlasSprite(int x, int yFromTop, int width, int height, Vector4 border)
