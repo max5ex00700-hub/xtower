@@ -447,7 +447,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
             if (!captured)
             {
                 outcome.captureAttempt = true;
-                outcome.captureSucceeded = UnityEngine.Random.value < .01f;
+                outcome.captureSucceeded = UnityEngine.Random.value < 1f; // TEST: 100% capture for uncaptured character
 
                 if (outcome.captureSucceeded)
                 {
