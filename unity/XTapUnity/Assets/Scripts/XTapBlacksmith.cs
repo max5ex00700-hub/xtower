@@ -46,6 +46,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
     RectTransform materialSlot;
 
     Texture2D skinAtlas;
+    Texture2D probabilityWheelTexture;
+    Sprite probabilityWheelSkin;
     Sprite backgroundSkin;
     Sprite panelSkin;
     Sprite slotSkin;
@@ -345,60 +347,24 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityWheel.sizeDelta = new Vector2(430f, 430f);
         probabilityWheel.anchoredPosition = Vector2.zero;
 
-        // The real calculation still rolls one hidden value from 00 to 99.
-        // The player only sees the two possible outcomes: SUCCESS or FAIL.
-        string[] visibleOutcomes = { "성공", "실패" };
-        Color[] outcomeColors =
-        {
-            new Color(.12f, .42f, .22f, 1f),
-            new Color(.48f, .10f, .08f, 1f)
-        };
+        // Authored SUCCESS / FAIL wheel.
+        // SUCCESS is upright at 0 degrees.
+        // FAIL is intentionally authored upside-down in the lower half so it becomes
+        // upright when the whole wheel stops at 180 degrees. No pointer is required.
+        GameObject wheelArtGo = new GameObject(
+            "SuccessFailWheelArt",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image)
+        );
+        wheelArtGo.transform.SetParent(probabilityWheel, false);
 
-        for (int i = 0; i < visibleOutcomes.Length; i++)
-        {
-            float a = i * 180f * Mathf.Deg2Rad;
-
-            GameObject slot = new GameObject(
-                i == 0 ? "SuccessSlot" : "FailSlot",
-                typeof(RectTransform),
-                typeof(CanvasRenderer),
-                typeof(Image)
-            );
-            slot.transform.SetParent(probabilityWheel, false);
-
-            Image si = slot.GetComponent<Image>();
-            si.color = outcomeColors[i];
-            si.raycastTarget = false;
-
-            RectTransform sr = si.rectTransform;
-            sr.anchorMin = sr.anchorMax = new Vector2(.5f, .5f);
-            sr.sizeDelta = new Vector2(180f, 74f);
-            sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 176f;
-
-            Text lt = MakeText(slot.transform, visibleOutcomes[i], 18, TextAnchor.MiddleCenter, true);
-            lt.color = new Color(1f, .95f, .84f, 1f);
-            Anchor(lt.rectTransform, 0f, 0f, 1f, 1f);
-        }
-
-        GameObject coreGo = new GameObject("WheelCore", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        coreGo.transform.SetParent(probabilityWheel, false);
-        probabilityWheelCore = coreGo.GetComponent<Image>();
-        probabilityWheelCore.color = new Color(.13f, .15f, .20f, 1f);
+        probabilityWheelCore = wheelArtGo.GetComponent<Image>();
+        probabilityWheelCore.sprite = probabilityWheelSkin;
+        probabilityWheelCore.color = Color.white;
+        probabilityWheelCore.preserveAspect = true;
         probabilityWheelCore.raycastTarget = false;
-
-        RectTransform cr = probabilityWheelCore.rectTransform;
-        cr.anchorMin = cr.anchorMax = new Vector2(.5f, .5f);
-        cr.sizeDelta = new Vector2(200f, 200f);
-
-        probabilityRollText = MakeText(coreGo.transform, "판정", 30, TextAnchor.MiddleCenter, true);
-        probabilityRollText.color = new Color(1f, .78f, .20f, 1f);
-        Anchor(probabilityRollText.rectTransform, 0f, 0f, 1f, 1f);
-
-        RectTransform arrow = MakePanel(window, "Pointer", new Color(1f, .78f, .18f, 1f));
-        arrow.anchorMin = arrow.anchorMax = new Vector2(.5f, 1f);
-        arrow.pivot = new Vector2(.5f, 1f);
-        arrow.sizeDelta = new Vector2(42f, 72f);
-        arrow.anchoredPosition = new Vector2(0f, -7f);
+        Anchor(probabilityWheelCore.rectTransform, 0f, 0f, 1f, 1f);
 
         RectTransform resultChute = MakePanel(probabilityMachine, "ResultChute", new Color(.025f, .03f, .04f, 1f));
         Anchor(resultChute, .25f, .285f, .75f, .420f);
@@ -827,8 +793,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityChanceText.text = "성공률 " + chance + "%  ·  성공 / 실패";
         probabilityPhaseText.text = "룰렛 회전 중";
         probabilityResultText.text = "";
-        probabilityRollText.text = "판정";
-        probabilityRollText.color = new Color(1f, .78f, .20f, 1f);
+        probabilityWheel.localScale = Vector3.one;
 
         // Pick the exact hidden 00-99 result once. The player only sees success or failure.
         int finalRoll = UnityEngine.Random.Range(0, 100);
@@ -884,12 +849,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (probabilityWheelCore != null)
             probabilityWheelCore.rectTransform.localScale = Vector3.one;
 
-        // Never expose the hidden 00-99 roll. Only reveal the binary outcome.
-        probabilityRollText.text = success ? "성공" : "실패";
-        probabilityRollText.color = success
-            ? new Color(.62f, 1f, .52f, 1f)
-            : new Color(1f, .34f, .28f, 1f);
-        probabilityRollText.transform.localScale = Vector3.one * 1.24f;
+        // Never expose the hidden 00-99 roll.
+        // The orientation of the authored wheel is the primary result indicator:
+        // SUCCESS upright = success, FAIL upright = failure.
+        probabilityWheel.localScale = Vector3.one * 1.06f;
 
         probabilityPhaseText.text = destructiveEnhance
             ? "실패 시 대상 파괴"
@@ -906,7 +869,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         VibrateForgeResult();
 
         yield return new WaitForSecondsRealtime(.16f);
-        probabilityRollText.transform.localScale = Vector3.one;
+        probabilityWheel.localScale = Vector3.one;
         yield return new WaitForSecondsRealtime(.72f);
 
         if (operationMode == ForgeMode.Enhance)
@@ -1052,6 +1015,8 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void LoadVisualAssets()
     {
+        LoadProbabilityWheelAsset();
+
         try
         {
             TextAsset encoded = Resources.Load<TextAsset>("XTapBlacksmithUI/atlas");
@@ -1083,6 +1048,43 @@ public sealed class XTapBlacksmith : MonoBehaviour
         catch (Exception e)
         {
             Debug.LogWarning("X탑 대장간 UI 에셋 로드 실패: " + e.Message);
+        }
+    }
+
+    void LoadProbabilityWheelAsset()
+    {
+        try
+        {
+            TextAsset wheelBytes = Resources.Load<TextAsset>("XTapBlacksmithUI/forge_success_fail_wheel");
+            if (wheelBytes == null || wheelBytes.bytes == null || wheelBytes.bytes.Length < 1024)
+            {
+                Debug.LogWarning("X탑 대장간 SUCCESS/FAIL 룰렛 에셋을 찾지 못했습니다.");
+                return;
+            }
+
+            probabilityWheelTexture = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            if (!probabilityWheelTexture.LoadImage(wheelBytes.bytes, false))
+            {
+                Destroy(probabilityWheelTexture);
+                probabilityWheelTexture = null;
+                Debug.LogWarning("X탑 대장간 SUCCESS/FAIL 룰렛 이미지 로드 실패.");
+                return;
+            }
+
+            probabilityWheelTexture.wrapMode = TextureWrapMode.Clamp;
+            probabilityWheelTexture.filterMode = FilterMode.Bilinear;
+
+            probabilityWheelSkin = Sprite.Create(
+                probabilityWheelTexture,
+                new Rect(0f, 0f, probabilityWheelTexture.width, probabilityWheelTexture.height),
+                new Vector2(.5f, .5f),
+                100f
+            );
+            probabilityWheelSkin.name = "XTapForgeSuccessFailWheel";
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 대장간 SUCCESS/FAIL 룰렛 에셋 로드 실패: " + e.Message);
         }
     }
 
