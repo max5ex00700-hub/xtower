@@ -27,13 +27,18 @@ public sealed class XTapGachaMachine : MonoBehaviour
     Text statsText;
     Text hintText;
 
+    Texture2D machineSkinTexture;
+    Texture2D wheelSkinTexture;
+    Sprite machineSkin;
+    Sprite wheelSkin;
+
     bool readyToCollect;
     Coroutine playRoutine;
     Outcome pendingOutcome;
     int activeCharacterId = 1;
     int activeProgressStep;
 
-    readonly int[] corrections = {-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50};
+    readonly int[] corrections = {0, 10, 20, 30, 40, 50, -50, -40, -30, -20, -10};
     readonly int[] allowedSizes = {1, 2, 3, 4, 5, 6, 9, 12};
     readonly int[] baseBudgets = {10, 22, 35, 50, 66, 84, 135, 190};
 
@@ -165,6 +170,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         font = uiFont;
         onCollected = collected;
         bag = inventory;
+        LoadVisualAssets();
         BuildUi();
         overlay.SetActive(false);
     }
@@ -235,7 +241,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         statsText.text = "";
 
         int highestFloor = activeProgressStep / 10 + 1;
-        title.text = "X-TOWER  HOURLY TICKET";
+        title.text = "";
         if (ticketStatusText != null)
         {
             ticketStatusText.gameObject.SetActive(true);
@@ -310,7 +316,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
             pendingOutcome.block = RollBlock(correction, false);
 
             ShowOutcome(pendingOutcome);
-            title.text = "X-TOWER  HOURLY TICKET";
+            title.text = "";
             if (ticketStatusText != null)
                 ticketStatusText.text =
                     "최고 " + highestFloor + "층 블록  ·  " + (spin + 1) + " / " + ticketCount;
@@ -367,7 +373,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         nameText.text = "";
         statsText.text = "";
         hintText.text = "보정 룰렛 회전 중";
-        title.text = "X-TOWER  REWARD";
+        title.text = "";
 
         machine.localScale = Vector3.one * .90f;
         machine.anchoredPosition = new Vector2(0f, -40f);
@@ -625,7 +631,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         if (outcome.block == null) return;
 
         XTapGearBlockData r = outcome.block;
-        title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "BLOCK GEAR";
+        title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "";
         nameText.text = XTapGearNameColor.Rich(r) + "  ·  " + r.cellCount + "칸";
         double descriptorMultiplier = DescriptorFinalMultiplier(r.descriptorCount);
         statsText.text =
@@ -929,13 +935,24 @@ public sealed class XTapGachaMachine : MonoBehaviour
         machine = new GameObject("GachaMachine", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<RectTransform>();
         machine.SetParent(overlay.transform, false);
         Image body = machine.GetComponent<Image>();
-        body.color = new Color(.075f, .085f, .11f, 1f);
+        if (machineSkin != null)
+        {
+            body.sprite = machineSkin;
+            body.type = Image.Type.Simple;
+            body.preserveAspect = false;
+            body.color = Color.white;
+        }
+        else
+        {
+            body.color = new Color(.075f, .085f, .11f, 1f);
+        }
         body.raycastTarget = true;
         machine.anchorMin = machine.anchorMax = new Vector2(.5f, .5f);
         machine.pivot = new Vector2(.5f, .5f);
         machine.sizeDelta = new Vector2(900f, 1600f);
 
-        MakeFrame(machine, new Color(.84f, .60f, .13f, 1f), 18f);
+        if (machineSkin == null)
+            MakeFrame(machine, new Color(.84f, .60f, .13f, 1f), 18f);
 
         title = MakeText(machine, "X-TOWER  REWARD", 28, TextAnchor.MiddleCenter, true);
         title.color = new Color(1f, .84f, .39f, 1f);
@@ -950,82 +967,111 @@ public sealed class XTapGachaMachine : MonoBehaviour
         correctionText.color = new Color(.96f, .76f, .25f, 1f);
         Anchor(correctionText.rectTransform, .12f, .805f, .88f, .855f);
 
-        RectTransform window = MakePanel(machine, "WheelWindow", new Color(.025f, .03f, .045f, 1f));
-        Anchor(window, .17f, .455f, .83f, .820f);
-        MakeFrame(window, new Color(.42f, .44f, .50f, 1f), 8f);
+        // Opaque window hides the static wheel painted into the full-screen concept art.
+        // The authored wheel below is the actual rotating gameplay element.
+        RectTransform window = MakePanel(machine, "WheelWindow", new Color(.012f, .014f, .022f, .97f));
+        Anchor(window, .12f, .405f, .88f, .790f);
+        MakeFrame(window, new Color(.66f, .43f, .18f, 1f), 7f);
 
-        wheel = new GameObject("Wheel", typeof(RectTransform)).GetComponent<RectTransform>();
+        wheel = new GameObject(
+            "Wheel",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image)
+        ).GetComponent<RectTransform>();
         wheel.SetParent(window, false);
         wheel.anchorMin = wheel.anchorMax = new Vector2(.5f, .5f);
-        wheel.sizeDelta = new Vector2(430f, 430f);
+        wheel.sizeDelta = new Vector2(520f, 520f);
         wheel.anchoredPosition = Vector2.zero;
 
-        float segment = 360f / corrections.Length;
-        for (int i = 0; i < corrections.Length; i++)
-        {
-            float a = i * segment * Mathf.Deg2Rad;
-
-            GameObject slot = new GameObject("Slot" + i, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-            slot.transform.SetParent(wheel, false);
-            Image si = slot.GetComponent<Image>();
-            si.color = i == 5
-                ? new Color(.58f, .16f, .62f, 1f)
-                : (corrections[i] > 0 ? new Color(.76f, .45f, .10f, 1f) : new Color(.20f, .28f, .38f, 1f));
-            si.raycastTarget = false;
-            RectTransform sr = si.rectTransform;
-            sr.anchorMin = sr.anchorMax = new Vector2(.5f, .5f);
-            sr.sizeDelta = new Vector2(86f, 64f);
-            sr.anchoredPosition = new Vector2(Mathf.Sin(a), Mathf.Cos(a)) * 176f;
-
-            string label = (corrections[i] > 0 ? "+" + corrections[i] : corrections[i].ToString()) + "%";
-            Text lt = MakeText(slot.transform, label, 12, TextAnchor.MiddleCenter, true);
-            lt.color = Color.white;
-            Anchor(lt.rectTransform, 0f, 0f, 1f, 1f);
-        }
-
-        GameObject coreGo = new GameObject("WheelCore", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        coreGo.transform.SetParent(wheel, false);
-        wheelCore = coreGo.GetComponent<Image>();
-        wheelCore.color = new Color(.13f, .15f, .20f, 1f);
+        wheelCore = wheel.GetComponent<Image>();
+        wheelCore.sprite = wheelSkin;
+        wheelCore.color = Color.white;
+        wheelCore.preserveAspect = true;
         wheelCore.raycastTarget = false;
-        RectTransform cr = wheelCore.rectTransform;
-        cr.anchorMin = cr.anchorMax = new Vector2(.5f, .5f);
-        cr.sizeDelta = new Vector2(200f, 200f);
 
-        Text x = MakeText(coreGo.transform, "X", 46, TextAnchor.MiddleCenter, true);
-        x.color = new Color(1f, .78f, .20f, 1f);
-        Anchor(x.rectTransform, 0f, 0f, 1f, 1f);
+        // Fixed jewel pointer. Only the wheel rotates.
+        RectTransform pointer = MakePanel(window, "PointerGem", new Color(1f, .65f, .14f, 1f));
+        pointer.anchorMin = pointer.anchorMax = new Vector2(.5f, 1f);
+        pointer.pivot = new Vector2(.5f, .5f);
+        pointer.sizeDelta = new Vector2(42f, 42f);
+        pointer.anchoredPosition = new Vector2(0f, -22f);
+        pointer.localRotation = Quaternion.Euler(0f, 0f, 45f);
 
-        RectTransform arrow = MakePanel(window, "Pointer", new Color(1f, .78f, .18f, 1f));
-        arrow.anchorMin = arrow.anchorMax = new Vector2(.5f, 1f);
-        arrow.pivot = new Vector2(.5f, 1f);
-        arrow.sizeDelta = new Vector2(42f, 72f);
-        arrow.anchoredPosition = new Vector2(0f, -7f);
+        RectTransform pointerCore = MakePanel(pointer, "Core", new Color(.20f, .62f, 1f, 1f));
+        pointerCore.anchorMin = pointerCore.anchorMax = new Vector2(.5f, .5f);
+        pointerCore.pivot = new Vector2(.5f, .5f);
+        pointerCore.sizeDelta = new Vector2(20f, 20f);
+        pointerCore.anchoredPosition = Vector2.zero;
 
-        chute = MakePanel(machine, "Chute", new Color(.025f, .03f, .04f, 1f));
-        Anchor(chute, .25f, .285f, .75f, .420f);
-        MakeFrame(chute, new Color(.50f, .52f, .58f, 1f), 7f);
+        chute = MakePanel(machine, "Chute", new Color(.012f, .014f, .020f, .95f));
+        Anchor(chute, .11f, .095f, .89f, .395f);
+        MakeFrame(chute, new Color(.66f, .43f, .18f, 1f), 6f);
 
         rewardRoot = new GameObject("RewardBlock", typeof(RectTransform)).GetComponent<RectTransform>();
         rewardRoot.SetParent(machine, false);
         rewardRoot.anchorMin = rewardRoot.anchorMax = new Vector2(.5f, .5f);
-        rewardRoot.sizeDelta = new Vector2(380f, 240f);
-        rewardRoot.anchoredPosition = new Vector2(0f, -360f);
+        rewardRoot.sizeDelta = new Vector2(420f, 250f);
+        rewardRoot.anchoredPosition = new Vector2(0f, -410f);
 
         nameText = MakeText(machine, "", 20, TextAnchor.MiddleCenter, true);
-        nameText.color = Color.white;
-        Anchor(nameText.rectTransform, .06f, .185f, .94f, .265f);
+        nameText.color = new Color(1f, .95f, .82f, 1f);
+        Anchor(nameText.rectTransform, .12f, .155f, .88f, .225f);
 
         statsText = MakeText(machine, "", 18, TextAnchor.MiddleCenter, true);
         statsText.color = new Color(.96f, .82f, .38f, 1f);
         statsText.resizeTextForBestFit = true;
         statsText.resizeTextMinSize = 48;
         statsText.resizeTextMaxSize = 70;
-        Anchor(statsText.rectTransform, .05f, .105f, .95f, .185f);
+        Anchor(statsText.rectTransform, .10f, .095f, .90f, .155f);
 
         hintText = MakeText(machine, "", 15, TextAnchor.MiddleCenter, false);
-        hintText.color = new Color(.72f, .74f, .80f, 1f);
-        Anchor(hintText.rectTransform, .05f, .025f, .95f, .095f);
+        hintText.color = new Color(.94f, .86f, .68f, 1f);
+        Anchor(hintText.rectTransform, .08f, .025f, .92f, .080f);
+    }
+
+    void LoadVisualAssets()
+    {
+        machineSkin = LoadJpegResource("XTapGachaUI/block_gear_machine", out machineSkinTexture);
+        wheelSkin = LoadJpegResource("XTapGachaUI/block_gear_wheel", out wheelSkinTexture);
+    }
+
+    Sprite LoadJpegResource(string resourcePath, out Texture2D texture)
+    {
+        texture = null;
+        try
+        {
+            TextAsset bytes = Resources.Load<TextAsset>(resourcePath);
+            if (bytes == null || bytes.bytes == null || bytes.bytes.Length < 1024)
+            {
+                Debug.LogWarning("X탑 블록 머신 에셋 누락: " + resourcePath);
+                return null;
+            }
+
+            texture = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            if (!texture.LoadImage(bytes.bytes, false))
+            {
+                Destroy(texture);
+                texture = null;
+                Debug.LogWarning("X탑 블록 머신 이미지 로드 실패: " + resourcePath);
+                return null;
+            }
+
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+
+            return Sprite.Create(
+                texture,
+                new Rect(0f, 0f, texture.width, texture.height),
+                new Vector2(.5f, .5f),
+                100f
+            );
+        }
+        catch (Exception e)
+        {
+            Debug.LogWarning("X탑 블록 머신 에셋 로드 실패: " + resourcePath + " / " + e.Message);
+            return null;
+        }
     }
 
     RectTransform MakePanel(Transform parent, string n, Color c)

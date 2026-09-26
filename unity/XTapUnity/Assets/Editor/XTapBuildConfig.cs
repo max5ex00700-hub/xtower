@@ -31,7 +31,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         {
             string path = Path.Combine(baseDir, required[i]);
             if (!File.Exists(path))
-                throw new BuildFailedException("X탑 11.37 필수 메인 UI 자산 누락: " + required[i]);
+                throw new BuildFailedException("X탑 11.38 필수 메인 UI 자산 누락: " + required[i]);
 
             try
             {
@@ -43,7 +43,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             }
             catch (Exception e)
             {
-                throw new BuildFailedException("X탑 11.37 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
+                throw new BuildFailedException("X탑 11.38 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
             }
         }
 
@@ -53,14 +53,32 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         );
 
         if (!File.Exists(forgeWheelPath))
-            throw new BuildFailedException("X탑 11.37 대장간 SUCCESS/FAIL 룰렛 에셋 누락.");
+            throw new BuildFailedException("X탑 11.38 대장간 SUCCESS/FAIL 룰렛 에셋 누락.");
 
         byte[] forgeWheel = File.ReadAllBytes(forgeWheelPath);
         if (forgeWheel.Length < 1024 ||
             forgeWheel[0] != 0xFF || forgeWheel[1] != 0xD8 || forgeWheel[2] != 0xFF)
-            throw new BuildFailedException("X탑 11.37 대장간 SUCCESS/FAIL 룰렛 에셋 손상.");
+            throw new BuildFailedException("X탑 11.38 대장간 SUCCESS/FAIL 룰렛 에셋 손상.");
 
-        Debug.Log("X탑 11.37 UI 검증 완료: 메인 버튼 + 대장간 SUCCESS/FAIL 룰렛 에셋 정상.");
+        string gachaUiDir = Path.Combine(Application.dataPath, "Resources/XTapGachaUI");
+        string[] gachaAssets =
+        {
+            "block_gear_machine.bytes",
+            "block_gear_wheel.bytes"
+        };
+
+        for (int i = 0; i < gachaAssets.Length; i++)
+        {
+            string path = Path.Combine(gachaUiDir, gachaAssets[i]);
+            if (!File.Exists(path))
+                throw new BuildFailedException("X탑 11.38 블록 머신 에셋 누락: " + gachaAssets[i]);
+
+            byte[] image = File.ReadAllBytes(path);
+            if (image.Length < 1024 || image[0] != 0xFF || image[1] != 0xD8 || image[2] != 0xFF)
+                throw new BuildFailedException("X탑 11.38 블록 머신 에셋 손상: " + gachaAssets[i]);
+        }
+
+        Debug.Log("X탑 11.38 UI 검증 완료: 메인 버튼 + 대장간 룰렛 + 9:16 블록 머신 에셋 정상.");
     }
 
     public void OnPreprocessBuild(BuildReport report)
@@ -83,7 +101,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         PlayerSettings.productName = "X탑";
         PlayerSettings.companyName = "XTap";
-        PlayerSettings.bundleVersion = "11.37-bag-scroll-gesture-" + shortCommit;
+        PlayerSettings.bundleVersion = "11.38-block-gear-art-machine-" + shortCommit;
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.xtower.game.unity");
 
         Debug.Log("X탑 BUILD FINGERPRINT / branch=" + (gitBranch ?? "local") + " / commit=" + (gitCommit ?? "local"));
@@ -92,7 +110,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         PlayerSettings.SplashScreen.showUnityLogo = true;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
-        PlayerSettings.Android.bundleVersionCode = 1137;
+        PlayerSettings.Android.bundleVersionCode = 1138;
 
         // 64-bit Android is required for current 64-bit-only devices.
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
