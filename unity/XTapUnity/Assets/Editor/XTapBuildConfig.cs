@@ -31,7 +31,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         {
             string path = Path.Combine(baseDir, required[i]);
             if (!File.Exists(path))
-                throw new BuildFailedException("X탑 11.30 필수 메인 UI 자산 누락: " + required[i]);
+                throw new BuildFailedException("X탑 11.31 필수 메인 UI 자산 누락: " + required[i]);
 
             try
             {
@@ -43,11 +43,11 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             }
             catch (Exception e)
             {
-                throw new BuildFailedException("X탑 11.30 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
+                throw new BuildFailedException("X탑 11.31 메인 UI 자산 손상: " + required[i] + " / " + e.Message);
             }
         }
 
-        Debug.Log("X탑 11.30 메인 UI 검증 완료: 완성형 메인 버튼 에셋 검증 정상.");
+        Debug.Log("X탑 11.31 메인 UI 검증 완료: 완성형 메인 버튼 에셋 검증 정상.");
     }
 
     public void OnPreprocessBuild(BuildReport report)
@@ -70,7 +70,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         PlayerSettings.productName = "X탑";
         PlayerSettings.companyName = "XTap";
-        PlayerSettings.bundleVersion = "11.30-touch-aware-speech-bubbles-" + shortCommit;
+        PlayerSettings.bundleVersion = "11.31-character-dialogue-mix-" + shortCommit;
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.xtower.game.unity");
 
         Debug.Log("X탑 BUILD FINGERPRINT / branch=" + (gitBranch ?? "local") + " / commit=" + (gitCommit ?? "local"));
@@ -79,7 +79,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         PlayerSettings.SplashScreen.showUnityLogo = true;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
-        PlayerSettings.Android.bundleVersionCode = 1130;
+        PlayerSettings.Android.bundleVersionCode = 1131;
 
         // 64-bit Android is required for current 64-bit-only devices.
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
