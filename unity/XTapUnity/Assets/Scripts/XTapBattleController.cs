@@ -3259,7 +3259,8 @@ public sealed class XTapBattleController : MonoBehaviour
 
         float left = 5f;
         float right = width - 5f;
-        float bottom = 22f;
+        // Tail removed: use the full lower edge for a clean rounded rectangle.
+        float bottom = 5f;
         float top = height - 5f;
         float radius = 24f;
 
@@ -3282,15 +3283,6 @@ public sealed class XTapBattleController : MonoBehaviour
                     };
                     for (int i = 0; i < centers.Length; i++)
                         if (Vector2.Distance(new Vector2(x, y), centers[i]) <= radius) { inside = true; break; }
-                }
-
-                // Small comic-style tail at the lower-left.
-                if (!inside && y >= 3f && y < bottom + 3f)
-                {
-                    float yy = (y - 3f) / Mathf.Max(1f, bottom);
-                    float minX = Mathf.Lerp(40f, 66f, yy);
-                    float maxX = Mathf.Lerp(40f, 98f, yy);
-                    if (x >= minX && x <= maxX) inside = true;
                 }
 
                 pixels[y * width + x] = inside ? solid : clear;
