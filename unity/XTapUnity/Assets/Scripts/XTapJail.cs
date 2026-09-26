@@ -312,6 +312,9 @@ public sealed class XTapJail : MonoBehaviour
 
         Text t = MakeText(go.transform, label, fontSize + 1, TextAnchor.MiddleCenter, true);
         t.color = new Color(.94f, .96f, 1f, 1f);
+        t.resizeTextForBestFit = true;
+        t.resizeTextMinSize = 32;
+        t.resizeTextMaxSize = Mathf.RoundToInt((fontSize + 1) * UiFontScale);
         Outline outline = t.gameObject.AddComponent<Outline>();
         outline.effectColor = new Color(0f, 0f, 0f, .88f);
         outline.effectDistance = new Vector2(2f, -2f);

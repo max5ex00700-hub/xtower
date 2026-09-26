@@ -701,7 +701,7 @@ public sealed class XTapReinaParryMiniGame : MonoBehaviour
         string grade = GradeFor(score, clear);
         bestScore = PlayerPrefs.GetInt(BestScoreKey, 0);
 
-        if (score > bestScore)
+        if (clear && score > bestScore)
         {
             bestScore = score;
             PlayerPrefs.SetInt(BestScoreKey, bestScore);
