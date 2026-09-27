@@ -427,7 +427,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         anvilImage.sprite = forgeAnvilSkin;
         anvilImage.color = forgeAnvilSkin != null
             ? Color.white
-            : new Color(.20f, .17f, .15f, 1f);
+            : Color.clear;
         anvilImage.preserveAspect = true;
         anvilImage.raycastTarget = false;
         forgeAnvil = anvilImage.rectTransform;
@@ -516,11 +516,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         go.transform.SetParent(parent, false);
         image = go.GetComponent<Image>();
         image.sprite = sprite;
-        image.color = sprite != null
-            ? Color.white
-            : (name == "AngelSmith"
-                ? new Color(.82f, .86f, .95f, 1f)
-                : new Color(.42f, .10f, .10f, 1f));
+        image.color = sprite != null ? Color.white : Color.clear;
         image.preserveAspect = true;
         image.raycastTarget = false;
 
@@ -529,20 +525,28 @@ public sealed class XTapBlacksmith : MonoBehaviour
         rt.pivot = new Vector2(.5f, .5f);
         rt.sizeDelta = size;
 
-        // 11.55: If authored duel art cannot decode, keep the result animation
-        // readable instead of showing anonymous empty rectangles.
+        // 11.56: A missing optional actor must never become a giant solid
+        // rectangle. Keep a small framed fallback only if the real sprite is absent.
         if (sprite == null)
         {
-            Text fallbackLabel = MakeText(
+            RectTransform fallback = MakePanel(
                 rt,
-                name == "AngelSmith" ? "천사\n망치" : "악마\n망치",
-                18,
+                "ActorFallback",
+                name == "AngelSmith"
+                    ? new Color(.20f, .25f, .34f, .72f)
+                    : new Color(.30f, .08f, .07f, .72f)
+            );
+            Anchor(fallback, .24f, .25f, .76f, .75f);
+            Frame(fallback, new Color(.82f, .58f, .22f, .92f), 3f);
+
+            Text fallbackLabel = MakeText(
+                fallback,
+                name == "AngelSmith" ? "천사" : "악마",
+                15,
                 TextAnchor.MiddleCenter,
                 true
             );
-            fallbackLabel.color = name == "AngelSmith"
-                ? new Color(.15f, .18f, .24f, 1f)
-                : new Color(1f, .78f, .62f, 1f);
+            fallbackLabel.color = new Color(1f, .88f, .70f, 1f);
             Anchor(fallbackLabel.rectTransform, .08f, .08f, .92f, .92f);
         }
 
@@ -1575,10 +1579,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 forgeDuelAtlasTexture.wrapMode = TextureWrapMode.Clamp;
                 forgeDuelAtlasTexture.filterMode = FilterMode.Bilinear;
 
-                // Coordinates use top-left atlas design coordinates.
-                angelSmithSkin = MakeForgeDuelAtlasSprite(5, 48, 150, 199);
-                demonSmithSkin = MakeForgeDuelAtlasSprite(175, 48, 155, 199);
-                forgeAnvilSkin = MakeForgeDuelAtlasSprite(346, 130, 160, 85);
+                // 11.56 replacement atlas is 400x200. Coordinates use top-left design space.
+                angelSmithSkin = MakeForgeDuelAtlasSprite(4, 38, 117, 155);
+                demonSmithSkin = MakeForgeDuelAtlasSprite(137, 38, 121, 155);
+                forgeAnvilSkin = MakeForgeDuelAtlasSprite(270, 102, 125, 66);
             }
         }
         catch (Exception e)

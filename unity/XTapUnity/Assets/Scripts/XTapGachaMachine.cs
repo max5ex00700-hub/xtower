@@ -914,9 +914,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
         correctionText.color = new Color(.96f, .76f, .25f, 1f);
         Anchor(correctionText.rectTransform, .12f, .805f, .88f, .855f);
 
-        // Full-width roulette stage. The wheel rotates; the selector pointer never does.
+        // 11.56: align the one live ornate wheel exactly over the sample wheel
+        // baked into the 9:16 machine art. The background's ornate top pointer
+        // stays fixed while only this wheel rotates.
         RectTransform window = MakePanel(machine, "WheelWindow", new Color(0f, 0f, 0f, 0f));
-        Anchor(window, .09f, .340f, .91f, .750f);
+        Anchor(window, .08f, .292f, .92f, .732f);
 
         wheel = new GameObject(
             "Wheel",
@@ -926,8 +928,13 @@ public sealed class XTapGachaMachine : MonoBehaviour
         ).GetComponent<RectTransform>();
         wheel.SetParent(window, false);
         wheel.anchorMin = wheel.anchorMax = new Vector2(.5f, .5f);
-        wheel.sizeDelta = new Vector2(660f, 660f);
+        wheel.sizeDelta = new Vector2(760f, 760f);
         wheel.anchoredPosition = Vector2.zero;
+        wheel.localRotation = Quaternion.Euler(
+            0f,
+            0f,
+            WheelVisualAngleForCorrectionIndex(0)
+        );
 
         wheelCore = wheel.GetComponent<Image>();
         wheelCore.sprite = wheelSkin;
@@ -937,42 +944,21 @@ public sealed class XTapGachaMachine : MonoBehaviour
         wheelCore.preserveAspect = true;
         wheelCore.raycastTarget = false;
 
-        // Draw the approved 11-sector face over the ornamental wheel base.
-        // This deliberately replaces the old baked sector colors/numbers at runtime.
-        GameObject faceGo = new GameObject(
-            "WheelFace11",
-            typeof(RectTransform),
-            typeof(CanvasRenderer),
-            typeof(XTapRouletteFaceGraphic)
-        );
-        faceGo.transform.SetParent(wheel, false);
-        RectTransform faceRt = faceGo.GetComponent<RectTransform>();
-        Anchor(faceRt, 0f, 0f, 1f, 1f);
-        XTapRouletteFaceGraphic faceGraphic = faceGo.GetComponent<XTapRouletteFaceGraphic>();
-        faceGraphic.raycastTarget = false;
-
-        BuildRouletteLabels();
-
-        // Fixed 12-o'clock selector: separate from the rotating wheel, with a clear air gap.
-        GameObject pointerGo = new GameObject(
-            "FixedPointer",
-            typeof(RectTransform),
-            typeof(CanvasRenderer),
-            typeof(XTapFixedPointerGraphic)
-        );
-        pointerGo.transform.SetParent(window, false);
-        fixedPointer = pointerGo.GetComponent<RectTransform>();
-        fixedPointer.anchorMin = fixedPointer.anchorMax = new Vector2(.5f, .5f);
-        fixedPointer.sizeDelta = new Vector2(92f, 112f);
-        fixedPointer.anchoredPosition = new Vector2(0f, 405f);
-        pointerGo.GetComponent<XTapFixedPointerGraphic>().raycastTarget = false;
-        fixedPointer.SetAsLastSibling();
+        // 11.56: DO NOT draw another flat 11-sector face or another set of
+        // runtime labels here. block_gear_wheel already contains the complete
+        // ornate 11-sector face and values. Drawing them again caused the
+        // orange/blue duplicate wheel seen on device.
+        //
+        // The authored machine background already has the fixed 12-o'clock
+        // gold selector, so a second blue runtime pointer is also intentionally
+        // disabled.
+        fixedPointer = null;
 
         // Cover only the fixed sample result area so the real block/name/stats can be drawn.
         // The rest of the authored 9:16 image remains fully visible.
         // Real generated-block area. Fully opaque so nothing behind can bleed through.
-        chute = MakePanel(machine, "Chute", new Color(.008f, .010f, .016f, 1f));
-        Anchor(chute, .11f, .070f, .89f, .300f);
+        chute = MakePanel(machine, "Chute", new Color(.008f, .010f, .016f, .90f));
+        Anchor(chute, .14f, .085f, .86f, .275f);
         MakeFrame(chute, new Color(.78f, .53f, .18f, 1f), 5f);
 
         rewardRoot = new GameObject("RewardBlock", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -1039,11 +1025,22 @@ public sealed class XTapGachaMachine : MonoBehaviour
         }
     }
 
+    float WheelVisualAngleForCorrectionIndex(int correctionIndex)
+    {
+        float segment = 360f / corrections.Length;
+
+        // The authored wheel's 12-o'clock order starts at 0%, while gameplay's
+        // canonical order starts at -30. In the art, -30 is sector index 8.
+        const int authoredMinusThirtyIndex = 8;
+        int wrapped = ((correctionIndex % corrections.Length) + corrections.Length) % corrections.Length;
+        return Mathf.Repeat((authoredMinusThirtyIndex + wrapped) * segment, 360f);
+    }
+
     IEnumerator SpinWheelTo(int correctionIndex, float duration, int minTurns, int maxTurnsExclusive)
     {
         float segment = 360f / corrections.Length;
         float startAngle = NormalizeSignedAngle(wheel.localEulerAngles.z);
-        float targetAngle = correctionIndex * segment;
+        float targetAngle = WheelVisualAngleForCorrectionIndex(correctionIndex);
 
         // Stop just past the target first, then bounce back into the exact slot.
         float overshootAngle = targetAngle - segment * .18f;
