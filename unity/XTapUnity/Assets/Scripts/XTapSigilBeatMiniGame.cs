@@ -6,12 +6,14 @@ using UnityEngine.UI;
 
 public sealed class XTapSigilBeatInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
+    public Action<Vector2> Pressed;
     public Action<Vector2, Vector2> Released;
     readonly Dictionary<int, Vector2> downs = new Dictionary<int, Vector2>();
 
     public void OnPointerDown(PointerEventData eventData)
     {
         downs[eventData.pointerId] = eventData.position;
+        if (Pressed != null) Pressed(eventData.position);
     }
 
     public void OnPointerUp(PointerEventData eventData)
@@ -385,6 +387,7 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         inputSurface.raycastTarget = true;
         Anchor(inputSurface.rectTransform, 0f, 0f, 1f, 1f);
         inputReceiver = inputSurface.GetComponent<XTapSigilBeatInput>();
+        inputReceiver.Pressed = HandlePointerPressed;
         inputReceiver.Released = HandleGesture;
         inputSurface.gameObject.SetActive(false);
 
@@ -508,6 +511,9 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
         for (int i = 0; i < targetRings.Length; i++)
             targetRings[i].rectTransform.localScale = Vector3.one;
+
+        ReleaseThumb(true);
+        ReleaseThumb(false);
     }
 
     void StartGame()
@@ -661,6 +667,7 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
         Vector2 delta = endScreen - startScreen;
         bool leftSide = startScreen.x < Screen.width * .5f;
+        ReleaseThumb(leftSide);
         PulseThumb(leftSide, delta);
         PlaySlashFx(leftSide, delta);
         SlashDirection inputDirection = DirectionFromGesture(delta);
@@ -958,6 +965,29 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
             case SlashDirection.Right: return noteRightSkin;
             default: return noteTapSkin;
         }
+    }
+
+    void HandlePointerPressed(Vector2 screen)
+    {
+        bool left = screen.x < Screen.width * .5f;
+        Image hand = left ? leftThumb : rightThumb;
+        if (hand == null) return;
+
+        RectTransform rect = hand.rectTransform;
+        rect.localScale = Vector3.one * .92f;
+        rect.anchoredPosition = left
+            ? new Vector2(10f, 16f)
+            : new Vector2(-10f, 16f);
+    }
+
+    void ReleaseThumb(bool left)
+    {
+        Image hand = left ? leftThumb : rightThumb;
+        if (hand == null) return;
+
+        hand.rectTransform.localScale = Vector3.one;
+        hand.rectTransform.localRotation = Quaternion.identity;
+        hand.rectTransform.anchoredPosition = Vector2.zero;
     }
 
     void PulseThumb(bool left, Vector2 delta)
