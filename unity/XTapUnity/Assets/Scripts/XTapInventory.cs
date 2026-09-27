@@ -2028,8 +2028,10 @@ public sealed class XTapInventory : MonoBehaviour
 
     static double DescriptorFinalMultiplier(int count)
     {
-        if (count >= 3) return 5d;
-        if (count == 2) return 3d;
+        // Cumulative descriptor multipliers:
+        // 1st x2, 2nd adds x3, 3rd adds x5 => x2 / x6 / x30.
+        if (count >= 3) return 30d;
+        if (count == 2) return 6d;
         if (count == 1) return 2d;
         return 1d;
     }
@@ -2074,8 +2076,9 @@ public sealed class XTapInventory : MonoBehaviour
         double preHp;
         GetPreDescriptorStats(item, out preAttack, out preDefense, out preHp);
 
-        // Descriptor is always the final calculation:
-        // 1 descriptor = x2, 2 descriptors = x3, 3 descriptors = x5.
+        // Descriptor is always the final calculation.
+        // Multipliers stack: 1 descriptor = x2, 2 = x2*x3 = x6,
+        // 3 = x2*x3*x5 = x30.
         double descriptorMultiplier = DescriptorFinalMultiplier(item.descriptorCount);
         item.attack = Math.Max(0d, preAttack * descriptorMultiplier);
         item.defense = Math.Max(0d, preDefense * descriptorMultiplier);
@@ -2084,10 +2087,10 @@ public sealed class XTapInventory : MonoBehaviour
         if (item.descriptorCount > 0)
         {
             int count = Mathf.Clamp(item.descriptorCount, 1, 3);
-            int multiplier = count == 1 ? 2 : (count == 2 ? 3 : 5);
+            int multiplier = count == 1 ? 2 : (count == 2 ? 6 : 30);
             item.descriptorEffectText =
-                "수식어 " + count + "개 · 최종 공/방/체 ×" + multiplier;
-            item.descriptorFormulaVersion = 3;
+                "수식어 " + count + "개 · 누적 최종 공/방/체 ×" + multiplier;
+            item.descriptorFormulaVersion = 4;
         }
     }
 

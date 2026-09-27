@@ -507,7 +507,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         }
 
         item.descriptorCount = selected.Count;
-        item.descriptorFormulaVersion = 3;
+        item.descriptorFormulaVersion = 4;
 
         if (selected.Count == 0)
         {
@@ -528,11 +528,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
             words.Add(descriptor.word);
         }
 
-        int multiplier = selected.Count == 1 ? 2 : (selected.Count == 2 ? 3 : 5);
+        int multiplier = selected.Count == 1 ? 2 : (selected.Count == 2 ? 6 : 30);
         item.descriptorIds = string.Join(",", ids.ToArray());
         item.descriptorWords = string.Join("|", words.ToArray());
         item.descriptorEffectText =
-            "수식어 " + selected.Count + "개 · 최종 공/방/체 ×" + multiplier;
+            "수식어 " + selected.Count + "개 · 누적 최종 공/방/체 ×" + multiplier;
         item.displayName = string.Join(" ", words.ToArray()) + " " + noun;
     }
 
@@ -597,8 +597,10 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
     static double DescriptorFinalMultiplier(int count)
     {
-        if (count >= 3) return 5d;
-        if (count == 2) return 3d;
+        // Cumulative descriptor multipliers:
+        // 1st x2, 2nd adds x3, 3rd adds x5 => x2 / x6 / x30.
+        if (count >= 3) return 30d;
+        if (count == 2) return 6d;
         if (count == 1) return 2d;
         return 1d;
     }
