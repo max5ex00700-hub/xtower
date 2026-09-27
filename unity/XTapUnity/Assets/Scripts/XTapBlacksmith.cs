@@ -622,11 +622,11 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (ruleText == null) return;
 
         if (mode == ForgeMode.Enhance)
-            ruleText.text = "+1~+10 안전 강화 · 블록 고유 공/방/체 단계당 +10%  ·  +11~+20 성공률 10% / 실패 시 대상 파괴";
+            ruleText.text = "제물가치  -% 1 · +% 2 · 전용 3 · 수식어 5  |  안전 강화: 가치×10%";
         else if (mode == ForgeMode.Synthesis)
-            ruleText.text = "대상 블록 + 제물 블록  ·  성공률 1%  ·  제물의 강화 포함 현재 공/방/체 전부 합산";
+            ruleText.text = "대상 블록 + 제물 블록 1개  ·  성공률 1%  ·  제물의 강화 포함 현재 공/방/체 전부 합산";
         else
-            ruleText.text = "제물 최대 10개  ·  1개당 10%  ·  성공 시 플레이어 가방 +1칸";
+            ruleText.text = "제물가치  -% 1 · +% 2 · 전용 3 · 수식어 5  |  분해: 가치×10%";
     }
 
     void RefreshSharedStorage()
@@ -745,7 +745,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         Refresh();
     }
 
-    void ToggleMaterial(string id, int maxCount)
+    void ToggleMaterial(string id, int maxValue)
     {
         if (materialIds.Contains(id))
         {
@@ -753,14 +753,60 @@ public sealed class XTapBlacksmith : MonoBehaviour
             return;
         }
 
-        if (materialIds.Count >= maxCount)
+        if (mode == ForgeMode.Synthesis)
+        {
+            if (materialIds.Count >= maxValue)
+            {
+                if (resultText != null)
+                    resultText.text = "합성 제물은 1개만 선택할 수 있습니다.";
+                return;
+            }
+
+            materialIds.Add(id);
+            return;
+        }
+
+        XTapGearBlockData material = inventory.FindForgeItem(id);
+        if (material == null) return;
+
+        int currentValue = GetSelectedSacrificeValue();
+        int addedValue = GetSacrificeValue(material);
+        if (currentValue + addedValue > maxValue)
         {
             if (resultText != null)
-                resultText.text = "재료는 최대 " + maxCount + "개까지 선택할 수 있습니다.";
+                resultText.text =
+                    "제물 가치는 최대 " + maxValue + "입니다.  현재 " +
+                    currentValue + " + 선택 블럭 " + addedValue;
             return;
         }
 
         materialIds.Add(id);
+    }
+
+    int GetSacrificeValue(XTapGearBlockData item)
+    {
+        if (item == null) return 0;
+
+        // Highest applicable tier wins so a rare block is never valued below
+        // one of its lower traits.
+        if (item.descriptorCount > 0) return 5;
+        if (item.exclusive) return 3;
+        if (item.correction > 0) return 2;
+
+        // Negative-correction blocks are worth 1. A plain 0% non-exclusive
+        // ticket block also falls back to 1 so every valid block can be used.
+        return 1;
+    }
+
+    int GetSelectedSacrificeValue()
+    {
+        int total = 0;
+        for (int i = 0; i < materialIds.Count; i++)
+        {
+            XTapGearBlockData item = inventory.FindForgeItem(materialIds[i]);
+            total += GetSacrificeValue(item);
+        }
+        return total;
     }
 
     void RefreshSelectionInfo()
@@ -791,6 +837,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         double sacrificeDefense = 0d;
         double sacrificeHp = 0d;
         int sacrificeCount = 0;
+        int sacrificeValue = 0;
         XTapGearBlockData singleSacrifice = null;
 
         for (int i = 0; i < materialIds.Count; i++)
@@ -799,6 +846,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             if (material == null) continue;
 
             sacrificeCount++;
+            sacrificeValue += GetSacrificeValue(material);
             sacrificeAttack = XTapStatFormat.SafeAdd(sacrificeAttack, Math.Max(0d, material.attack));
             sacrificeDefense = XTapStatFormat.SafeAdd(sacrificeDefense, Math.Max(0d, material.defense));
             sacrificeHp = XTapStatFormat.SafeAdd(sacrificeHp, Math.Max(0d, material.hp));
@@ -817,12 +865,13 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 materialSlotText.text =
                     XTapGearNameColor.Rich(singleSacrifice) +
                     (singleSacrifice.enhanceLevel > 0 ? "  +" + singleSacrifice.enhanceLevel : "") +
-                    "\n" + XTapStatFormat.BlockTriplet(singleSacrifice.attack, singleSacrifice.defense, singleSacrifice.hp, "   ");
+                    "\n제물 " + GetSacrificeValue(singleSacrifice) + "개분  ·  " +
+                    XTapStatFormat.BlockTriplet(singleSacrifice.attack, singleSacrifice.defense, singleSacrifice.hp, "   ");
             }
             else
             {
                 materialSlotText.text =
-                    "제물 " + sacrificeCount + "개" +
+                    "블럭 " + sacrificeCount + "개  ·  제물가치 " + sacrificeValue + "/10" +
                     "\n합계  " + XTapStatFormat.BlockTriplet(sacrificeAttack, sacrificeDefense, sacrificeHp, "   ");
             }
         }
@@ -830,14 +879,14 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (mode == ForgeMode.Enhance)
         {
             bool destructive = target != null && target.enhanceLevel >= 10;
-            int chance = destructive ? 10 : Mathf.Clamp(sacrificeCount * 10, 0, 100);
+            int chance = destructive ? 10 : Mathf.Clamp(sacrificeValue * 10, 0, 100);
             selectionText.text = destructive
-                ? "파괴 강화  +" + (target.enhanceLevel + 1) + "  ·  제물 " + sacrificeCount + "개"
-                : "안전 강화  +" + (target != null ? target.enhanceLevel + 1 : 1) + "  ·  제물 " + sacrificeCount + "/10";
+                ? "파괴 강화  +" + (target.enhanceLevel + 1) + "  ·  제물가치 " + sacrificeValue
+                : "안전 강화  +" + (target != null ? target.enhanceLevel + 1 : 1) + "  ·  제물가치 " + sacrificeValue + "/10";
             chanceText.text = destructive
                 ? "성공률 10%  ·  실패 시 대상 파괴"
                 : "성공률 " + chance + "%  ·  실패 시 대상 유지";
-            executeButton.interactable = target != null && sacrificeCount > 0 && target.enhanceLevel < 20;
+            executeButton.interactable = target != null && sacrificeValue > 0 && target.enhanceLevel < 20;
         }
         else if (mode == ForgeMode.Synthesis)
         {
@@ -847,10 +896,10 @@ public sealed class XTapBlacksmith : MonoBehaviour
         }
         else
         {
-            int chance = Mathf.Clamp(sacrificeCount * 10, 0, 100);
-            selectionText.text = "제물 " + sacrificeCount + "/10";
+            int chance = Mathf.Clamp(sacrificeValue * 10, 0, 100);
+            selectionText.text = "제물가치 " + sacrificeValue + "/10  ·  블럭 " + sacrificeCount + "개";
             chanceText.text = "가방 +1칸  " + chance + "%";
-            executeButton.interactable = sacrificeCount > 0;
+            executeButton.interactable = sacrificeValue > 0;
         }
     }
 
@@ -877,6 +926,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
     bool TryGetCurrentOperationChance(out int chance)
     {
         chance = 0;
+        int sacrificeValue = GetSelectedSacrificeValue();
 
         if (mode == ForgeMode.Enhance)
         {
@@ -895,7 +945,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
             chance = target.enhanceLevel >= 10
                 ? 10
-                : Mathf.Clamp(materialIds.Count * 10, 0, 100);
+                : Mathf.Clamp(sacrificeValue * 10, 0, 100);
             return true;
         }
 
@@ -927,7 +977,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
             return false;
         }
 
-        chance = Mathf.Clamp(materialIds.Count * 10, 0, 100);
+        chance = Mathf.Clamp(sacrificeValue * 10, 0, 100);
         return true;
     }
 
@@ -1065,7 +1115,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 : new Vector2(0f, -36f);
 
             forgeMaterialTokenText.text = operationMode == ForgeMode.Dismantle
-                ? "x" + materialIds.Count
+                ? "제물 " + GetSelectedSacrificeValue()
                 : "제물";
         }
     }
