@@ -1579,10 +1579,12 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 forgeDuelAtlasTexture.wrapMode = TextureWrapMode.Clamp;
                 forgeDuelAtlasTexture.filterMode = FilterMode.Bilinear;
 
-                // 11.56 replacement atlas is 400x200. Coordinates use top-left design space.
+                // 11.57 replacement atlas is 400x200. Coordinates use top-left design space.
+                // The previous anvil crop started too low and could resolve to an almost-empty
+                // sprite. Crop the actual anvil body near the upper-right atlas region.
                 angelSmithSkin = MakeForgeDuelAtlasSprite(4, 38, 117, 155);
                 demonSmithSkin = MakeForgeDuelAtlasSprite(137, 38, 121, 155);
-                forgeAnvilSkin = MakeForgeDuelAtlasSprite(270, 102, 125, 66);
+                forgeAnvilSkin = MakeForgeDuelAtlasSprite(285, 47, 95, 55);
             }
         }
         catch (Exception e)
