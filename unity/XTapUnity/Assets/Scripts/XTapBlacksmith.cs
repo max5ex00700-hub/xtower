@@ -516,7 +516,11 @@ public sealed class XTapBlacksmith : MonoBehaviour
         go.transform.SetParent(parent, false);
         image = go.GetComponent<Image>();
         image.sprite = sprite;
-        image.color = sprite != null ? Color.white : new Color(.25f, .25f, .25f, 1f);
+        image.color = sprite != null
+            ? Color.white
+            : (name == "AngelSmith"
+                ? new Color(.82f, .86f, .95f, 1f)
+                : new Color(.42f, .10f, .10f, 1f));
         image.preserveAspect = true;
         image.raycastTarget = false;
 
@@ -524,6 +528,24 @@ public sealed class XTapBlacksmith : MonoBehaviour
         rt.anchorMin = rt.anchorMax = anchor;
         rt.pivot = new Vector2(.5f, .5f);
         rt.sizeDelta = size;
+
+        // 11.55: If authored duel art cannot decode, keep the result animation
+        // readable instead of showing anonymous empty rectangles.
+        if (sprite == null)
+        {
+            Text fallbackLabel = MakeText(
+                rt,
+                name == "AngelSmith" ? "천사\n망치" : "악마\n망치",
+                18,
+                TextAnchor.MiddleCenter,
+                true
+            );
+            fallbackLabel.color = name == "AngelSmith"
+                ? new Color(.15f, .18f, .24f, 1f)
+                : new Color(1f, .78f, .62f, 1f);
+            Anchor(fallbackLabel.rectTransform, .08f, .08f, .92f, .92f);
+        }
+
         return rt;
     }
 
