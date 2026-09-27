@@ -967,51 +967,37 @@ public sealed class XTapInventory : MonoBehaviour
         return PlayerPrefs.GetInt("xtap_captured_char_" + ownerCharacterId, 0) == 1;
     }
 
-    public int DescriptorSetBonusPercent
+    public int DescriptorEquipScore
     {
         get
         {
-            Dictionary<string, int> counts = new Dictionary<string, int>();
+            int score = 0;
 
             for (int i = 0; i < items.Count; i++)
             {
                 XTapGearBlockData item = items[i];
-                if (!CountsTowardPlayerStats(item) ||
-                    item.descriptorCount <= 0 ||
-                    string.IsNullOrEmpty(item.descriptorIds))
+                if (!CountsTowardPlayerStats(item) || item.descriptorCount <= 0)
                     continue;
 
-                string[] ids = item.descriptorIds.Split(',');
-                HashSet<string> uniqueOnItem = new HashSet<string>();
-
-                for (int d = 0; d < ids.Length && d < 3; d++)
-                {
-                    string id = ids[d].Trim();
-                    if (string.IsNullOrEmpty(id) || !uniqueOnItem.Add(id))
-                        continue;
-
-                    int count;
-                    counts.TryGetValue(id, out count);
-                    counts[id] = count + 1;
-                }
+                int count = Mathf.Clamp(item.descriptorCount, 1, 3);
+                score += count == 1 ? 2 : (count == 2 ? 3 : 5);
             }
 
-            int bonus = 0;
-            foreach (KeyValuePair<string, int> pair in counts)
-            {
-                // A set starts at 2 matching descriptors. Every matching equipped
-                // descriptor contributes +1% to the player's final total stats.
-                if (pair.Value >= 2)
-                    bonus += pair.Value;
-            }
-
-            return Mathf.Max(0, bonus);
+            return Mathf.Max(0, score);
         }
     }
 
     public double DescriptorSetMultiplier
     {
-        get { return 1d + DescriptorSetBonusPercent * .01d; }
+        get
+        {
+            // Equipped descriptor-block contributions add together:
+            // 1 descriptor block = +2, 2 descriptors = +3, 3 descriptors = +5.
+            // Examples: three 1-descriptor blocks => x6;
+            // one 1 + one 2 + one 3 => x10.
+            int score = DescriptorEquipScore;
+            return score > 0 ? score : 1d;
+        }
     }
 
     public double EquippedAttack
@@ -2026,16 +2012,6 @@ public sealed class XTapInventory : MonoBehaviour
         item.enhancementBaseInitialized = true;
     }
 
-    static double DescriptorFinalMultiplier(int count)
-    {
-        // Cumulative descriptor multipliers:
-        // 1st x2, 2nd adds x3, 3rd adds x5 => x2 / x6 / x30.
-        if (count >= 3) return 30d;
-        if (count == 2) return 6d;
-        if (count == 1) return 2d;
-        return 1d;
-    }
-
     public void GetPreDescriptorStats(
         XTapGearBlockData item,
         out double attack,
@@ -2076,21 +2052,20 @@ public sealed class XTapInventory : MonoBehaviour
         double preHp;
         GetPreDescriptorStats(item, out preAttack, out preDefense, out preHp);
 
-        // Descriptor is always the final calculation.
-        // Multipliers stack: 1 descriptor = x2, 2 = x2*x3 = x6,
-        // 3 = x2*x3*x5 = x30.
-        double descriptorMultiplier = DescriptorFinalMultiplier(item.descriptorCount);
-        item.attack = Math.Max(0d, preAttack * descriptorMultiplier);
-        item.defense = Math.Max(0d, preDefense * descriptorMultiplier);
-        item.hp = Math.Max(0d, preHp * descriptorMultiplier);
+        // Descriptors do not multiply the block by itself.
+        // They contribute to one shared multiplier applied after ALL equipped
+        // block stats are summed.
+        item.attack = Math.Max(0d, preAttack);
+        item.defense = Math.Max(0d, preDefense);
+        item.hp = Math.Max(0d, preHp);
 
         if (item.descriptorCount > 0)
         {
             int count = Mathf.Clamp(item.descriptorCount, 1, 3);
-            int multiplier = count == 1 ? 2 : (count == 2 ? 6 : 30);
+            int equipMultiplier = count == 1 ? 2 : (count == 2 ? 3 : 5);
             item.descriptorEffectText =
-                "수식어 " + count + "개 · 누적 최종 공/방/체 ×" + multiplier;
-            item.descriptorFormulaVersion = 4;
+                "수식어 " + count + "개 · 착용 전체 능력 배수 +" + equipMultiplier;
+            item.descriptorFormulaVersion = 5;
         }
     }
 

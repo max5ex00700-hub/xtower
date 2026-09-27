@@ -507,7 +507,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         }
 
         item.descriptorCount = selected.Count;
-        item.descriptorFormulaVersion = 4;
+        item.descriptorFormulaVersion = 5;
 
         if (selected.Count == 0)
         {
@@ -528,11 +528,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
             words.Add(descriptor.word);
         }
 
-        int multiplier = selected.Count == 1 ? 2 : (selected.Count == 2 ? 6 : 30);
+        int equipMultiplier = selected.Count == 1 ? 2 : (selected.Count == 2 ? 3 : 5);
         item.descriptorIds = string.Join(",", ids.ToArray());
         item.descriptorWords = string.Join("|", words.ToArray());
         item.descriptorEffectText =
-            "수식어 " + selected.Count + "개 · 누적 최종 공/방/체 ×" + multiplier;
+            "수식어 " + selected.Count + "개 · 착용 전체 능력 배수 +" + equipMultiplier;
         item.displayName = string.Join(" ", words.ToArray()) + " " + noun;
     }
 
@@ -584,25 +584,14 @@ public sealed class XTapGachaMachine : MonoBehaviour
         XTapGearBlockData r = outcome.block;
         title.text = r.exclusive ? "EXCLUSIVE BLOCK" : "";
         nameText.text = XTapGearNameColor.Rich(r) + "  ·  " + r.cellCount + "칸";
-        double descriptorMultiplier = DescriptorFinalMultiplier(r.descriptorCount);
         statsText.text =
             XTapStatFormat.BlockTriplet(
-                r.attack * descriptorMultiplier,
-                r.defense * descriptorMultiplier,
-                r.hp * descriptorMultiplier,
+                r.attack,
+                r.defense,
+                r.hp,
                 "     ") +
             (string.IsNullOrEmpty(r.descriptorEffectText) ? "" : "\n" + r.descriptorEffectText);
         DrawBlock(r);
-    }
-
-    static double DescriptorFinalMultiplier(int count)
-    {
-        // Cumulative descriptor multipliers:
-        // 1st x2, 2nd adds x3, 3rd adds x5 => x2 / x6 / x30.
-        if (count >= 3) return 30d;
-        if (count == 2) return 6d;
-        if (count == 1) return 2d;
-        return 1d;
     }
 
     void DrawCaptureSuccessImage(Sprite sprite)
