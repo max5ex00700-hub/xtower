@@ -7,20 +7,24 @@ using UnityEngine.UI;
 public sealed class XTapSigilBeatInput : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
 {
     public Action<Vector2, Vector2> Released;
-    Vector2 down;
-    bool pressed;
+    readonly Dictionary<int, Vector2> downs = new Dictionary<int, Vector2>();
 
     public void OnPointerDown(PointerEventData eventData)
     {
-        pressed = true;
-        down = eventData.position;
+        downs[eventData.pointerId] = eventData.position;
     }
 
     public void OnPointerUp(PointerEventData eventData)
     {
-        if (!pressed) return;
-        pressed = false;
+        Vector2 down;
+        if (!downs.TryGetValue(eventData.pointerId, out down)) return;
+        downs.Remove(eventData.pointerId);
         if (Released != null) Released(down, eventData.position);
+    }
+
+    void OnDisable()
+    {
+        downs.Clear();
     }
 }
 
@@ -33,13 +37,27 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
     const string PlaysKey = "xtap_minigame_x_sigil_beat_plays";
     const string ClearsKey = "xtap_minigame_x_sigil_beat_clears";
 
-    const double Bpm = 120.0;
-    const double BeatSeconds = 60.0 / Bpm;
+    const string MusicResource = "XTapSigilBeat/x_sigil_beat_stage1";
+    const double Bpm = 133.92857142857142;
     const double ApproachSeconds = 1.60;
-    const double FirstHitDelay = 2.00;
     const double PerfectWindow = 0.085;
     const double GoodWindow = 0.170;
-    const int NoteCount = 32;
+
+    // Actual beat tracker timestamps from the supplied "We Come Alive" audio.
+    // The gameplay clip begins two seconds before the first strong detected beat.
+    static readonly double[] BeatHitTimes =
+    {
+        2.000, 2.437, 2.800, 3.184, 3.611, 4.069, 4.517, 4.976,
+        5.445, 5.915, 6.352, 6.832, 7.312, 7.803, 8.229, 8.677,
+        9.136, 9.573, 10.032, 10.512, 10.971, 11.472, 11.888, 12.347,
+        12.741, 13.125, 13.520, 13.979, 14.427, 14.896, 15.355, 15.813,
+        16.272, 16.731, 17.189, 17.659, 18.117, 18.576, 19.035, 19.493,
+        19.952, 20.411, 20.859, 21.339, 21.797, 22.256, 22.715, 23.173,
+        23.632, 24.091, 24.539, 25.019, 25.477, 25.936, 26.384, 26.843,
+        27.301, 27.760, 28.208, 28.667, 29.125, 29.584, 30.043, 30.491,
+        30.949, 31.408, 31.867, 32.325, 32.773, 33.232, 33.691, 34.139,
+        34.608, 35.056, 35.515, 35.963, 36.421, 36.880, 37.339, 37.787
+    };
 
     enum SlashDirection
     {
@@ -55,6 +73,7 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         public int index;
         public int target;
         public SlashDirection direction;
+        public double hitOffset;
         public double hitDsp;
         public double spawnDsp;
         public bool spawned;
@@ -139,8 +158,10 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         beatSource = gameObject.AddComponent<AudioSource>();
         beatSource.playOnAwake = false;
         beatSource.spatialBlend = 0f;
-        beatSource.volume = .70f;
-        backingClip = CreatePrototypeBeat();
+        beatSource.volume = .82f;
+        backingClip = Resources.Load<AudioClip>(MusicResource);
+        if (backingClip == null)
+            Debug.LogError("X SIGIL BEAT 음악 에셋 로드 실패: " + MusicResource);
 
         BuildUi();
         overlay.SetActive(false);
@@ -220,7 +241,7 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
         PulseTargets(now);
 
-        if (resolvedCount >= NoteCount && now > lastHitDsp + .80)
+        if (notes.Count > 0 && resolvedCount >= notes.Count && now > lastHitDsp + .80)
             FinishGame();
     }
 
@@ -299,7 +320,7 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
         guideText = MakeText(
             overlay.transform,
-            "룬의 타이밍 링이 판정 문양과 겹치는 순간\n표시 방향으로 손가락을 베십시오",
+            "왼엄지 1·2  ·  오른엄지 3·4\n타이밍 링이 겹치는 순간 표시 방향으로 베십시오",
             17,
             TextAnchor.MiddleCenter,
             true
@@ -396,8 +417,8 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
             "  ·  MAX COMBO  " + PlayerPrefs.GetInt(BestComboKey, 0);
 
         startButton.gameObject.SetActive(true);
-        startButton.interactable = true;
-        startButtonText.text = "X SIGIL BEAT 시작";
+        startButton.interactable = backingClip != null;
+        startButtonText.text = backingClip != null ? "X SIGIL BEAT 시작" : "음악 에셋 없음";
         inputSurface.gameObject.SetActive(false);
 
         for (int i = 0; i < targetRings.Length; i++)
@@ -406,7 +427,7 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
     void StartGame()
     {
-        if (!IsOpen || playing) return;
+        if (!IsOpen || playing || backingClip == null) return;
 
         StopGameAudio();
         ClearNotes();
@@ -416,8 +437,8 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
         judgementText.text = "READY";
         judgementText.color = Color.white;
-        guideText.text = "탭 룬은 짧게 터치 · 방향 룬은 손가락으로 베기";
-        recordText.text = "";
+        guideText.text = "양손 엄지 사용 · TAP은 짧게 · 방향 룬은 표시 방향으로 스와이프";
+        recordText.text = "We Come Alive  ·  " + Bpm.ToString("0") + " BPM";
         startButton.gameObject.SetActive(false);
         inputSurface.gameObject.SetActive(true);
 
@@ -426,17 +447,14 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         songStartDsp = AudioSettings.dspTime + .85;
         for (int i = 0; i < notes.Count; i++)
         {
-            notes[i].hitDsp = songStartDsp + FirstHitDelay + i * BeatSeconds;
+            notes[i].hitDsp = songStartDsp + notes[i].hitOffset;
             notes[i].spawnDsp = notes[i].hitDsp - ApproachSeconds;
         }
 
         lastHitDsp = notes.Count > 0 ? notes[notes.Count - 1].hitDsp : songStartDsp;
 
-        if (beatSource != null && backingClip != null)
-        {
-            beatSource.clip = backingClip;
-            beatSource.PlayScheduled(songStartDsp);
-        }
+        beatSource.clip = backingClip;
+        beatSource.PlayScheduled(songStartDsp);
 
         PlayerPrefs.SetInt(PlaysKey, PlayerPrefs.GetInt(PlaysKey, 0) + 1);
         PlayerPrefs.Save();
@@ -448,39 +466,51 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
     {
         notes.Clear();
 
-        SlashDirection[] pattern =
+        int[] lanePattern = { 0, 2, 1, 3, 0, 3, 1, 2 };
+        SlashDirection[] directionPattern =
         {
             SlashDirection.Tap,
+            SlashDirection.Tap,
             SlashDirection.Left,
             SlashDirection.Right,
             SlashDirection.Up,
             SlashDirection.Down,
-            SlashDirection.Left,
             SlashDirection.Tap,
-            SlashDirection.Right,
-            SlashDirection.Up,
-            SlashDirection.Down,
-            SlashDirection.Right,
-            SlashDirection.Left,
-            SlashDirection.Tap,
-            SlashDirection.Up,
-            SlashDirection.Right,
-            SlashDirection.Down
+            SlashDirection.Tap
         };
 
-        for (int i = 0; i < NoteCount; i++)
+        for (int i = 0; i < BeatHitTimes.Length; i++)
         {
-            int target = (i * 3 + i / 4) % 4;
-            SlashDirection direction = pattern[i % pattern.Length];
+            int target = lanePattern[i % lanePattern.Length];
+            SlashDirection direction = i < 8
+                ? SlashDirection.Tap
+                : directionPattern[(i + i / 8) % directionPattern.Length];
 
-            Note note = new Note();
-            note.index = i;
-            note.target = target;
-            note.direction = direction;
-            note.targetNorm = TargetNorms[target];
-            note.spawnNorm = SpawnFor(target, i);
-            notes.Add(note);
+            AddChartNote(BeatHitTimes[i], target, direction, i);
+
+            // Chorus/build sections gain two-thumb chords. Each chord always spans
+            // left and right halves so both thumbs are used at the same instant.
+            if (i >= 28 && i <= 76 && (i % 4) == 0)
+            {
+                int opposite = target < 2 ? 2 + (target % 2) : target % 2;
+                SlashDirection oppositeDirection = direction == SlashDirection.Tap
+                    ? SlashDirection.Tap
+                    : (target < 2 ? SlashDirection.Right : SlashDirection.Left);
+                AddChartNote(BeatHitTimes[i], opposite, oppositeDirection, 1000 + i);
+            }
         }
+    }
+
+    void AddChartNote(double hitOffset, int target, SlashDirection direction, int seed)
+    {
+        Note note = new Note();
+        note.index = notes.Count;
+        note.target = Mathf.Clamp(target, 0, 3);
+        note.direction = direction;
+        note.hitOffset = hitOffset;
+        note.targetNorm = TargetNorms[note.target];
+        note.spawnNorm = SpawnFor(note.target, seed);
+        notes.Add(note);
     }
 
     Vector2 SpawnFor(int target, int index)
@@ -762,45 +792,6 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
     {
         if (beatSource != null)
             beatSource.Stop();
-    }
-
-    AudioClip CreatePrototypeBeat()
-    {
-        const int sampleRate = 44100;
-        const float lengthSeconds = 21f;
-        int frames = Mathf.CeilToInt(sampleRate * lengthSeconds);
-        float[] data = new float[frames];
-
-        for (int i = 0; i < frames; i++)
-        {
-            double t = (double)i / sampleRate;
-            double beatPos = t / BeatSeconds;
-            int beatIndex = (int)Math.Floor(beatPos);
-            double withinBeat = t - beatIndex * BeatSeconds;
-
-            float sample = 0f;
-
-            if (withinBeat < .11)
-            {
-                float env = Mathf.Exp((float)(-withinBeat * 36.0));
-                float freq = (beatIndex % 4 == 0) ? 92f : 132f;
-                sample += Mathf.Sin((float)(withinBeat * Math.PI * 2.0 * freq)) * env * .34f;
-            }
-
-            double half = BeatSeconds * .5;
-            double withinHalf = t - Math.Floor(t / half) * half;
-            if (withinHalf < .024)
-            {
-                float env = Mathf.Exp((float)(-withinHalf * 110.0));
-                sample += Mathf.Sin((float)(withinHalf * Math.PI * 2.0 * 760.0)) * env * .08f;
-            }
-
-            data[i] = Mathf.Clamp(sample, -.8f, .8f);
-        }
-
-        AudioClip clip = AudioClip.Create("SigilBeatPrototype120BPM", frames, 1, sampleRate, false);
-        clip.SetData(data, 0);
-        return clip;
     }
 
     Sprite CreateRingSprite(int size, int thickness)
