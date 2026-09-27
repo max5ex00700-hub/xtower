@@ -24,6 +24,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
     RectTransform machine;
     RectTransform wheel;
     Image wheelCore;
+    RectTransform fixedPointer;
     RectTransform chute;
     RectTransform rewardRoot;
     Text title;
@@ -44,7 +45,8 @@ public sealed class XTapGachaMachine : MonoBehaviour
     int activeCharacterId = 1;
     int activeProgressStep;
 
-    readonly int[] corrections = {0, 10, 20, 30, 40, 50, -50, -40, -30, -20, -10};
+    // Approved clockwise order, starting at 12 o'clock.
+    readonly int[] corrections = {-30, -20, -10, 0, 10, 20, 30, 40, 50, -50, -40};
     readonly int[] allowedSizes = {1, 2, 3, 4, 5, 6, 9, 12};
     readonly int[] baseBudgets = {10, 22, 35, 50, 66, 84, 135, 190};
 
@@ -254,19 +256,20 @@ public sealed class XTapGachaMachine : MonoBehaviour
             ticketStatusText.text = "최고 " + highestFloor + "층 블록  ·  무료 티켓 " + ticketCount + "장";
         }
 
-        machine.localScale = Vector3.one * .90f;
-        machine.anchoredPosition = new Vector2(0f, -40f);
+        machine.localScale = Vector3.one;
+        machine.anchoredPosition = Vector2.zero;
 
+        wheel.localScale = Vector3.one * .94f;
         float intro = 0f;
-        while (intro < .22f)
+        while (intro < .18f)
         {
             intro += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(intro / .22f);
+            float p = Mathf.Clamp01(intro / .18f);
             float e = 1f - Mathf.Pow(1f - p, 3f);
-            machine.localScale = Vector3.one * Mathf.Lerp(.90f, 1f, e);
-            machine.anchoredPosition = new Vector2(0f, Mathf.Lerp(-40f, 0f, e));
+            wheel.localScale = Vector3.one * Mathf.Lerp(.94f, 1f, e);
             yield return null;
         }
+        wheel.localScale = Vector3.one;
 
         for (int spin = 0; spin < ticketCount; spin++)
         {
@@ -283,35 +286,11 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
             int correctionIndex = UnityEngine.Random.Range(0, corrections.Length);
             int correction = corrections[correctionIndex];
-            float segment = 360f / corrections.Length;
 
-            float startAngle = NormalizeSignedAngle(wheel.localEulerAngles.z);
-            float targetAngle = correctionIndex * segment;
-            float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
-            float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
-
-            float duration = spin == 0 ? 1.55f : 1.20f;
-            float t = 0f;
-
-            while (t < duration)
-            {
-                t += Time.unscaledDeltaTime;
-                float p = Mathf.Clamp01(t / duration);
-                float e = 1f - Mathf.Pow(1f - p, 4f);
-                float angle = startAngle - totalSpin * e;
-                wheel.localRotation = Quaternion.Euler(0f, 0f, angle);
-
-                float shake = Mathf.Sin(Time.unscaledTime * 72f) * (1f - p) * 5f;
-                machine.anchoredPosition = new Vector2(shake, 0f);
-
-                float pulse = 1f + Mathf.Sin(Time.unscaledTime * 17f) * .05f;
-                wheelCore.rectTransform.localScale = Vector3.one * pulse;
-                yield return null;
-            }
-
-            wheel.localRotation = Quaternion.Euler(0f, 0f, targetAngle);
-            machine.anchoredPosition = Vector2.zero;
-            wheelCore.rectTransform.localScale = Vector3.one;
+            float ticketDuration = spin == 0 ? 2.20f : 1.75f;
+            int ticketMinTurns = spin == 0 ? 5 : 4;
+            int ticketMaxTurns = spin == 0 ? 8 : 7;
+            yield return SpinWheelTo(correctionIndex, ticketDuration, ticketMinTurns, ticketMaxTurns);
 
             yield return ChuteKick();
 
@@ -381,59 +360,25 @@ public sealed class XTapGachaMachine : MonoBehaviour
         hintText.text = "보정 룰렛 회전 중";
         title.text = "";
 
-        machine.localScale = Vector3.one * .90f;
-        machine.anchoredPosition = new Vector2(0f, -40f);
+        machine.localScale = Vector3.one;
+        machine.anchoredPosition = Vector2.zero;
 
+        wheel.localScale = Vector3.one * .94f;
         float intro = 0f;
-        while (intro < .22f)
+        while (intro < .18f)
         {
             intro += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(intro / .22f);
+            float p = Mathf.Clamp01(intro / .18f);
             float e = 1f - Mathf.Pow(1f - p, 3f);
-            machine.localScale = Vector3.one * Mathf.Lerp(.90f, 1f, e);
-            machine.anchoredPosition = new Vector2(0f, Mathf.Lerp(-40f, 0f, e));
+            wheel.localScale = Vector3.one * Mathf.Lerp(.94f, 1f, e);
             yield return null;
         }
+        wheel.localScale = Vector3.one;
 
         int correctionIndex = UnityEngine.Random.Range(0, corrections.Length);
         int correction = corrections[correctionIndex];
 
-        float segment = 360f / corrections.Length;
-
-        // Slot 0 is authored at the top pointer, and slot indices increase clockwise.
-        // A positive Unity Z rotation brings a clockwise-authored slot back to the top pointer.
-        // Always spin from the current wheel orientation to the ABSOLUTE target slot.
-        // This prevents visual selection from drifting away from the actual correction
-        // after the first reward spin.
-        float startAngle = NormalizeSignedAngle(wheel.localEulerAngles.z);
-        float targetAngle = correctionIndex * segment;
-        float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
-        float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
-
-        float duration = 1.85f;
-        float t = 0f;
-
-        while (t < duration)
-        {
-            t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / duration);
-            float e = 1f - Mathf.Pow(1f - p, 4f);
-            float angle = startAngle - totalSpin * e;
-            wheel.localRotation = Quaternion.Euler(0f, 0f, angle);
-
-            float shake = Mathf.Sin(Time.unscaledTime * 72f) * (1f - p) * 5f;
-            machine.anchoredPosition = new Vector2(shake, 0f);
-
-            float pulse = 1f + Mathf.Sin(Time.unscaledTime * 17f) * .05f;
-            wheelCore.rectTransform.localScale = Vector3.one * pulse;
-            yield return null;
-        }
-
-        // Snap to the exact selected slot so the pointer and applied value
-        // can never disagree because of accumulated rotation or frame rounding.
-        wheel.localRotation = Quaternion.Euler(0f, 0f, targetAngle);
-        machine.anchoredPosition = Vector2.zero;
-        wheelCore.rectTransform.localScale = Vector3.one;
+        yield return SpinWheelTo(correctionIndex, 2.75f, 5, 8);
 
         yield return ChuteKick();
 
@@ -953,9 +898,12 @@ public sealed class XTapGachaMachine : MonoBehaviour
             body.color = new Color(.075f, .085f, .11f, 1f);
         }
         body.raycastTarget = true;
-        machine.anchorMin = machine.anchorMax = new Vector2(.5f, .5f);
+        // Full-screen 9:16 stage. Never letterbox the authored background.
+        machine.anchorMin = Vector2.zero;
+        machine.anchorMax = Vector2.one;
         machine.pivot = new Vector2(.5f, .5f);
-        machine.sizeDelta = new Vector2(900f, 1600f);
+        machine.offsetMin = Vector2.zero;
+        machine.offsetMax = Vector2.zero;
 
         if (machineSkin == null)
             MakeFrame(machine, new Color(.84f, .60f, .13f, 1f), 18f);
@@ -975,10 +923,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
         correctionText.color = new Color(.96f, .76f, .25f, 1f);
         Anchor(correctionText.rectTransform, .12f, .805f, .88f, .855f);
 
-        // Keep the entire authored 9:16 background visible.
-        // This transparent stage only positions the live wheel over the wheel painted in the art.
+        // Full-width roulette stage. The wheel rotates; the selector pointer never does.
         RectTransform window = MakePanel(machine, "WheelWindow", new Color(0f, 0f, 0f, 0f));
-        Anchor(window, .12f, .300f, .88f, .720f);
+        Anchor(window, .09f, .340f, .91f, .750f);
 
         wheel = new GameObject(
             "Wheel",
@@ -988,7 +935,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         ).GetComponent<RectTransform>();
         wheel.SetParent(window, false);
         wheel.anchorMin = wheel.anchorMax = new Vector2(.5f, .5f);
-        wheel.sizeDelta = new Vector2(620f, 620f);
+        wheel.sizeDelta = new Vector2(660f, 660f);
         wheel.anchoredPosition = Vector2.zero;
 
         wheelCore = wheel.GetComponent<Image>();
@@ -999,20 +946,49 @@ public sealed class XTapGachaMachine : MonoBehaviour
         wheelCore.preserveAspect = true;
         wheelCore.raycastTarget = false;
 
-        // No extra Unity pointer. The pointer/jewel already exists in the full background art.
-        // Only the circular roulette art rotates.
+        // Draw the approved 11-sector face over the ornamental wheel base.
+        // This deliberately replaces the old baked sector colors/numbers at runtime.
+        GameObject faceGo = new GameObject(
+            "WheelFace11",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(XTapRouletteFaceGraphic)
+        );
+        faceGo.transform.SetParent(wheel, false);
+        RectTransform faceRt = faceGo.GetComponent<RectTransform>();
+        Anchor(faceRt, 0f, 0f, 1f, 1f);
+        XTapRouletteFaceGraphic faceGraphic = faceGo.GetComponent<XTapRouletteFaceGraphic>();
+        faceGraphic.raycastTarget = false;
+
+        BuildRouletteLabels();
+
+        // Fixed 12-o'clock selector: separate from the rotating wheel, with a clear air gap.
+        GameObject pointerGo = new GameObject(
+            "FixedPointer",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(XTapFixedPointerGraphic)
+        );
+        pointerGo.transform.SetParent(window, false);
+        fixedPointer = pointerGo.GetComponent<RectTransform>();
+        fixedPointer.anchorMin = fixedPointer.anchorMax = new Vector2(.5f, .5f);
+        fixedPointer.sizeDelta = new Vector2(92f, 112f);
+        fixedPointer.anchoredPosition = new Vector2(0f, 405f);
+        pointerGo.GetComponent<XTapFixedPointerGraphic>().raycastTarget = false;
+        fixedPointer.SetAsLastSibling();
 
         // Cover only the fixed sample result area so the real block/name/stats can be drawn.
         // The rest of the authored 9:16 image remains fully visible.
-        chute = MakePanel(machine, "Chute", new Color(.008f, .010f, .016f, .76f));
-        Anchor(chute, .13f, .080f, .87f, .355f);
-        MakeFrame(chute, new Color(.66f, .43f, .18f, .88f), 4f);
+        // Real generated-block area. Fully opaque so nothing behind can bleed through.
+        chute = MakePanel(machine, "Chute", new Color(.008f, .010f, .016f, 1f));
+        Anchor(chute, .11f, .070f, .89f, .300f);
+        MakeFrame(chute, new Color(.78f, .53f, .18f, 1f), 5f);
 
         rewardRoot = new GameObject("RewardBlock", typeof(RectTransform)).GetComponent<RectTransform>();
         rewardRoot.SetParent(machine, false);
         rewardRoot.anchorMin = rewardRoot.anchorMax = new Vector2(.5f, .5f);
         rewardRoot.sizeDelta = new Vector2(420f, 250f);
-        rewardRoot.anchoredPosition = new Vector2(0f, -455f);
+        rewardRoot.anchoredPosition = new Vector2(0f, -500f);
 
         nameText = MakeText(machine, "", 20, TextAnchor.MiddleCenter, true);
         nameText.color = new Color(1f, .95f, .82f, 1f);
@@ -1028,6 +1004,126 @@ public sealed class XTapGachaMachine : MonoBehaviour
         hintText = MakeText(machine, "", 15, TextAnchor.MiddleCenter, false);
         hintText.color = new Color(.94f, .86f, .68f, 1f);
         Anchor(hintText.rectTransform, .08f, .020f, .92f, .060f);
+    }
+
+
+    void BuildRouletteLabels()
+    {
+        float step = 360f / corrections.Length;
+        float radius = 215f;
+
+        for (int i = 0; i < corrections.Length; i++)
+        {
+            string value = corrections[i] == 0
+                ? "0%"
+                : (corrections[i] > 0 ? "+" + corrections[i] : corrections[i].ToString());
+
+            Text label = MakeText(wheel, value, 14, TextAnchor.MiddleCenter, true);
+            label.name = "WheelValue_" + value;
+            label.color = new Color(1f, .98f, .92f, 1f);
+            label.horizontalOverflow = HorizontalWrapMode.Overflow;
+            label.verticalOverflow = VerticalWrapMode.Overflow;
+
+            RectTransform rt = label.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(.5f, .5f);
+            rt.sizeDelta = new Vector2(150f, 82f);
+
+            float angle = i * step;
+            float radians = angle * Mathf.Deg2Rad;
+            rt.anchoredPosition = new Vector2(
+                Mathf.Sin(radians) * radius,
+                Mathf.Cos(radians) * radius
+            );
+
+            // Critical rule:
+            // each label's "up" points toward its own sector pointer.
+            // When that sector reaches 12 o'clock (+angle wheel rotation),
+            // the label becomes exactly 0 degrees/upright.
+            rt.localRotation = Quaternion.Euler(0f, 0f, -angle);
+
+            Outline outline = label.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0f, 0f, 0f, .92f);
+            outline.effectDistance = new Vector2(2f, -2f);
+            outline.useGraphicAlpha = true;
+        }
+    }
+
+    IEnumerator SpinWheelTo(int correctionIndex, float duration, int minTurns, int maxTurnsExclusive)
+    {
+        float segment = 360f / corrections.Length;
+        float startAngle = NormalizeSignedAngle(wheel.localEulerAngles.z);
+        float targetAngle = correctionIndex * segment;
+
+        // Stop just past the target first, then bounce back into the exact slot.
+        float overshootAngle = targetAngle - segment * .18f;
+        float clockwiseDelta = Mathf.Repeat(startAngle - overshootAngle, 360f);
+        float totalSpin = 360f * UnityEngine.Random.Range(minTurns, maxTurnsExclusive) + clockwiseDelta;
+
+        float mainDuration = duration * .86f;
+        float t = 0f;
+        int lastTick = -1;
+        float tickKick = 0f;
+
+        while (t < mainDuration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / mainDuration);
+
+            // Long, readable deceleration. Most suspense is intentionally in the last third.
+            float e = 1f - Mathf.Pow(1f - p, 3.2f);
+            float travelled = totalSpin * e;
+            wheel.localRotation = Quaternion.Euler(0f, 0f, startAngle - travelled);
+
+            int tick = Mathf.FloorToInt(travelled / segment);
+            if (tick != lastTick)
+            {
+                lastTick = tick;
+                tickKick = 1f;
+            }
+
+            tickKick = Mathf.MoveTowards(tickKick, 0f, Time.unscaledDeltaTime * 7.5f);
+
+            // Tick feedback belongs to the wheel/pointer only. Never shake the full-screen background.
+            float wheelNudge = Mathf.Sin(Time.unscaledTime * 92f) * tickKick * 2.5f;
+            wheel.anchoredPosition = new Vector2(wheelNudge, 0f);
+            wheelCore.rectTransform.localScale = Vector3.one * (1f + tickKick * .025f);
+
+            if (fixedPointer != null)
+                fixedPointer.localScale = Vector3.one * (1f + tickKick * .11f);
+
+            yield return null;
+        }
+
+        wheel.anchoredPosition = Vector2.zero;
+        wheelCore.rectTransform.localScale = Vector3.one;
+        if (fixedPointer != null) fixedPointer.localScale = Vector3.one;
+
+        // A short held breath before the final settling click.
+        yield return new WaitForSecondsRealtime(.06f);
+
+        float settleDuration = Mathf.Max(.30f, duration * .14f);
+        t = 0f;
+        while (t < settleDuration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / settleDuration);
+            float e = Mathf.SmoothStep(0f, 1f, p);
+
+            float angle = Mathf.LerpAngle(overshootAngle, targetAngle, e);
+            angle += Mathf.Sin(p * Mathf.PI * 2.2f) * (1f - p) * segment * .035f;
+            wheel.localRotation = Quaternion.Euler(0f, 0f, angle);
+
+            if (fixedPointer != null)
+                fixedPointer.localScale = Vector3.one * (1f + Mathf.Sin(p * Mathf.PI) * .08f);
+
+            yield return null;
+        }
+
+        // Exact final slot: visual value and applied correction can never disagree.
+        wheel.localRotation = Quaternion.Euler(0f, 0f, targetAngle);
+        wheel.anchoredPosition = Vector2.zero;
+        wheelCore.rectTransform.localScale = Vector3.one;
+        if (fixedPointer != null) fixedPointer.localScale = Vector3.one;
     }
 
     void LoadVisualAssets()
@@ -1052,24 +1148,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
             texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
             bool loaded = false;
 
-            // 11.44: approved embedded art is the primary source.
-            // This prevents stale/corrupt imported Resources from winning on Android.
-            string embedded = resourcePath.IndexOf("block_gear_machine", StringComparison.OrdinalIgnoreCase) >= 0
-                ? EmbeddedBlockGearMachineJpegBase64
-                : EmbeddedBlockGearWheelJpegBase64;
-            try
-            {
-                loaded = !string.IsNullOrEmpty(embedded) &&
-                         texture.LoadImage(Convert.FromBase64String(embedded), false);
-            }
-            catch
-            {
-                loaded = false;
-            }
-
-            TextAsset source = loaded ? null : Resources.Load<TextAsset>(resourcePath);
-
-            if (!loaded && source != null)
+            // Repository Resources are the canonical source. Embedded art is emergency fallback only.
+            TextAsset source = Resources.Load<TextAsset>(resourcePath);
+            if (source != null)
             {
                 try
                 {
@@ -1096,12 +1177,25 @@ public sealed class XTapGachaMachine : MonoBehaviour
                 }
             }
 
-            // 11.40: do not show the empty fallback frame if Resources lookup/import
-            // fails on the installed APK. Decode the exact approved repository art
-            // embedded in this script as a guaranteed final source.
             if (!loaded)
             {
-                Debug.LogError("X탑 블록 머신 승인 이미지와 Resources 로드 모두 실패: " + resourcePath);
+                string embedded = resourcePath.IndexOf("block_gear_machine", StringComparison.OrdinalIgnoreCase) >= 0
+                    ? EmbeddedBlockGearMachineJpegBase64
+                    : EmbeddedBlockGearWheelJpegBase64;
+                try
+                {
+                    loaded = !string.IsNullOrEmpty(embedded) &&
+                             texture.LoadImage(Convert.FromBase64String(embedded), false);
+                }
+                catch
+                {
+                    loaded = false;
+                }
+            }
+
+            if (!loaded)
+            {
+                Debug.LogError("X탑 블록 머신 Resources와 내장 fallback 모두 로드 실패: " + resourcePath);
             }
 
             if (!loaded)
