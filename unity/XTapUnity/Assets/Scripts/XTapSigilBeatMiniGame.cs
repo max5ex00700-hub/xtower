@@ -59,6 +59,24 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         34.608, 35.056, 35.515, 35.963, 36.421, 36.880, 37.339, 37.787
     };
 
+    [Serializable]
+    sealed class VisualPackData
+    {
+        public string sigil_background;
+        public string thumb_left;
+        public string thumb_right;
+        public string timing_ring;
+        public string note_down;
+        public string note_right;
+        public string note_left;
+        public string note_up;
+        public string note_tap;
+        public string slash_left;
+        public string slash_right;
+        public string judgement_frame;
+        public string title_plate;
+    }
+
     enum SlashDirection
     {
         Tap,
@@ -114,6 +132,22 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
     AudioClip backingClip;
     Sprite ringSprite;
     Sprite runeSprite;
+    Sprite stageBackgroundSkin;
+    Sprite thumbLeftSkin;
+    Sprite thumbRightSkin;
+    Sprite noteTapSkin;
+    Sprite noteUpSkin;
+    Sprite noteDownSkin;
+    Sprite noteLeftSkin;
+    Sprite noteRightSkin;
+    Sprite slashLeftSkin;
+    Sprite slashRightSkin;
+    Sprite judgementFrameSkin;
+    Sprite titlePlateSkin;
+    Image leftThumb;
+    Image rightThumb;
+    Coroutine leftThumbRoutine;
+    Coroutine rightThumbRoutine;
 
     readonly List<Note> notes = new List<Note>();
     readonly List<Note> active = new List<Note>();
@@ -152,8 +186,9 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         assets = originalAssets;
         onClosed = closed;
 
-        ringSprite = CreateRingSprite(192, 12);
-        runeSprite = CreateRuneSprite(160);
+        LoadVisualPack();
+        if (ringSprite == null) ringSprite = CreateRingSprite(192, 12);
+        if (runeSprite == null) runeSprite = CreateRuneSprite(160);
 
         beatSource = gameObject.AddComponent<AudioSource>();
         beatSource.playOnAwake = false;
@@ -176,10 +211,18 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         overlay.SetActive(true);
         overlay.transform.SetAsLastSibling();
 
-        Sprite reina = assets.GetSprite("assets/f1_p00.jpg");
-        if (reina == null) reina = assets.GetSprite("assets/f1_p02.jpg");
-        portrait.sprite = reina;
-        portrait.enabled = reina != null;
+        if (stageBackgroundSkin != null)
+        {
+            portrait.sprite = null;
+            portrait.enabled = false;
+        }
+        else
+        {
+            Sprite reina = assets.GetSprite("assets/f1_p00.jpg");
+            if (reina == null) reina = assets.GetSprite("assets/f1_p02.jpg");
+            portrait.sprite = reina;
+            portrait.enabled = reina != null;
+        }
 
         ResetIdle();
     }
@@ -250,7 +293,17 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         overlay = new GameObject("SigilBeatMiniGame", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         overlay.transform.SetParent(host, false);
         Image bg = overlay.GetComponent<Image>();
-        bg.color = new Color(.006f, .006f, .012f, .998f);
+        if (stageBackgroundSkin != null)
+        {
+            bg.sprite = stageBackgroundSkin;
+            bg.type = Image.Type.Simple;
+            bg.preserveAspect = false;
+            bg.color = Color.white;
+        }
+        else
+        {
+            bg.color = new Color(.006f, .006f, .012f, .998f);
+        }
         bg.raycastTarget = true;
         Anchor(bg.rectTransform, 0f, 0f, 1f, 1f);
 
@@ -268,6 +321,14 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
         Image bottomShade = MakeImage(overlay.transform, "BottomHudShade", new Color(.006f, .005f, .012f, .94f), 0f, 0f, 1f, .18f);
         bottomShade.raycastTarget = false;
+
+        if (titlePlateSkin != null)
+        {
+            Image titlePlate = MakeImage(overlay.transform, "SigilTitlePlate", Color.white, .025f, .930f, .76f, .995f);
+            titlePlate.sprite = titlePlateSkin;
+            titlePlate.preserveAspect = false;
+            titlePlate.raycastTarget = false;
+        }
 
         Text title = MakeText(overlay.transform, "X SIGIL BEAT  ·  1F", 24, TextAnchor.MiddleLeft, true);
         title.color = new Color(1f, .86f, .56f, 1f);
@@ -296,6 +357,22 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         BuildPerspectiveGuides();
         BuildTargets();
 
+        if (thumbLeftSkin != null)
+        {
+            leftThumb = MakeImage(overlay.transform, "LeftThumb", Color.white, .00f, .085f, .32f, .390f);
+            leftThumb.sprite = thumbLeftSkin;
+            leftThumb.preserveAspect = true;
+            leftThumb.raycastTarget = false;
+        }
+
+        if (thumbRightSkin != null)
+        {
+            rightThumb = MakeImage(overlay.transform, "RightThumb", Color.white, .68f, .085f, 1.00f, .390f);
+            rightThumb.sprite = thumbRightSkin;
+            rightThumb.preserveAspect = true;
+            rightThumb.raycastTarget = false;
+        }
+
         inputSurface = new GameObject(
             "SigilBeatInput",
             typeof(RectTransform),
@@ -310,6 +387,14 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         inputReceiver = inputSurface.GetComponent<XTapSigilBeatInput>();
         inputReceiver.Released = HandleGesture;
         inputSurface.gameObject.SetActive(false);
+
+        if (judgementFrameSkin != null)
+        {
+            Image judgementFrame = MakeImage(overlay.transform, "JudgementFrame", Color.white, .20f, .485f, .80f, .615f);
+            judgementFrame.sprite = judgementFrameSkin;
+            judgementFrame.preserveAspect = false;
+            judgementFrame.raycastTarget = false;
+        }
 
         judgementText = MakeText(overlay.transform, "", 34, TextAnchor.MiddleCenter, true);
         judgementText.color = Color.white;
@@ -549,19 +634,23 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
 
         Image core = new GameObject("RuneCore", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
         core.transform.SetParent(root, false);
-        core.sprite = runeSprite;
-        core.color = new Color(TargetColors[note.target].r, TargetColors[note.target].g, TargetColors[note.target].b, .96f);
+        Sprite authoredNote = GetNoteSprite(note.direction);
+        core.sprite = authoredNote != null ? authoredNote : runeSprite;
+        core.color = Color.white;
         core.raycastTarget = false;
-        SetSize(core.rectTransform, 104f, 104f);
+        SetSize(core.rectTransform, 118f, 132f);
         note.core = core;
 
-        Text label = MakeText(core.transform, DirectionLabel(note.direction), 16, TextAnchor.MiddleCenter, true);
-        label.color = Color.white;
-        label.resizeTextForBestFit = true;
-        label.resizeTextMinSize = 22;
-        label.resizeTextMaxSize = 38;
-        Anchor(label.rectTransform, .08f, .08f, .92f, .92f);
-        note.label = label;
+        if (authoredNote == null)
+        {
+            Text label = MakeText(core.transform, DirectionLabel(note.direction), 16, TextAnchor.MiddleCenter, true);
+            label.color = Color.white;
+            label.resizeTextForBestFit = true;
+            label.resizeTextMinSize = 22;
+            label.resizeTextMaxSize = 38;
+            Anchor(label.rectTransform, .08f, .08f, .92f, .92f);
+            note.label = label;
+        }
 
         active.Add(note);
     }
@@ -571,6 +660,9 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
         if (!playing) return;
 
         Vector2 delta = endScreen - startScreen;
+        bool leftSide = startScreen.x < Screen.width * .5f;
+        PulseThumb(leftSide, delta);
+        PlaySlashFx(leftSide, delta);
         SlashDirection inputDirection = DirectionFromGesture(delta);
         Vector2 sampleScreen = inputDirection == SlashDirection.Tap
             ? endScreen
@@ -792,6 +884,150 @@ public sealed class XTapSigilBeatMiniGame : MonoBehaviour
     {
         if (beatSource != null)
             beatSource.Stop();
+    }
+
+    void LoadVisualPack()
+    {
+        try
+        {
+            TextAsset packAsset = Resources.Load<TextAsset>("XTapSigilBeat/visual_pack");
+            if (packAsset == null || string.IsNullOrEmpty(packAsset.text))
+            {
+                Debug.LogError("X SIGIL BEAT visual pack 누락.");
+                return;
+            }
+
+            VisualPackData pack = JsonUtility.FromJson<VisualPackData>(packAsset.text);
+            if (pack == null)
+            {
+                Debug.LogError("X SIGIL BEAT visual pack 파싱 실패.");
+                return;
+            }
+
+            stageBackgroundSkin = DecodePackSprite(pack.sigil_background, "SigilBackground");
+            thumbLeftSkin = DecodePackSprite(pack.thumb_left, "SigilThumbLeft");
+            thumbRightSkin = DecodePackSprite(pack.thumb_right, "SigilThumbRight");
+            ringSprite = DecodePackSprite(pack.timing_ring, "SigilTimingRing");
+            noteTapSkin = DecodePackSprite(pack.note_tap, "SigilNoteTap");
+            noteUpSkin = DecodePackSprite(pack.note_up, "SigilNoteUp");
+            noteDownSkin = DecodePackSprite(pack.note_down, "SigilNoteDown");
+            noteLeftSkin = DecodePackSprite(pack.note_left, "SigilNoteLeft");
+            noteRightSkin = DecodePackSprite(pack.note_right, "SigilNoteRight");
+            slashLeftSkin = DecodePackSprite(pack.slash_left, "SigilSlashLeft");
+            slashRightSkin = DecodePackSprite(pack.slash_right, "SigilSlashRight");
+            judgementFrameSkin = DecodePackSprite(pack.judgement_frame, "SigilJudgementFrame");
+            titlePlateSkin = DecodePackSprite(pack.title_plate, "SigilTitlePlate");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("X SIGIL BEAT visual pack 로드 실패: " + e.Message);
+        }
+    }
+
+    Sprite DecodePackSprite(string encoded, string spriteName)
+    {
+        if (string.IsNullOrEmpty(encoded)) return null;
+        try
+        {
+            byte[] bytes = Convert.FromBase64String(encoded);
+            Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!texture.LoadImage(bytes, false))
+            {
+                Destroy(texture);
+                return null;
+            }
+            texture.wrapMode = TextureWrapMode.Clamp;
+            texture.filterMode = FilterMode.Bilinear;
+            Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, texture.width, texture.height), new Vector2(.5f, .5f), 100f);
+            sprite.name = spriteName;
+            return sprite;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    Sprite GetNoteSprite(SlashDirection direction)
+    {
+        switch (direction)
+        {
+            case SlashDirection.Up: return noteUpSkin;
+            case SlashDirection.Down: return noteDownSkin;
+            case SlashDirection.Left: return noteLeftSkin;
+            case SlashDirection.Right: return noteRightSkin;
+            default: return noteTapSkin;
+        }
+    }
+
+    void PulseThumb(bool left, Vector2 delta)
+    {
+        Image hand = left ? leftThumb : rightThumb;
+        if (hand == null) return;
+
+        Coroutine running = left ? leftThumbRoutine : rightThumbRoutine;
+        if (running != null) StopCoroutine(running);
+
+        Coroutine next = StartCoroutine(ThumbPulseRoutine(hand, left, delta));
+        if (left) leftThumbRoutine = next;
+        else rightThumbRoutine = next;
+    }
+
+    IEnumerator ThumbPulseRoutine(Image hand, bool left, Vector2 delta)
+    {
+        RectTransform rect = hand.rectTransform;
+        Vector3 baseScale = Vector3.one;
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+        if (delta.sqrMagnitude < 36f) angle = left ? 8f : -8f;
+        angle = Mathf.Clamp(angle, -55f, 55f);
+
+        float t = 0f;
+        while (t < .12f)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / .12f);
+            float kick = Mathf.Sin(p * Mathf.PI);
+            rect.localScale = baseScale * (1f + .18f * kick);
+            rect.localRotation = Quaternion.Euler(0f, 0f, angle * .22f * kick);
+            yield return null;
+        }
+
+        rect.localScale = baseScale;
+        rect.localRotation = Quaternion.identity;
+    }
+
+    void PlaySlashFx(bool left, Vector2 delta)
+    {
+        Sprite skin = left ? slashLeftSkin : slashRightSkin;
+        if (skin == null || gameArea == null) return;
+
+        Image fx = new GameObject("ThumbSlashFx", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
+        fx.transform.SetParent(gameArea, false);
+        fx.sprite = skin;
+        fx.preserveAspect = true;
+        fx.raycastTarget = false;
+        fx.color = new Color(1f, 1f, 1f, .94f);
+        Anchor(fx.rectTransform, left ? .00f : .48f, .08f, left ? .52f : 1.00f, .48f);
+
+        float angle = Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg;
+        if (delta.sqrMagnitude > 36f) fx.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle * .18f);
+        StartCoroutine(SlashFxRoutine(fx));
+    }
+
+    IEnumerator SlashFxRoutine(Image fx)
+    {
+        float t = 0f;
+        while (fx != null && t < .18f)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / .18f);
+            fx.rectTransform.localScale = Vector3.one * Mathf.Lerp(.82f, 1.16f, p);
+            Color c = fx.color;
+            c.a = 1f - p;
+            fx.color = c;
+            yield return null;
+        }
+        if (fx != null) Destroy(fx.gameObject);
     }
 
     Sprite CreateRingSprite(int size, int thickness)
