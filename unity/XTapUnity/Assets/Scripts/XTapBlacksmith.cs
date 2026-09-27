@@ -52,6 +52,12 @@ public sealed class XTapBlacksmith : MonoBehaviour
     Texture2D skinAtlas;
     Texture2D probabilityWheelTexture;
     Sprite probabilityWheelSkin;
+    Texture2D forgeDuelBackgroundTexture;
+    Texture2D forgeDuelAtlasTexture;
+    Sprite forgeDuelBackgroundSkin;
+    Sprite angelSmithSkin;
+    Sprite demonSmithSkin;
+    Sprite forgeAnvilSkin;
     Sprite backgroundSkin;
     Sprite panelSkin;
     Sprite slotSkin;
@@ -77,6 +83,22 @@ public sealed class XTapBlacksmith : MonoBehaviour
     Text probabilityResultText;
     Image probabilityChargeFill;
     readonly Image[] probabilityLamps = new Image[3];
+
+    RectTransform forgeStage;
+    RectTransform angelSmith;
+    RectTransform demonSmith;
+    RectTransform forgeAnvil;
+    RectTransform forgeImpact;
+    RectTransform forgeTargetToken;
+    RectTransform forgeMaterialToken;
+    Image angelSmithImage;
+    Image demonSmithImage;
+    Image forgeImpactImage;
+    Text forgeTargetTokenText;
+    Text forgeMaterialTokenText;
+    Vector2 angelRestPosition;
+    Vector2 demonRestPosition;
+
     bool probabilityBusy;
     Coroutine probabilityRoutine;
 
@@ -305,94 +327,225 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void BuildProbabilityMachineUi()
     {
-        probabilityOverlay = new GameObject("ForgeProbabilityOverlay", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        probabilityOverlay = new GameObject(
+            "ForgeProbabilityOverlay",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image)
+        );
         probabilityOverlay.transform.SetParent(overlay.transform, false);
 
         Image dim = probabilityOverlay.GetComponent<Image>();
-        dim.color = new Color(0f, 0f, 0f, .82f);
+        dim.color = new Color(0f, 0f, 0f, 1f);
         dim.raycastTarget = true;
         Anchor(dim.rectTransform, 0f, 0f, 1f, 1f);
 
-        // Reuse the BLOCK reward machine composition. Forge only changes the
-        // numeric ranges and operation labels.
         probabilityMachine = new GameObject(
-            "ForgeBlockMachine",
+            "ForgeDuelMachine",
             typeof(RectTransform),
             typeof(CanvasRenderer),
             typeof(Image)
         ).GetComponent<RectTransform>();
         probabilityMachine.SetParent(probabilityOverlay.transform, false);
+        Anchor(probabilityMachine, 0f, 0f, 1f, 1f);
 
         Image body = probabilityMachine.GetComponent<Image>();
-        body.color = new Color(.075f, .085f, .11f, 1f);
+        if (forgeDuelBackgroundSkin != null)
+        {
+            body.sprite = forgeDuelBackgroundSkin;
+            body.type = Image.Type.Simple;
+            body.preserveAspect = false;
+            body.color = Color.white;
+        }
+        else
+        {
+            body.color = new Color(.025f, .012f, .008f, 1f);
+        }
         body.raycastTarget = true;
 
-        probabilityMachine.anchorMin = probabilityMachine.anchorMax = new Vector2(.5f, .5f);
-        probabilityMachine.pivot = new Vector2(.5f, .5f);
-        probabilityMachine.sizeDelta = new Vector2(900f, 1600f);
-        probabilityMachine.anchoredPosition = Vector2.zero;
-        Frame(probabilityMachine, new Color(.84f, .60f, .13f, 1f), 18f);
+        RectTransform topShade = MakePanel(
+            probabilityMachine,
+            "TopShade",
+            new Color(.012f, .008f, .008f, .68f)
+        );
+        Anchor(topShade, 0f, .805f, 1f, 1f);
 
-        probabilityTitleText = MakeText(probabilityMachine, "X-TOWER  FORGE", 28, TextAnchor.MiddleCenter, true);
-        probabilityTitleText.color = new Color(1f, .84f, .39f, 1f);
-        Anchor(probabilityTitleText.rectTransform, .06f, .905f, .94f, .985f);
+        probabilityTitleText = MakeText(
+            probabilityMachine,
+            "X-TOWER FORGE",
+            27,
+            TextAnchor.MiddleCenter,
+            true
+        );
+        probabilityTitleText.color = new Color(1f, .86f, .48f, 1f);
+        Anchor(probabilityTitleText.rectTransform, .05f, .910f, .95f, .982f);
 
-        probabilityChanceText = MakeText(probabilityMachine, "", 20, TextAnchor.MiddleCenter, true);
-        probabilityChanceText.color = new Color(.96f, .76f, .25f, 1f);
-        Anchor(probabilityChanceText.rectTransform, .12f, .830f, .88f, .905f);
+        probabilityChanceText = MakeText(
+            probabilityMachine,
+            "",
+            17,
+            TextAnchor.MiddleCenter,
+            true
+        );
+        probabilityChanceText.color = new Color(1f, .74f, .28f, 1f);
+        Anchor(probabilityChanceText.rectTransform, .08f, .842f, .92f, .910f);
 
-        RectTransform window = MakePanel(probabilityMachine, "WheelWindow", new Color(.025f, .03f, .045f, 1f));
-        Anchor(window, .17f, .455f, .83f, .820f);
-        Frame(window, new Color(.42f, .44f, .50f, 1f), 8f);
+        forgeStage = new GameObject("ForgeDuelStage", typeof(RectTransform)).GetComponent<RectTransform>();
+        forgeStage.SetParent(probabilityMachine, false);
+        Anchor(forgeStage, 0f, .205f, 1f, .840f);
 
-        probabilityWheel = new GameObject("Wheel", typeof(RectTransform)).GetComponent<RectTransform>();
-        probabilityWheel.SetParent(window, false);
-        probabilityWheel.anchorMin = probabilityWheel.anchorMax = new Vector2(.5f, .5f);
-        probabilityWheel.sizeDelta = new Vector2(430f, 430f);
-        probabilityWheel.anchoredPosition = Vector2.zero;
+        angelSmith = CreateForgeActor(
+            forgeStage,
+            "AngelSmith",
+            angelSmithSkin,
+            new Vector2(.25f, .57f),
+            new Vector2(360f, 480f),
+            out angelSmithImage
+        );
+        angelRestPosition = new Vector2(-48f, 18f);
+        angelSmith.anchoredPosition = angelRestPosition;
 
-        // Authored SUCCESS / FAIL wheel.
-        // SUCCESS is upright at 0 degrees.
-        // FAIL is intentionally authored upside-down in the lower half so it becomes
-        // upright when the whole wheel stops at 180 degrees. No pointer is required.
-        GameObject wheelArtGo = new GameObject(
-            "SuccessFailWheelArt",
+        demonSmith = CreateForgeActor(
+            forgeStage,
+            "DemonSmith",
+            demonSmithSkin,
+            new Vector2(.75f, .57f),
+            new Vector2(370f, 480f),
+            out demonSmithImage
+        );
+        demonRestPosition = new Vector2(48f, 18f);
+        demonSmith.anchoredPosition = demonRestPosition;
+
+        GameObject anvilGo = new GameObject(
+            "ForgeAnvil",
             typeof(RectTransform),
             typeof(CanvasRenderer),
             typeof(Image)
         );
-        wheelArtGo.transform.SetParent(probabilityWheel, false);
-
-        probabilityWheelCore = wheelArtGo.GetComponent<Image>();
-        probabilityWheelCore.sprite = probabilityWheelSkin;
-        probabilityWheelCore.color = probabilityWheelSkin != null
+        anvilGo.transform.SetParent(forgeStage, false);
+        Image anvilImage = anvilGo.GetComponent<Image>();
+        anvilImage.sprite = forgeAnvilSkin;
+        anvilImage.color = forgeAnvilSkin != null
             ? Color.white
-            : new Color(1f, 1f, 1f, 0f);
-        probabilityWheelCore.preserveAspect = true;
-        probabilityWheelCore.raycastTarget = false;
-        Anchor(probabilityWheelCore.rectTransform, 0f, 0f, 1f, 1f);
+            : new Color(.20f, .17f, .15f, 1f);
+        anvilImage.preserveAspect = true;
+        anvilImage.raycastTarget = false;
+        forgeAnvil = anvilImage.rectTransform;
+        forgeAnvil.anchorMin = forgeAnvil.anchorMax = new Vector2(.5f, .28f);
+        forgeAnvil.sizeDelta = new Vector2(470f, 250f);
+        forgeAnvil.anchoredPosition = new Vector2(0f, -8f);
 
-        RectTransform resultChute = MakePanel(probabilityMachine, "ResultChute", new Color(.025f, .03f, .04f, 1f));
-        Anchor(resultChute, .25f, .285f, .75f, .420f);
-        Frame(resultChute, new Color(.50f, .52f, .58f, 1f), 7f);
+        forgeTargetToken = CreateForgeToken(
+            forgeStage,
+            "ForgeTargetToken",
+            new Vector2(.5f, .33f),
+            new Color(.12f, .32f, .56f, .96f),
+            out forgeTargetTokenText
+        );
+        forgeMaterialToken = CreateForgeToken(
+            forgeStage,
+            "ForgeMaterialToken",
+            new Vector2(.5f, .33f),
+            new Color(.56f, .18f, .12f, .96f),
+            out forgeMaterialTokenText
+        );
 
-        probabilityPhaseText = MakeText(resultChute, "", 18, TextAnchor.MiddleCenter, true);
-        probabilityPhaseText.color = new Color(.90f, .82f, .62f, 1f);
-        Anchor(probabilityPhaseText.rectTransform, .04f, .54f, .96f, .94f);
+        GameObject impactGo = new GameObject(
+            "ForgeImpact",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image)
+        );
+        impactGo.transform.SetParent(forgeStage, false);
+        forgeImpactImage = impactGo.GetComponent<Image>();
+        forgeImpactImage.raycastTarget = false;
+        forgeImpactImage.color = new Color(1f, .85f, .30f, 0f);
+        forgeImpact = forgeImpactImage.rectTransform;
+        forgeImpact.anchorMin = forgeImpact.anchorMax = new Vector2(.5f, .32f);
+        forgeImpact.sizeDelta = new Vector2(170f, 170f);
+        forgeImpact.anchoredPosition = Vector2.zero;
+        forgeImpact.localRotation = Quaternion.Euler(0f, 0f, 45f);
+        forgeImpact.localScale = Vector3.one * .15f;
 
-        probabilityResultText = MakeText(resultChute, "", 26, TextAnchor.MiddleCenter, true);
+        RectTransform resultPlate = MakePanel(
+            probabilityMachine,
+            "ForgeResultPlate",
+            new Color(.008f, .008f, .012f, .98f)
+        );
+        Anchor(resultPlate, .055f, .035f, .945f, .205f);
+        Frame(resultPlate, new Color(.82f, .55f, .16f, .98f), 6f);
+
+        probabilityPhaseText = MakeText(
+            resultPlate,
+            "",
+            16,
+            TextAnchor.MiddleCenter,
+            true
+        );
+        probabilityPhaseText.color = new Color(.94f, .85f, .66f, 1f);
+        Anchor(probabilityPhaseText.rectTransform, .04f, .53f, .96f, .93f);
+
+        probabilityResultText = MakeText(
+            resultPlate,
+            "",
+            27,
+            TextAnchor.MiddleCenter,
+            true
+        );
         probabilityResultText.color = Color.white;
-        Anchor(probabilityResultText.rectTransform, .04f, .06f, .96f, .56f);
-
-        Text guide = MakeText(probabilityMachine, "최종 결과는 성공 또는 실패", 15, TextAnchor.MiddleCenter, false);
-        guide.color = new Color(.72f, .74f, .80f, 1f);
-        Anchor(guide.rectTransform, .05f, .105f, .95f, .185f);
-
-        Text touchGuide = MakeText(probabilityMachine, "확률 계산은 내부에서 정확히 판정됩니다", 13, TextAnchor.MiddleCenter, false);
-        touchGuide.color = new Color(.58f, .60f, .66f, 1f);
-        Anchor(touchGuide.rectTransform, .05f, .025f, .95f, .095f);
+        Anchor(probabilityResultText.rectTransform, .04f, .08f, .96f, .58f);
 
         probabilityOverlay.SetActive(false);
+    }
+
+    RectTransform CreateForgeActor(
+        Transform parent,
+        string name,
+        Sprite sprite,
+        Vector2 anchor,
+        Vector2 size,
+        out Image image
+    )
+    {
+        GameObject go = new GameObject(
+            name,
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image)
+        );
+        go.transform.SetParent(parent, false);
+        image = go.GetComponent<Image>();
+        image.sprite = sprite;
+        image.color = sprite != null ? Color.white : new Color(.25f, .25f, .25f, 1f);
+        image.preserveAspect = true;
+        image.raycastTarget = false;
+
+        RectTransform rt = image.rectTransform;
+        rt.anchorMin = rt.anchorMax = anchor;
+        rt.pivot = new Vector2(.5f, .5f);
+        rt.sizeDelta = size;
+        return rt;
+    }
+
+    RectTransform CreateForgeToken(
+        Transform parent,
+        string name,
+        Vector2 anchor,
+        Color color,
+        out Text tokenText
+    )
+    {
+        RectTransform token = MakePanel(parent, name, color);
+        token.anchorMin = token.anchorMax = anchor;
+        token.pivot = new Vector2(.5f, .5f);
+        token.sizeDelta = new Vector2(126f, 126f);
+        token.anchoredPosition = Vector2.zero;
+        Frame(token, new Color(.95f, .72f, .26f, 1f), 5f);
+
+        tokenText = MakeText(token, "", 14, TextAnchor.MiddleCenter, true);
+        tokenText.color = new Color(1f, .94f, .80f, 1f);
+        Anchor(tokenText.rectTransform, .05f, .05f, .95f, .95f);
+        return token;
     }
 
     RectTransform MakeSlotPanel(Transform parent, string name, float x1, float y1, float x2, float y2)
@@ -795,88 +948,55 @@ public sealed class XTapBlacksmith : MonoBehaviour
             : null;
         bool destructiveEnhance = enhanceTarget != null && enhanceTarget.enhanceLevel >= 10;
 
-        probabilityTitleText.text = "X-TOWER  " + operationName.ToUpper();
-        probabilityChanceText.text = "성공률 " + chance + "%  ·  성공 / 실패";
-        probabilityPhaseText.text = "룰렛 회전 중";
+        probabilityTitleText.text = "X-TOWER  " + operationName;
+        probabilityChanceText.text = "성공률 " + chance + "%";
+        probabilityPhaseText.text = "천사와 악마가 결과를 다툽니다";
+        probabilityPhaseText.color = new Color(.94f, .85f, .66f, 1f);
         probabilityResultText.text = "";
-        probabilityWheel.localScale = Vector3.one;
 
-        // Pick the exact hidden 00-99 result once. The player only sees success or failure.
+        // Probability is decided exactly once before the presentation starts.
+        // The final hammer blow only REVEALS that already-decided outcome.
         int finalRoll = UnityEngine.Random.Range(0, 100);
         bool success = finalRoll < chance;
 
-        probabilityMachine.localScale = Vector3.one * .90f;
-        probabilityMachine.anchoredPosition = new Vector2(0f, -40f);
-
-        float intro = 0f;
-        while (intro < .22f)
-        {
-            intro += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(intro / .22f);
-            float e = 1f - Mathf.Pow(1f - p, 3f);
-            probabilityMachine.localScale = Vector3.one * Mathf.Lerp(.90f, 1f, e);
-            probabilityMachine.anchoredPosition = new Vector2(0f, Mathf.Lerp(-40f, 0f, e));
-            yield return null;
-        }
-
-        // The hidden 00-99 roll decides the outcome. The visible wheel only
-        // lands on one of two result plates.
-        float startAngle = NormalizeSignedAngle(probabilityWheel.localEulerAngles.z);
-        float targetAngle = success ? 0f : 180f;
-        float clockwiseDelta = Mathf.Repeat(startAngle - targetAngle, 360f);
-        float totalSpin = 360f * UnityEngine.Random.Range(4, 7) + clockwiseDelta;
-
-        float duration = 1.85f;
-        float t = 0f;
-
-        while (t < duration)
-        {
-            t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / duration);
-            float e = 1f - Mathf.Pow(1f - p, 4f);
-            float angle = startAngle - totalSpin * e;
-            probabilityWheel.localRotation = Quaternion.Euler(0f, 0f, angle);
-
-            float shake = Mathf.Sin(Time.unscaledTime * 72f) * (1f - p) * 5f;
-            probabilityMachine.anchoredPosition = new Vector2(shake, 0f);
-
-            if (probabilityWheelCore != null)
-            {
-                float pulse = 1f + Mathf.Sin(Time.unscaledTime * 17f) * .05f;
-                probabilityWheelCore.rectTransform.localScale = Vector3.one * pulse;
-            }
-
-            yield return null;
-        }
-
-        // Same snap behavior as the block reward machine.
-        probabilityWheel.localRotation = Quaternion.Euler(0f, 0f, targetAngle);
+        probabilityMachine.localScale = Vector3.one;
         probabilityMachine.anchoredPosition = Vector2.zero;
-        if (probabilityWheelCore != null)
-            probabilityWheelCore.rectTransform.localScale = Vector3.one;
+        forgeStage.anchoredPosition = Vector2.zero;
 
-        // Never expose the hidden 00-99 roll.
-        // The orientation of the authored wheel is the primary result indicator:
-        // SUCCESS upright = success, FAIL upright = failure.
-        probabilityWheel.localScale = Vector3.one * 1.06f;
+        ResetForgeDuelStage(operationMode);
+        yield return AnimateForgeIntro(operationMode);
 
-        probabilityPhaseText.text = destructiveEnhance
-            ? "실패 시 대상 파괴"
-            : operationName + " 판정";
-        probabilityPhaseText.color = destructiveEnhance
-            ? new Color(1f, .34f, .26f, 1f)
-            : new Color(.90f, .82f, .62f, 1f);
+        // Six alternating blows create anticipation. The opponent always gets
+        // the last pre-hit, then the actual winning side delivers the finisher.
+        for (int i = 0; i < 6; i++)
+        {
+            bool angelHit = (i % 2 == 0) ? success : !success;
+            float strikeDuration = Mathf.Lerp(.30f, .15f, i / 5f);
+            yield return ForgeHammerStrike(angelHit, false, strikeDuration);
+        }
+
+        probabilityPhaseText.text = "마지막 일격";
+        probabilityPhaseText.color = new Color(1f, .90f, .58f, 1f);
+        yield return new WaitForSecondsRealtime(.34f);
+
+        // Angel finisher = success, demon finisher = failure.
+        yield return ForgeHammerStrike(success, true, .34f);
+
+        probabilityPhaseText.text = destructiveEnhance && !success
+            ? "대상 파괴"
+            : (success ? "천사의 막타" : "악마의 막타");
+        probabilityPhaseText.color = success
+            ? new Color(.72f, .91f, 1f, 1f)
+            : new Color(1f, .42f, .32f, 1f);
 
         probabilityResultText.text = success ? "성공" : "실패";
         probabilityResultText.color = success
-            ? new Color(.58f, 1f, .58f, 1f)
-            : new Color(1f, .42f, .38f, 1f);
+            ? new Color(1f, .88f, .38f, 1f)
+            : new Color(1f, .28f, .22f, 1f);
 
         VibrateForgeResult();
-
-        yield return new WaitForSecondsRealtime(.16f);
-        probabilityWheel.localScale = Vector3.one;
-        yield return new WaitForSecondsRealtime(.72f);
+        yield return AnimateForgeOutcome(operationMode, success);
+        yield return new WaitForSecondsRealtime(.52f);
 
         if (operationMode == ForgeMode.Enhance)
             ResolveEnhance(success);
@@ -889,6 +1009,255 @@ public sealed class XTapBlacksmith : MonoBehaviour
         probabilityBusy = false;
         probabilityRoutine = null;
         Refresh();
+    }
+
+    void ResetForgeDuelStage(ForgeMode operationMode)
+    {
+        if (angelSmith != null)
+        {
+            angelSmith.anchoredPosition = angelRestPosition;
+            angelSmith.localRotation = Quaternion.identity;
+            angelSmith.localScale = Vector3.one;
+        }
+
+        if (demonSmith != null)
+        {
+            demonSmith.anchoredPosition = demonRestPosition;
+            demonSmith.localRotation = Quaternion.identity;
+            demonSmith.localScale = Vector3.one;
+        }
+
+        if (forgeAnvil != null)
+        {
+            forgeAnvil.anchoredPosition = new Vector2(0f, -8f);
+            forgeAnvil.localScale = Vector3.one;
+        }
+
+        if (forgeImpactImage != null)
+            forgeImpactImage.color = new Color(1f, 1f, 1f, 0f);
+        if (forgeImpact != null)
+            forgeImpact.localScale = Vector3.one * .15f;
+
+        XTapGearBlockData target = inventory.FindForgeItem(targetId);
+        bool showTarget = operationMode != ForgeMode.Dismantle;
+        bool showMaterial = operationMode != ForgeMode.Enhance;
+
+        forgeTargetToken.gameObject.SetActive(showTarget);
+        forgeMaterialToken.gameObject.SetActive(showMaterial);
+
+        if (showTarget)
+        {
+            forgeTargetToken.localScale = Vector3.one;
+            forgeTargetToken.anchoredPosition = operationMode == ForgeMode.Synthesis
+                ? new Vector2(-82f, -36f)
+                : new Vector2(0f, -36f);
+
+            forgeTargetTokenText.text = operationMode == ForgeMode.Enhance
+                ? (target != null ? "+" + target.enhanceLevel : "대상")
+                : "대상";
+        }
+
+        if (showMaterial)
+        {
+            forgeMaterialToken.localScale = Vector3.one;
+            forgeMaterialToken.anchoredPosition = operationMode == ForgeMode.Synthesis
+                ? new Vector2(82f, -36f)
+                : new Vector2(0f, -36f);
+
+            forgeMaterialTokenText.text = operationMode == ForgeMode.Dismantle
+                ? "x" + materialIds.Count
+                : "제물";
+        }
+    }
+
+    IEnumerator AnimateForgeIntro(ForgeMode operationMode)
+    {
+        Vector3 angelStart = Vector3.one * .84f;
+        Vector3 demonStart = Vector3.one * .84f;
+        angelSmith.localScale = angelStart;
+        demonSmith.localScale = demonStart;
+
+        Vector2 targetEnd = forgeTargetToken.gameObject.activeSelf
+            ? forgeTargetToken.anchoredPosition
+            : Vector2.zero;
+        Vector2 materialEnd = forgeMaterialToken.gameObject.activeSelf
+            ? forgeMaterialToken.anchoredPosition
+            : Vector2.zero;
+
+        if (forgeTargetToken.gameObject.activeSelf)
+            forgeTargetToken.anchoredPosition = targetEnd + Vector2.down * 90f;
+        if (forgeMaterialToken.gameObject.activeSelf)
+            forgeMaterialToken.anchoredPosition = materialEnd + Vector2.down * 90f;
+
+        float t = 0f;
+        const float duration = .34f;
+        while (t < duration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / duration);
+            float e = 1f - Mathf.Pow(1f - p, 3f);
+
+            angelSmith.localScale = Vector3.Lerp(angelStart, Vector3.one, e);
+            demonSmith.localScale = Vector3.Lerp(demonStart, Vector3.one, e);
+
+            if (forgeTargetToken.gameObject.activeSelf)
+                forgeTargetToken.anchoredPosition = Vector2.Lerp(
+                    targetEnd + Vector2.down * 90f,
+                    targetEnd,
+                    e
+                );
+            if (forgeMaterialToken.gameObject.activeSelf)
+                forgeMaterialToken.anchoredPosition = Vector2.Lerp(
+                    materialEnd + Vector2.down * 90f,
+                    materialEnd,
+                    e
+                );
+
+            yield return null;
+        }
+
+        angelSmith.localScale = Vector3.one;
+        demonSmith.localScale = Vector3.one;
+        if (forgeTargetToken.gameObject.activeSelf)
+            forgeTargetToken.anchoredPosition = targetEnd;
+        if (forgeMaterialToken.gameObject.activeSelf)
+            forgeMaterialToken.anchoredPosition = materialEnd;
+
+        if (operationMode == ForgeMode.Synthesis)
+        {
+            probabilityPhaseText.text = "두 블록을 하나의 운명으로";
+            yield return new WaitForSecondsRealtime(.18f);
+        }
+    }
+
+    IEnumerator ForgeHammerStrike(bool angelHit, bool finalHit, float duration)
+    {
+        RectTransform smith = angelHit ? angelSmith : demonSmith;
+        Vector2 home = angelHit ? angelRestPosition : demonRestPosition;
+        float side = angelHit ? 1f : -1f;
+
+        probabilityPhaseText.text = finalHit
+            ? "마지막 일격"
+            : (angelHit ? "천사의 망치" : "악마의 망치");
+        probabilityPhaseText.color = angelHit
+            ? new Color(.72f, .90f, 1f, 1f)
+            : new Color(1f, .45f, .36f, 1f);
+
+        float liftDuration = duration * .48f;
+        float t = 0f;
+        Vector2 lifted = home + new Vector2(-side * 14f, finalHit ? 48f : 30f);
+        float raisedAngle = angelHit ? 8f : -8f;
+
+        while (t < liftDuration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / liftDuration);
+            float e = p * p * (3f - 2f * p);
+            smith.anchoredPosition = Vector2.Lerp(home, lifted, e);
+            smith.localRotation = Quaternion.Euler(0f, 0f, raisedAngle * e);
+            yield return null;
+        }
+
+        float dropDuration = Mathf.Max(.05f, duration - liftDuration);
+        t = 0f;
+        Vector2 strike = home + new Vector2(side * (finalHit ? 58f : 38f), finalHit ? -48f : -28f);
+        float strikeAngle = angelHit ? -12f : 12f;
+
+        while (t < dropDuration)
+        {
+            t += Time.unscaledDeltaTime;
+            float p = Mathf.Clamp01(t / dropDuration);
+            float e = 1f - Mathf.Pow(1f - p, 4f);
+            smith.anchoredPosition = Vector2.Lerp(lifted, strike, e);
+            smith.localRotation = Quaternion.Euler(
+                0f,
+                0f,
+                Mathf.Lerp(raisedAngle, strikeAngle, e)
+            );
+
+            if (p > .58f)
+            {
+                float hitP = Mathf.InverseLerp(.58f, 1f, p);
+                float flash = Mathf.Sin(hitP * Mathf.PI);
+                forgeImpactImage.color = angelHit
+                    ? new Color(1f, .88f, .32f, flash)
+                    : new Color(1f, .16f, .10f, flash);
+                forgeImpact.localScale = Vector3.one * Mathf.Lerp(
+                    .25f,
+                    finalHit ? 1.75f : 1.10f,
+                    hitP
+                );
+
+                float shake = (finalHit ? 16f : 7f) * (1f - hitP);
+                forgeStage.anchoredPosition = new Vector2(
+                    Mathf.Sin(Time.unscaledTime * 95f) * shake,
+                    Mathf.Cos(Time.unscaledTime * 73f) * shake * .38f
+                );
+                forgeAnvil.localScale = Vector3.one * (1f + flash * (finalHit ? .08f : .035f));
+            }
+
+            yield return null;
+        }
+
+        smith.anchoredPosition = home;
+        smith.localRotation = Quaternion.identity;
+        forgeStage.anchoredPosition = Vector2.zero;
+        forgeAnvil.localScale = Vector3.one;
+        forgeImpactImage.color = new Color(1f, 1f, 1f, 0f);
+        forgeImpact.localScale = Vector3.one * .15f;
+
+        if (finalHit)
+            yield return new WaitForSecondsRealtime(.12f);
+    }
+
+    IEnumerator AnimateForgeOutcome(ForgeMode operationMode, bool success)
+    {
+        if (operationMode == ForgeMode.Synthesis &&
+            forgeTargetToken.gameObject.activeSelf &&
+            forgeMaterialToken.gameObject.activeSelf)
+        {
+            Vector2 targetStart = forgeTargetToken.anchoredPosition;
+            Vector2 materialStart = forgeMaterialToken.anchoredPosition;
+            float t = 0f;
+            const float duration = .30f;
+
+            while (t < duration)
+            {
+                t += Time.unscaledDeltaTime;
+                float p = Mathf.Clamp01(t / duration);
+                float e = 1f - Mathf.Pow(1f - p, 3f);
+                forgeTargetToken.anchoredPosition = Vector2.Lerp(targetStart, Vector2.zero, e);
+                forgeMaterialToken.anchoredPosition = Vector2.Lerp(materialStart, Vector2.zero, e);
+                forgeTargetToken.localScale = Vector3.one * Mathf.Lerp(1f, success ? 1.18f : .72f, e);
+                forgeMaterialToken.localScale = Vector3.one * Mathf.Lerp(1f, success ? .18f : .55f, e);
+                yield return null;
+            }
+
+            forgeMaterialToken.gameObject.SetActive(false);
+            forgeTargetToken.localScale = Vector3.one * (success ? 1.18f : .72f);
+        }
+        else
+        {
+            RectTransform token = operationMode == ForgeMode.Dismantle
+                ? forgeMaterialToken
+                : forgeTargetToken;
+
+            if (token != null && token.gameObject.activeSelf)
+            {
+                Vector3 start = token.localScale;
+                Vector3 peak = Vector3.one * (success ? 1.22f : .72f);
+                float t = 0f;
+                const float duration = .24f;
+
+                while (t < duration)
+                {
+                    t += Time.unscaledDeltaTime;
+                    float p = Mathf.Clamp01(t / duration);
+                    token.localScale = Vector3.Lerp(start, peak, p);
+                    yield return null;
+                }
+            }
+        }
     }
 
     static float NormalizeSignedAngle(float angle)
@@ -1021,7 +1390,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
     void LoadVisualAssets()
     {
-        LoadProbabilityWheelAsset();
+        LoadForgeDuelAssets();
 
         try
         {
@@ -1073,6 +1442,110 @@ public sealed class XTapBlacksmith : MonoBehaviour
         {
             Debug.LogError("X탑 대장간 UI 에셋 로드 실패: " + e.Message);
         }
+    }
+
+    void LoadForgeDuelAssets()
+    {
+        try
+        {
+            TextAsset backgroundBytes = Resources.Load<TextAsset>(
+                "XTapBlacksmithUI/forge_duel_background"
+            );
+            forgeDuelBackgroundTexture = new Texture2D(
+                2,
+                2,
+                TextureFormat.RGB24,
+                false
+            );
+
+            if (!LoadImageBytes(forgeDuelBackgroundTexture, backgroundBytes))
+            {
+                Destroy(forgeDuelBackgroundTexture);
+                forgeDuelBackgroundTexture = null;
+                Debug.LogError("X탑 대장간 9:16 듀얼 배경 로드 실패.");
+            }
+            else
+            {
+                forgeDuelBackgroundTexture.wrapMode = TextureWrapMode.Clamp;
+                forgeDuelBackgroundTexture.filterMode = FilterMode.Bilinear;
+                forgeDuelBackgroundSkin = Sprite.Create(
+                    forgeDuelBackgroundTexture,
+                    new Rect(
+                        0f,
+                        0f,
+                        forgeDuelBackgroundTexture.width,
+                        forgeDuelBackgroundTexture.height
+                    ),
+                    new Vector2(.5f, .5f),
+                    100f
+                );
+                forgeDuelBackgroundSkin.name = "XTapForgeDuelBackground";
+            }
+
+            TextAsset atlasBytes = Resources.Load<TextAsset>(
+                "XTapBlacksmithUI/forge_duel_atlas"
+            );
+            forgeDuelAtlasTexture = new Texture2D(
+                2,
+                2,
+                TextureFormat.RGBA32,
+                false
+            );
+
+            if (!LoadImageBytes(forgeDuelAtlasTexture, atlasBytes))
+            {
+                Destroy(forgeDuelAtlasTexture);
+                forgeDuelAtlasTexture = null;
+                Debug.LogError("X탑 대장간 천사/악마/모루 atlas 로드 실패.");
+            }
+            else
+            {
+                forgeDuelAtlasTexture.wrapMode = TextureWrapMode.Clamp;
+                forgeDuelAtlasTexture.filterMode = FilterMode.Bilinear;
+
+                // Coordinates use top-left atlas design coordinates.
+                angelSmithSkin = MakeForgeDuelAtlasSprite(5, 48, 150, 199);
+                demonSmithSkin = MakeForgeDuelAtlasSprite(175, 48, 155, 199);
+                forgeAnvilSkin = MakeForgeDuelAtlasSprite(346, 130, 160, 85);
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError("X탑 대장간 듀얼 에셋 로드 실패: " + e.Message);
+        }
+    }
+
+    Sprite MakeForgeDuelAtlasSprite(
+        int x,
+        int yFromTop,
+        int width,
+        int height
+    )
+    {
+        if (forgeDuelAtlasTexture == null) return null;
+
+        int safeX = Mathf.Clamp(x, 0, forgeDuelAtlasTexture.width - 1);
+        int safeWidth = Mathf.Clamp(
+            width,
+            1,
+            forgeDuelAtlasTexture.width - safeX
+        );
+        int safeHeight = Mathf.Clamp(
+            height,
+            1,
+            forgeDuelAtlasTexture.height
+        );
+        int y = forgeDuelAtlasTexture.height - yFromTop - safeHeight;
+        y = Mathf.Clamp(y, 0, forgeDuelAtlasTexture.height - safeHeight);
+
+        return Sprite.Create(
+            forgeDuelAtlasTexture,
+            new Rect(safeX, y, safeWidth, safeHeight),
+            new Vector2(.5f, .5f),
+            100f,
+            0,
+            SpriteMeshType.FullRect
+        );
     }
 
     void LoadProbabilityWheelAsset()
