@@ -5,11 +5,10 @@ using UnityEngine.UI;
 public sealed class XTapRouletteFaceGraphic : MaskableGraphic
 {
     const int SegmentCount = 11;
-    const float InnerRadiusRatio = .34f;
-    const float OuterRadiusRatio = .82f;
+    const float InnerRadiusRatio = .22f;
+    const float OuterRadiusRatio = .88f;
 
-    static readonly Color Gold = new Color(1f, .67f, .16f, 1f);
-    static readonly Color PointerGold = new Color(1f, .76f, .18f, 1f);
+    static readonly Color Gold = new Color(.72f, .50f, .22f, 1f);
 
     protected override void OnPopulateMesh(VertexHelper vh)
     {
@@ -21,6 +20,12 @@ public sealed class XTapRouletteFaceGraphic : MaskableGraphic
         float inner = radius * InnerRadiusRatio;
         float outer = radius * OuterRadiusRatio;
         float step = 360f / SegmentCount;
+
+        // One complete disc, underneath the transparent ornamental rim and hub.
+        for (int i = 0; i < 96; i++)
+            AddTriangle(vh, center, center + Dir(i * Mathf.PI * 2f / 96f) * inner,
+                center + Dir((i + 1) * Mathf.PI * 2f / 96f) * inner,
+                new Color(.012f, .025f, .050f, 1f));
 
         for (int segment = 0; segment < SegmentCount; segment++)
         {
@@ -40,11 +45,18 @@ public sealed class XTapRouletteFaceGraphic : MaskableGraphic
                 float a0 = Mathf.Lerp(startDeg, endDeg, t0) * Mathf.Deg2Rad;
                 float a1 = Mathf.Lerp(startDeg, endDeg, t1) * Mathf.Deg2Rad;
 
-                Vector2 i0 = center + Dir(a0) * inner;
-                Vector2 i1 = center + Dir(a1) * inner;
-                Vector2 o0 = center + Dir(a0) * outer;
-                Vector2 o1 = center + Dir(a1) * outer;
-                AddGradientQuad(vh, i0, i1, o1, o0, innerColor, outerColor);
+                // Soft radial illumination rather than a flat orange/blue overlay.
+                for (int band = 0; band < 8; band++)
+                {
+                    float r0 = band / 8f;
+                    float r1 = (band + 1) / 8f;
+                    float radius0 = Mathf.Lerp(inner, outer, r0);
+                    float radius1 = Mathf.Lerp(inner, outer, r1);
+                    Color c0 = Color.Lerp(innerColor, outerColor, Mathf.Sin(r0 * Mathf.PI * .82f));
+                    Color c1 = Color.Lerp(innerColor, outerColor, Mathf.Sin(r1 * Mathf.PI * .82f));
+                    AddGradientQuad(vh, center + Dir(a0) * radius0, center + Dir(a1) * radius0,
+                        center + Dir(a1) * radius1, center + Dir(a0) * radius1, c0, c1);
+                }
             }
         }
 
@@ -53,7 +65,7 @@ public sealed class XTapRouletteFaceGraphic : MaskableGraphic
         {
             float a = (90f + step * .5f - segment * step) * Mathf.Deg2Rad;
             Vector2 dir = Dir(a);
-            Vector2 normal = new Vector2(-dir.y, dir.x) * 2.8f;
+            Vector2 normal = new Vector2(-dir.y, dir.x) * 1.35f;
             AddSolidQuad(
                 vh,
                 center + dir * inner - normal,
@@ -64,26 +76,8 @@ public sealed class XTapRouletteFaceGraphic : MaskableGraphic
             );
         }
 
-        AddRing(vh, center, inner, 4f, Gold);
-        AddRing(vh, center, outer, 4f, Gold);
-
-        // One outward-pointing yellow marker per sector, exactly like the approved reference.
-        for (int segment = 0; segment < SegmentCount; segment++)
-        {
-            float a = (90f - segment * step) * Mathf.Deg2Rad;
-            Vector2 dir = Dir(a);
-            Vector2 normal = new Vector2(-dir.y, dir.x);
-
-            Vector2 tip = center + dir * (radius * .775f);
-            Vector2 baseCenter = center + dir * (radius * .710f);
-            AddTriangle(
-                vh,
-                tip,
-                baseCenter + normal * 11f,
-                baseCenter - normal * 11f,
-                PointerGold
-            );
-        }
+        AddRing(vh, center, inner, 2.5f, Gold);
+        AddRing(vh, center, outer, 2.5f, Gold);
     }
 
     static Vector2 Dir(float radians)
@@ -95,27 +89,27 @@ public sealed class XTapRouletteFaceGraphic : MaskableGraphic
     {
         if (index == 3)
         {
-            innerColor = new Color(.24f, .035f, .36f, 1f);
-            outerColor = new Color(.57f, .12f, .78f, 1f);
+            innerColor = new Color(.065f, .022f, .10f, 1f);
+            outerColor = new Color(.30f, .13f, .43f, 1f);
             return;
         }
 
         if (index == 9)
         {
-            innerColor = new Color(.42f, .01f, .02f, 1f);
-            outerColor = new Color(.92f, .055f, .035f, 1f);
+            innerColor = new Color(.075f, .014f, .025f, 1f);
+            outerColor = new Color(.36f, .075f, .10f, 1f);
             return;
         }
 
         if (index >= 4 && index <= 8)
         {
-            innerColor = new Color(.55f, .16f, .005f, 1f);
-            outerColor = new Color(.99f, .46f, .02f, 1f);
+            innerColor = new Color(.075f, .036f, .012f, 1f);
+            outerColor = new Color(.40f, .22f, .065f, 1f);
             return;
         }
 
-        innerColor = new Color(.005f, .12f, .34f, 1f);
-        outerColor = new Color(.015f, .37f, .94f, 1f);
+        innerColor = new Color(.012f, .035f, .085f, 1f);
+        outerColor = new Color(.045f, .23f, .40f, 1f);
     }
 
     static void AddGradientQuad(
@@ -198,21 +192,21 @@ public sealed class XTapFixedPointerGraphic : MaskableGraphic
 
         Rect rect = rectTransform.rect;
         Vector2 center = rect.center;
-        Color gold = new Color(1f, .66f, .12f, 1f);
-        Color blue = new Color(.02f, .42f, 1f, 1f);
+        Color gold = new Color(.94f, .76f, .41f, 1f);
+        Color blue = new Color(.08f, .30f, .54f, 1f);
         Color darkBlue = new Color(.01f, .10f, .28f, 1f);
 
-        Vector2 gemCenter = center + Vector2.up * 19f;
-        AddDiamond(vh, gemCenter, 32f, 42f, gold);
-        AddDiamond(vh, gemCenter, 20f, 28f, blue);
-        AddDiamond(vh, gemCenter + Vector2.up * 4f, 9f, 13f, new Color(.48f, .86f, 1f, 1f));
+        Vector2 gemCenter = center + Vector2.up * 16f;
+        AddDiamond(vh, gemCenter, 19f, 27f, gold);
+        AddDiamond(vh, gemCenter, 13f, 19f, blue);
+        AddDiamond(vh, gemCenter + Vector2.up * 4f, 6f, 10f, new Color(.76f, .92f, 1f, 1f));
 
-        // Downward selector spear. Its tip ends above the wheel with a visible air gap.
+        // One stationary selector. The ornament and all values rotate beneath it.
         AddTriangle(
             vh,
-            center + Vector2.down * 51f,
-            center + new Vector2(-13f, -5f),
-            center + new Vector2(13f, -5f),
+            center + Vector2.down * 45f,
+            center + new Vector2(-13f, -3f),
+            center + new Vector2(13f, -3f),
             gold
         );
         AddTriangle(
@@ -250,6 +244,38 @@ public sealed class XTapFixedPointerGraphic : MaskableGraphic
         vertex.position = position;
         vertex.color = color;
         vertex.uv0 = Vector2.zero;
+        vh.AddVert(vertex);
+    }
+}
+
+[RequireComponent(typeof(CanvasRenderer))]
+public sealed class XTapGachaShadeGraphic : MaskableGraphic
+{
+    protected override void OnPopulateMesh(VertexHelper vh)
+    {
+        vh.Clear();
+        Rect rect = rectTransform.rect;
+        float[] heights = {0f, .25f, .60f, .82f, 1f};
+        float[] alphas = {.82f, .55f, .06f, 0f, .32f};
+        for (int band = 0; band < heights.Length - 1; band++)
+        {
+            int start = vh.currentVertCount;
+            float bottom = Mathf.Lerp(rect.yMin, rect.yMax, heights[band]);
+            float top = Mathf.Lerp(rect.yMin, rect.yMax, heights[band + 1]);
+            AddVertex(vh, rect.xMin, bottom, alphas[band]);
+            AddVertex(vh, rect.xMax, bottom, alphas[band]);
+            AddVertex(vh, rect.xMax, top, alphas[band + 1]);
+            AddVertex(vh, rect.xMin, top, alphas[band + 1]);
+            vh.AddTriangle(start, start + 1, start + 2);
+            vh.AddTriangle(start, start + 2, start + 3);
+        }
+    }
+
+    static void AddVertex(VertexHelper vh, float x, float y, float alpha)
+    {
+        UIVertex vertex = UIVertex.simpleVert;
+        vertex.position = new Vector2(x, y);
+        vertex.color = new Color(0f, 0f, 0f, alpha);
         vh.AddVert(vertex);
     }
 }
