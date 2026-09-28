@@ -20,9 +20,6 @@ public sealed class XTapBattleController : MonoBehaviour
     const float DedicatedSurrenderDialogueChance = .75f;
     const float DedicatedTouchDialogueChance = .90f;
     const float ShieldCueChance = .30f;
-    const float CombatCueSeconds = 1.05f;
-    const float FollowupHitCueSeconds = CombatCueSeconds / 1.5f;
-    const double FollowupHitAttackMultiplier = 5d;
     const double ShieldMissAttackMultiplier = 2d;
     const int StagesPerFloor = 10;
     const string CurrentStepKey = "xtap_current_progress_step";
@@ -36,6 +33,14 @@ public sealed class XTapBattleController : MonoBehaviour
 
     XTapOriginalApkAssets assets;
     AudioSource audioSource;
+    AudioSource combatSfxSource;
+    AudioClip shieldClang;
+    XTapCombatEffects combatFx;
+    readonly XTapCombatState combatState = new XTapCombatState();
+    readonly XTapCombatPointer combatPointer = new XTapCombatPointer();
+    bool hitStopActive, appPaused, appUnfocused;
+    Image weakTimingRing, shieldTimingRing;
+    Text shieldCueText;
 
     Canvas canvas;
     RectTransform root;
@@ -137,16 +142,12 @@ public sealed class XTapBattleController : MonoBehaviour
 
     Vector2 pointerStart;
     float pointerStartTime;
-    bool pointerTracking;
-
-    bool weakActive;
-    float weakUntil;
+    bool weakActive { get { return combatState.IsHitCue; } }
     Vector2 weakNorm;
     Vector2 weakVelocity;
-    bool followupWeakActive;
+    bool followupWeakActive { get { return combatState.Cue == XTapCombatCue.Followup; } }
 
-    bool shieldActive;
-    float shieldUntil;
+    bool shieldActive { get { return combatState.Cue == XTapCombatCue.Shield; } }
     Vector2 shieldNorm;
     Vector2 shieldVelocity;
 
@@ -254,6 +255,8 @@ public sealed class XTapBattleController : MonoBehaviour
         shieldSprite = XTapCombatCueSkin.Get("shield_crystal");
         weakPoint.sprite = weakPointSprite;
         shieldPoint.sprite = shieldSprite;
+        combatFx = gameObject.AddComponent<XTapCombatEffects>();
+        combatFx.Initialize(root, koreanFont, ringSprite, weakPointSprite, shieldSprite);
 
         XTapMainSkin.EnsureLoaded();
         SetStartupProgress(.12f);
@@ -285,6 +288,10 @@ public sealed class XTapBattleController : MonoBehaviour
         audioSource.playOnAwake = false;
         audioSource.spatialBlend = 0f;
         audioSource.volume = 1f;
+        combatSfxSource = gameObject.AddComponent<AudioSource>();
+        combatSfxSource.playOnAwake = false;
+        combatSfxSource.spatialBlend = 0f;
+        shieldClang = Resources.Load<AudioClip>("XTapBlacksmithUI/forge_hammer_angel");
         PreloadCombatVoices();
         PreloadCombatSfx();
 
@@ -442,52 +449,80 @@ public sealed class XTapBattleController : MonoBehaviour
             AccrueHourlyTickets();
             RefreshMainTicketUi();
         }
-
-        if (assets == null || !assets.Ready) return;
+        if (combatFx != null) combatFx.Frozen = hitStopActive || appPaused || appUnfocused;
+        if (assets == null || !assets.Ready || appPaused || appUnfocused) return;
         if (sigilBeatMiniGame != null && sigilBeatMiniGame.IsOpen) return;
         if (jail != null && jail.IsOpen) return;
-
-        UpdateWeakPoint();
-        UpdateShieldPoint();
-
         if (mainOverlay != null && mainOverlay.activeSelf)
         {
+            combatPointer.Clear();
             HandleMainScreenInput();
             return;
         }
-        if (gachaMachine != null && gachaMachine.IsOpen) return;
-        if (busy) return;
+        if ((gachaMachine != null && gachaMachine.IsOpen) ||
+            (inventory != null && inventory.IsOpen) ||
+            (blacksmith != null && blacksmith.IsOpen) ||
+            (codex != null && codex.IsOpen)) return;
+        if (won) return;
 
-        if (Input.touchCount > 0)
+        // Busy presentation and hit-stop pause both motion and deadlines.
+        float step = Mathf.Min(.1f, Time.unscaledDeltaTime);
+        combatState.Advance(step, busy || hitStopActive);
+        if (!busy && !hitStopActive)
         {
-            Touch t = Input.GetTouch(0);
-            if (t.phase == TouchPhase.Began)
-            {
-                pointerStart = t.position;
-                pointerStartTime = Time.unscaledTime;
-                pointerTracking = true;
-            }
-            else if (pointerTracking && (t.phase == TouchPhase.Ended || t.phase == TouchPhase.Canceled))
-            {
-                pointerTracking = false;
-                ProcessGesture(pointerStart, t.position, Time.unscaledTime - pointerStartTime);
-            }
-            return;
+            UpdateWeakPoint(step);
+            UpdateShieldPoint(step);
         }
-
+        // Process releases even while busy, so no held/canceled touch leaks into
+        // the next target. Only the owning finger can complete an ordinary swipe.
+        for (int i = 0; i < Input.touchCount; i++)
+        {
+            Touch touch = Input.GetTouch(i);
+            if (touch.phase == TouchPhase.Began) CombatPointerDown(touch.fingerId, touch.position);
+            else if (touch.phase == TouchPhase.Ended || touch.phase == TouchPhase.Canceled)
+                CombatPointerUp(touch.fingerId, touch.position, touch.phase == TouchPhase.Canceled);
+        }
 #if UNITY_EDITOR
-        if (Input.GetMouseButtonDown(0))
+        if (Input.touchCount == 0)
         {
-            pointerStart = Input.mousePosition;
-            pointerStartTime = Time.unscaledTime;
-            pointerTracking = true;
-        }
-        else if (pointerTracking && Input.GetMouseButtonUp(0))
-        {
-            pointerTracking = false;
-            ProcessGesture(pointerStart, Input.mousePosition, Time.unscaledTime - pointerStartTime);
+            if (Input.GetMouseButtonDown(0)) CombatPointerDown(-2, Input.mousePosition);
+            if (Input.GetMouseButtonUp(0)) CombatPointerUp(-2, Input.mousePosition, false);
         }
 #endif
+    }
+
+    void CombatPointerDown(int fingerId, Vector2 position)
+    {
+        if (!combatPointer.Begin(fingerId, !busy && !hitStopActive && !won)) return;
+        if (busy || hitStopActive || won) return;
+        pointerStart = position;
+        pointerStartTime = Time.unscaledTime;
+        if (shieldActive)
+        {
+            combatPointer.Consume();
+            Vector2 target = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
+            if (Vector2.Distance(target, position) <= CombatCueRadiusPixels()) ResolveShieldBlock(target);
+            else RegisterCombatMistake(position, "실드를 노리세요");
+            return;
+        }
+        if (weakActive)
+        {
+            Vector2 target = new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height);
+            if (Vector2.Distance(target, position) <= CombatCueRadiusPixels())
+            {
+                XTapCombatCue cue; bool unusedPerfect;
+                if (!combatState.ConsumeCue(out cue, out unusedPerfect)) return;
+                combatPointer.Consume();
+                HideWeakPoint();
+                StartCoroutine(ResolveAttack(position, ZoneOf(position), false, Vector2.zero, cue));
+            }
+        }
+    }
+
+    void CombatPointerUp(int fingerId, Vector2 position, bool canceled)
+    {
+        if (!combatPointer.End(fingerId, canceled) || busy || hitStopActive || won) return;
+        ProcessGesture(pointerStart, position, Time.unscaledTime - pointerStartTime);
     }
 
     void BuildBattleOnlyUi()
@@ -546,6 +581,7 @@ public sealed class XTapBattleController : MonoBehaviour
         weakPointHitText.horizontalOverflow = HorizontalWrapMode.Overflow;
         weakPointHitText.verticalOverflow = VerticalWrapMode.Overflow;
         Anchor(weakPointHitText.rectTransform, .29f, .39f, .71f, .61f);
+        weakTimingRing = MakeCueTimer(weakPoint.rectTransform);
 
         shieldPoint = new GameObject("ShieldPoint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
         shieldPoint.transform.SetParent(root, false);
@@ -554,6 +590,16 @@ public sealed class XTapBattleController : MonoBehaviour
         shieldPoint.raycastTarget = false;
         shieldPoint.gameObject.SetActive(false);
         SetSize(shieldPoint.rectTransform, 94, 94);
+        shieldTimingRing = MakeCueTimer(shieldPoint.rectTransform);
+        shieldCueText = MakeText(shieldPoint.transform, "막기", 12, TextAnchor.MiddleCenter, true);
+        shieldCueText.resizeTextForBestFit = false;
+        shieldCueText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        shieldCueText.verticalOverflow = VerticalWrapMode.Overflow;
+        shieldCueText.color = Color.white;
+        Anchor(shieldCueText.rectTransform, .18f, .35f, .82f, .65f);
+        Outline guardOutline = shieldCueText.gameObject.AddComponent<Outline>();
+        guardOutline.effectColor = new Color(.02f, .04f, .10f, 1f);
+        guardOutline.effectDistance = new Vector2(2f, -2f);
 
         shieldMissFlash = new GameObject("ShieldMissFlash", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
         shieldMissFlash.transform.SetParent(root, false);
@@ -1770,12 +1816,16 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void OnApplicationPause(bool paused)
     {
+        appPaused = paused;
+        combatPointer.Clear();
         AccrueHourlyTickets();
         RefreshMainTicketUi();
     }
 
     void OnApplicationFocus(bool focused)
     {
+        appUnfocused = !focused;
+        combatPointer.Clear();
         if (!focused) return;
         AccrueHourlyTickets();
         RefreshMainTicketUi();
@@ -1917,10 +1967,11 @@ public sealed class XTapBattleController : MonoBehaviour
         hitCount = 0;
         won = false;
         busy = false;
-        weakActive = false;
-        followupWeakActive = false;
+        combatState.Reset();
+        combatPointer.Clear();
+        hitStopActive = false;
+        if (combatFx != null) combatFx.Clear();
         if (weakPoint != null) weakPoint.gameObject.SetActive(false);
-        shieldActive = false;
         if (shieldPoint != null) shieldPoint.gameObject.SetActive(false);
         if (shieldMissFlash != null) shieldMissFlash.color = new Color(.88f, .03f, .025f, 0f);
         if (shieldMissVignette != null) shieldMissVignette.color = new Color(.11f, 0f, 0f, 0f);
@@ -1934,184 +1985,130 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void ProcessGesture(Vector2 start, Vector2 end, float duration)
     {
-        if (won)
-        {
-            return;
-        }
-
-        if (shieldActive)
-        {
-            Vector2 shieldScreen = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
-            float shieldRadius = CombatCueRadiusPixels();
-            if (Vector2.Distance(shieldScreen, end) <= shieldRadius)
-            {
-                ResolveShieldBlock(shieldScreen);
-            }
-            else
-            {
-                StartCoroutine(TouchPulse(end, false, false));
-            }
-            return;
-        }
-
+        if (won || busy || shieldActive) return;
         Vector2 delta = end - start;
         float swipeThreshold = Mathf.Max(85f, Screen.width * .085f);
         bool swipe = delta.magnitude >= swipeThreshold && duration <= .65f;
         Vector2 impact = swipe ? Vector2.Lerp(start, end, .55f) : end;
-
         int zone = ZoneOf(impact);
         if (zone == 6)
         {
             ShowBubble(MixedDodgeLine(), 1.0f, impact);
-            VibrateTouch(false);
-            StartCoroutine(TouchPulse(impact, false, false));
+            RegisterCombatMistake(impact, "빗나감");
             return;
         }
-
+        // Ordinary taps/swipes resolve on release. HIT and shield only resolve
+        // on their down event, never opportunistically a second time on release.
         StartCoroutine(ResolveAttack(impact, zone, swipe, delta));
     }
 
-    IEnumerator ResolveAttack(Vector2 impact, int zone, bool swipe, Vector2 swipeDelta)
+    void RegisterCombatMistake(Vector2 position, string text)
     {
+        combatState.RegisterMistake();
+        if (combatFx != null) combatFx.Miss(position, text);
+    }
+
+    IEnumerator CombatHitStop(float seconds)
+    {
+        hitStopActive = true;
+        ResetJelly();
+        if (combatFx != null) combatFx.Frozen = true;
+        yield return new WaitForSecondsRealtime(seconds);
+        while (appPaused || appUnfocused) yield return null;
+        hitStopActive = false;
+        if (combatFx != null) combatFx.Frozen = false;
+    }
+
+    IEnumerator ResolveAttack(Vector2 impact, int zone, bool swipe, Vector2 swipeDelta, XTapCombatCue consumedCue = XTapCombatCue.None)
+    {
+        if (busy || won) yield break;
         busy = true;
-
-        bool weakHit = weakActive && Vector2.Distance(
-            new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height), impact
-        ) <= CombatCueRadiusPixels();
-        bool followupWeakHit = weakHit && followupWeakActive;
-
+        bool weakHit = consumedCue == XTapCombatCue.Hit || consumedCue == XTapCombatCue.Followup || consumedCue == XTapCombatCue.Counter;
+        bool followupWeakHit = consumedCue == XTapCombatCue.Followup;
+        bool counterHit = consumedCue == XTapCombatCue.Counter;
         bool dodged = !weakHit && UnityEngine.Random.value < CharacterDodgeChance;
-
         if (dodged)
         {
-            HideWeakPoint();
+            // A random enemy dodge preserves both accuracy combo and any open HIT.
             SetActionSprite("d");
             ShowBubble(MixedDodgeLine(), 1.0f, impact);
-            // Dodge should read as fast body movement, not a UI/game "boing".
-            // Reuse the clean light whoosh already bundled for combat movement.
+            combatFx.Dodge(impact);
             PlayCombatSfx("fight_swing_light", .62f);
             if (UnityEngine.Random.value < .45f) PlayVoice("female_gasp1", .68f);
-            yield return TouchPulse(impact, false, swipe);
             yield return CharacterRecoil(impact, false, true);
-            yield return new WaitForSecondsRealtime(.10f);
             SetStageOrFallback(Stage());
-
-            if (TryStartShieldWindow())
-            {
-                busy = false;
-                yield break;
-            }
-
-            if (ApplyEnemyCounterAttack())
-            {
-                yield break;
-            }
-
+            if (TryStartShieldWindow()) { busy = false; yield break; }
+            if (ApplyEnemyCounterAttack()) yield break;
             busy = false;
             yield break;
         }
 
         string prefix = PrefixFor(zone, swipe, swipeDelta);
         SetActionSprite(prefix);
-
-        double attackMultiplier = weakHit
-            ? (followupWeakHit ? FollowupHitAttackMultiplier : 3.6d)
-            : (swipe ? 1.6d : 1d);
-        double rawAttack = SafeMultiply(CurrentPlayerAttack(), attackMultiplier);
+        double rawAttack = SafeMultiply(CurrentPlayerAttack(), XTapCombatState.AttackMultiplier(consumedCue, swipe));
         double damage = Math.Max(1d, Math.Floor(rawAttack - enemyDefense));
         enemyHp = Math.Max(0d, enemyHp - damage);
         hitCount++;
-        RefreshBattleStatUi();
-
-        StartJellyImpact(impact, weakHit, swipe, swipeDelta);
-
-        if (weakHit)
-        {
-            weakActive = false;
-            ShowBubble(MixedCriticalLine(), 1.25f, impact);
-            VibrateTouch(true);
-            PlayCombatImpact(prefix, swipe, true);
-            PlayRandomVoice(criticalHitVoices, .84f);
-            yield return WeakPointHitBurst();
-            HideWeakPoint();
-            yield return TouchPulse(impact, true, swipe);
-            yield return CharacterRecoil(impact, true, false);
-
-            // A normal weak-point success opens one harder, faster follow-up HIT.
-            // The follow-up is 1.5x tighter and deals exactly 5x player attack.
-            if (!followupWeakHit && enemyHp > 0d)
-            {
-                StartFollowupWeakPoint();
-                busy = false;
-                yield break;
-            }
-        }
-        else
-        {
-            ShowBubble(MixedCombatLine(zone), 1.05f, impact);
-            VibrateTouch(false);
-            PlayCombatImpact(prefix, swipe, false);
-            if (enemyHp <= enemyMaxHp * .25d && UnityEngine.Random.value < .45f)
-                PlayRandomVoice(lowHpVoices, .72f);
-            else
-                PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .78f : .66f);
-            yield return TouchPulse(impact, false, swipe);
-            yield return CharacterRecoil(impact, false, false);
-        }
-
-        if (enemyHp <= 0)
+        int combo = combatState.RegisterHit();
+        // Claim immediately at actual HP zero, before any yield or input callback.
+        // Presentation can never advance a floor or grant a second reward itself.
+        bool finishing = combatState.ClaimFinish(enemyHp);
+        if (finishing)
         {
             won = true;
-            fightCount++;
-            HideWeakPoint();
+            HideWeakPoint(); HideShieldPoint();
+            combatPointer.Consume();
+        }
+        RefreshBattleStatUi();
+        combatFx.Hit(impact, damage, consumedCue, combo);
+        if (finishing) combatFx.Finish(impact);
+        ShowBubble(weakHit ? MixedCriticalLine() : MixedCombatLine(zone), weakHit ? 1.25f : 1.05f, impact);
+        VibrateTouch(weakHit || finishing);
+        PlayCombatImpact(prefix, swipe, weakHit || finishing);
+        if (weakHit || finishing) PlayRandomVoice(criticalHitVoices, .84f);
+        else if (enemyHp <= enemyMaxHp * .25d && UnityEngine.Random.value < .45f) PlayRandomVoice(lowHpVoices, .72f);
+        else PlayRandomVoice(swipe ? swipeHitVoices : normalHitVoices, swipe ? .78f : .66f);
 
+        float stop = finishing ? .10f : followupWeakHit ? .095f : weakHit ? .07f : .025f;
+        yield return CombatHitStop(stop);
+        StartJellyImpact(impact, weakHit || finishing, swipe, swipeDelta);
+        // Sparks, numbers and rings run together while the character recoils.
+        yield return CharacterRecoil(impact, weakHit || finishing, false, finishing ? 4 : followupWeakHit || counterHit ? 3 : combatState.ComboTier);
+
+        if (finishing)
+        {
+            // ~0.6 seconds from contact: freeze .10 + recoil .13 + finish .37.
+            yield return new WaitForSecondsRealtime(.37f);
             int clearedCharacterId = CurrentCharacterId();
-
-            // _cap is reserved for successful capture reveal only.
-            // A normal battle victory must never display the capture illustration.
-
-            // Winning advances the player's actual current progress.
             int clearedStep = currentStep;
-            int nextStep = clearedStep + 1;
-
-            if (nextStep > maxUnlockedStep)
-                maxUnlockedStep = nextStep;
-
-            currentStep = nextStep;
+            fightCount++;
+            currentStep = clearedStep + 1;
+            maxUnlockedStep = Mathf.Max(maxUnlockedStep, currentStep);
             SaveProgress();
             RefreshMainProgressUi();
-
+            // Normal victory never reveals _cap; it is still capture-only.
             ShowBubble(MixedSurrenderLine(clearedCharacterId), 30f);
             Play("assets/win.wav");
-            yield return new WaitForSecondsRealtime(.45f);
-
-            if (gachaMachine != null)
-                gachaMachine.PlayReward(clearedCharacterId, clearedStep);
-
+            combatFx.Clear();
+            if (gachaMachine != null) gachaMachine.PlayReward(clearedCharacterId, clearedStep);
             busy = false;
             yield break;
         }
-
+        if (consumedCue == XTapCombatCue.Hit)
+        {
+            StartFollowupWeakPoint();
+            busy = false;
+            yield break;
+        }
         if (TryStartShieldWindow())
         {
             SetStageOrFallback(Stage());
             busy = false;
             yield break;
         }
-
-        if (ApplyEnemyCounterAttack())
-        {
-            yield break;
-        }
-
+        if (ApplyEnemyCounterAttack()) yield break;
         SetStageOrFallback(Stage());
-
-        if (!weakActive && hitCount >= 4)
-        {
-            hitCount = 0;
-            StartWeakPoint();
-        }
-
+        if (!weakActive && hitCount >= 4) { hitCount = 0; StartWeakPoint(); }
         busy = false;
     }
 
@@ -2259,6 +2256,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
         HideWeakPoint();
         HideShieldPoint();
+        combatState.RegisterMistake();
+        combatPointer.Consume();
+        if (combatFx != null) combatFx.Clear();
         deathOverlay.gameObject.SetActive(true);
         deathOverlay.transform.SetAsLastSibling();
         deathOverlayGroup.alpha = 0f;
@@ -2426,66 +2426,70 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void StartWeakPoint()
     {
-        if (shieldActive) return;
-
-        followupWeakActive = false;
-        weakActive = true;
-        weakUntil = Time.unscaledTime + CombatCueSeconds;
-        weakNorm = new Vector2(UnityEngine.Random.Range(.34f, .66f), UnityEngine.Random.Range(.34f, .68f));
-        weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
-        weakPoint.sprite = weakPointSprite;
-        weakPoint.color = Color.white;
-        if (weakPointHitText != null) weakPointHitText.text = "HIT";
-        weakPoint.gameObject.SetActive(true);
-        weakPoint.transform.SetAsLastSibling();
-        PositionWeakPoint();
+        if (shieldActive || won) return;
+        ShowHitCue(XTapCombatCue.Hit);
     }
 
     void StartFollowupWeakPoint()
     {
-        if (shieldActive || won || weakPoint == null) return;
+        if (shieldActive || won) return;
+        ShowHitCue(XTapCombatCue.Followup);
+    }
 
-        followupWeakActive = true;
-        weakActive = true;
-        weakUntil = Time.unscaledTime + FollowupHitCueSeconds;
+    void ShowHitCue(XTapCombatCue kind)
+    {
+        if (weakPoint == null || combatState.Finished) return;
+        combatState.OpenCue(kind);
+        bool followup = kind == XTapCombatCue.Followup;
+        bool counter = kind == XTapCombatCue.Counter;
         weakNorm = new Vector2(UnityEngine.Random.Range(.31f, .69f), UnityEngine.Random.Range(.31f, .71f));
-        weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * (.34f * 1.5f);
-        weakPoint.sprite = followupWeakPointSprite;
+        weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * (.34f * (followup ? 1.5f : 1f));
+        weakPoint.sprite = followup || counter ? followupWeakPointSprite : weakPointSprite;
         weakPoint.color = Color.white;
-        if (weakPointHitText != null) weakPointHitText.text = "HIT!!";
+        weakPointHitText.text = counter ? "반격" : followup ? "HIT!!" : "HIT";
+        weakTimingRing.color = counter ? new Color(.36f, .85f, 1f, .85f) : new Color(1f, .78f, .25f, .8f);
+        weakTimingRing.fillAmount = 1f;
         weakPoint.gameObject.SetActive(true);
         weakPoint.transform.SetAsLastSibling();
+        MoveCueWithinScreen(ref weakNorm, ref weakVelocity, 0f);
         PositionWeakPoint();
     }
 
-    void UpdateWeakPoint()
+    void UpdateWeakPoint(float step)
     {
         if (!weakActive) return;
-
-        if (Time.unscaledTime >= weakUntil)
+        if (combatState.Expired)
         {
+            Vector2 missedAt = new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height);
             HideWeakPoint();
+            RegisterCombatMistake(missedAt, "HIT 놓침");
             return;
         }
-
-        weakNorm += weakVelocity * Time.unscaledDeltaTime;
-
-        if (weakNorm.x < .25f || weakNorm.x > .75f)
-        {
-            weakVelocity.x *= -1f;
-            weakNorm.x = Mathf.Clamp(weakNorm.x, .25f, .75f);
-        }
-        if (weakNorm.y < .27f || weakNorm.y > .73f)
-        {
-            weakVelocity.y *= -1f;
-            weakNorm.y = Mathf.Clamp(weakNorm.y, .27f, .73f);
-        }
-
-        // Keep the ornate silhouette stable; breathe light, not the touch target.
-        float phase = (Mathf.Sin(Time.unscaledTime * 8.5f) + 1f) * .5f;
+        MoveCueWithinScreen(ref weakNorm, ref weakVelocity, step);
+        float phase = (Mathf.Sin((float)combatState.Clock * 8.5f) + 1f) * .5f;
         weakPoint.rectTransform.localScale = Vector3.one;
         weakPoint.color = new Color(1f, 1f, 1f, Mathf.Lerp(.88f, 1f, phase));
+        weakTimingRing.fillAmount = (float)(combatState.Remaining / (followupWeakActive ? XTapCombatState.FollowupSeconds : XTapCombatState.CueSeconds));
         PositionWeakPoint();
+    }
+
+    void MoveCueWithinScreen(ref Vector2 position, ref Vector2 velocity, float step)
+    {
+        position += velocity * step;
+        // Enlarged cues and their timer rings remain within small phone screens.
+        float edge = CombatCueRadiusPixels() * 1.10f;
+        float minX = Mathf.Min(.49f, Mathf.Max(.25f, edge / Mathf.Max(1, Screen.width)));
+        float minY = Mathf.Min(.49f, Mathf.Max(.27f, edge / Mathf.Max(1, Screen.height)));
+        if (position.x < minX || position.x > 1f-minX)
+        {
+            velocity.x = position.x < minX ? Mathf.Abs(velocity.x) : -Mathf.Abs(velocity.x);
+            position.x = Mathf.Clamp(position.x, minX, 1f-minX);
+        }
+        if (position.y < minY || position.y > 1f-minY)
+        {
+            velocity.y = position.y < minY ? Mathf.Abs(velocity.y) : -Mathf.Abs(velocity.y);
+            position.y = Mathf.Clamp(position.y, minY, 1f-minY);
+        }
     }
 
     void PositionWeakPoint()
@@ -2499,23 +2503,34 @@ public sealed class XTapBattleController : MonoBehaviour
 
     float CombatCueRadiusPixels()
     {
-        return Mathf.Max(58f, Screen.width * .06f);
+        return 2f * Mathf.Max(58f, Screen.width * .06f);
     }
 
     void SizeCombatCue(Image cue)
     {
-        // CanvasScaler varies with both width and height. Match the visible square
-        // to the unchanged circular hit area's diameter in physical screen pixels.
         float diameter = 2f * CombatCueRadiusPixels() / Mathf.Max(.01f, canvas.scaleFactor);
         cue.rectTransform.sizeDelta = new Vector2(diameter, diameter);
         if (cue == weakPoint && weakPointHitText != null)
             weakPointHitText.fontSize = Mathf.Max(12, Mathf.RoundToInt(diameter * (followupWeakActive ? .145f : .18f)));
+        if (cue == shieldPoint && shieldCueText != null)
+            shieldCueText.fontSize = Mathf.Max(12, Mathf.RoundToInt(diameter * .14f));
+    }
+
+    Image MakeCueTimer(RectTransform parent)
+    {
+        var go = new GameObject("CueCountdown", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        go.transform.SetParent(parent, false);
+        Image image = go.GetComponent<Image>();
+        image.sprite = ringSprite; image.raycastTarget = false;
+        image.type = Image.Type.Filled; image.fillMethod = Image.FillMethod.Radial360;
+        image.fillOrigin = (int)Image.Origin360.Top; image.fillClockwise = false;
+        Anchor(image.rectTransform, -.05f, -.05f, 1.05f, 1.05f);
+        return image;
     }
 
     void HideWeakPoint()
     {
-        weakActive = false;
-        followupWeakActive = false;
+        if (weakActive) combatState.CloseCue();
         if (weakPoint != null)
         {
             weakPoint.rectTransform.localScale = Vector3.one;
@@ -2528,64 +2543,47 @@ public sealed class XTapBattleController : MonoBehaviour
 
     bool TryStartShieldWindow()
     {
-        if (won || weakActive || shieldActive || shieldPoint == null)
-            return false;
-
-        if (UnityEngine.Random.value >= ShieldCueChance)
-            return false;
-
-        shieldActive = true;
-        shieldUntil = Time.unscaledTime + CombatCueSeconds;
-        shieldNorm = new Vector2(
-            UnityEngine.Random.Range(.34f, .66f),
-            UnityEngine.Random.Range(.34f, .68f)
-        );
+        if (won || weakActive || shieldActive || shieldPoint == null || UnityEngine.Random.value >= ShieldCueChance) return false;
+        combatState.OpenCue(XTapCombatCue.Shield);
+        shieldNorm = new Vector2(UnityEngine.Random.Range(.34f, .66f), UnityEngine.Random.Range(.34f, .68f));
         shieldVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
-
         shieldPoint.rectTransform.localScale = Vector3.one;
         shieldPoint.color = Color.white;
+        shieldTimingRing.color = new Color(.30f, .72f, 1f, .85f);
+        shieldTimingRing.fillAmount = 1f;
+        shieldCueText.text = "막기";
         shieldPoint.gameObject.SetActive(true);
         shieldPoint.transform.SetAsLastSibling();
+        MoveCueWithinScreen(ref shieldNorm, ref shieldVelocity, 0f);
         PositionShieldPoint();
         return true;
     }
 
-    void UpdateShieldPoint()
+    void UpdateShieldPoint(float step)
     {
         if (!shieldActive) return;
-
-        if (Time.unscaledTime >= shieldUntil)
+        if (combatState.Expired)
         {
-            Vector2 shieldScreen = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
+            Vector2 missedAt = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
             HideShieldPoint();
-            StartCoroutine(ShieldMissPenalty(shieldScreen));
+            RegisterCombatMistake(missedAt, "방어 실패");
+            StartCoroutine(ShieldMissPenalty(missedAt));
             return;
         }
-
-        // Shield moves exactly like the normal HIT weak point.
-        shieldNorm += shieldVelocity * Time.unscaledDeltaTime;
-
-        if (shieldNorm.x < .25f || shieldNorm.x > .75f)
-        {
-            shieldVelocity.x *= -1f;
-            shieldNorm.x = Mathf.Clamp(shieldNorm.x, .25f, .75f);
-        }
-        if (shieldNorm.y < .27f || shieldNorm.y > .73f)
-        {
-            shieldVelocity.y *= -1f;
-            shieldNorm.y = Mathf.Clamp(shieldNorm.y, .27f, .73f);
-        }
-
-        float phase = (Mathf.Sin(Time.unscaledTime * 8.5f) + 1f) * .5f;
+        MoveCueWithinScreen(ref shieldNorm, ref shieldVelocity, step);
+        bool perfect = combatState.PerfectWindow;
+        float phase = (Mathf.Sin((float)combatState.Clock * 8.5f) + 1f) * .5f;
         shieldPoint.rectTransform.localScale = Vector3.one;
-        shieldPoint.color = new Color(1f, 1f, 1f, Mathf.Lerp(.88f, 1f, phase));
+        shieldPoint.color = perfect ? new Color(1f, .93f, .62f) : new Color(1f, 1f, 1f, Mathf.Lerp(.88f, 1f, phase));
+        shieldTimingRing.color = perfect ? new Color(1f, .88f, .38f) : new Color(.30f, .72f, 1f, .85f);
+        shieldTimingRing.fillAmount = (float)(combatState.Remaining / XTapCombatState.CueSeconds);
+        shieldCueText.text = perfect ? "지금!" : "막기";
         PositionShieldPoint();
     }
 
     void PositionShieldPoint()
     {
         if (shieldPoint == null) return;
-
         Vector2 screen = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
         Vector2 local;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screen, null, out local);
@@ -2593,28 +2591,48 @@ public sealed class XTapBattleController : MonoBehaviour
         SizeCombatCue(shieldPoint);
     }
 
-    void ResolveShieldBlock(Vector2 shieldScreen)
+    void ResolveShieldBlock(Vector2 screen)
     {
         if (!shieldActive) return;
-
+        XTapCombatCue cue; bool perfect;
+        if (!combatState.ConsumeCue(out cue, out perfect)) return;
         HideShieldPoint();
-        VibrateTouch(false);
-        PlayCombatSfx("fight_punch_medium", .82f);
-        StartCoroutine(TouchPulse(shieldScreen, true, false));
+        StartCoroutine(ShieldBlockSequence(screen, perfect));
+    }
 
-        if (!weakActive && hitCount >= 4)
+    IEnumerator ShieldBlockSequence(Vector2 screen, bool perfect)
+    {
+        busy = true;
+        combatFx.Guard(screen, perfect);
+        VibrateTouch(perfect);
+        if (sfxEnabled && combatSfxSource != null && shieldClang != null)
+        {
+            combatSfxSource.pitch = perfect ? 1.08f : 1f;
+            combatSfxSource.PlayOneShot(shieldClang, perfect ? .82f : .60f);
+        }
+        else PlayCombatSfx("fight_punch_medium", .70f);
+        yield return CombatHitStop(perfect ? .055f : .025f);
+        if (perfect)
+        {
+            hitCount = 0;
+            ShowHitCue(XTapCombatCue.Counter);
+            combatFx.CounterReady(new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height));
+        }
+        else if (hitCount >= 4)
         {
             hitCount = 0;
             StartWeakPoint();
         }
+        busy = false;
     }
 
     void HideShieldPoint()
     {
-        shieldActive = false;
+        if (shieldActive) combatState.CloseCue();
         if (shieldPoint != null)
         {
             shieldPoint.rectTransform.localScale = Vector3.one;
+            shieldPoint.color = Color.white;
             shieldPoint.gameObject.SetActive(false);
         }
     }
@@ -2756,7 +2774,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Destroy(go);
     }
 
-    IEnumerator CharacterRecoil(Vector2 impact, bool heavy, bool dodge)
+    IEnumerator CharacterRecoil(Vector2 impact, bool heavy, bool dodge, int impactTier = 0)
     {
         RectTransform r = battleImage.rectTransform;
         Vector2 basePos = r.anchoredPosition;
@@ -2764,7 +2782,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         Vector2 center = new Vector2(Screen.width * .5f, Screen.height * .5f);
         Vector2 dir = (center - impact).normalized;
-        float power = dodge ? 24f : (heavy ? 34f : 17f);
+        float power = dodge ? 24f : (heavy ? 38f : 17f) + impactTier * 5f;
 
         float total = dodge ? .17f : .13f;
         float t = 0;
@@ -2773,36 +2791,14 @@ public sealed class XTapBattleController : MonoBehaviour
             t += Time.unscaledDeltaTime;
             float p = Mathf.Clamp01(t / total);
             float wave = Mathf.Sin(p * Mathf.PI);
-            r.anchoredPosition = basePos + dir * power * wave;
-            float s = 1f + (heavy ? .022f : .010f) * wave;
+            r.anchoredPosition = basePos + dir * power * wave + (heavy && !dodge ? new Vector2(Mathf.Sin(p * 31f), Mathf.Cos(p * 27f)) * (3f + impactTier) * (1f-p) : Vector2.zero);
+            float s = 1f + (heavy ? .025f + impactTier * .008f : .010f) * wave;
             r.localScale = baseScale * s;
             yield return null;
         }
 
         r.anchoredPosition = basePos;
         r.localScale = baseScale;
-    }
-
-    IEnumerator WeakPointHitBurst()
-    {
-        if (weakPoint == null || !weakPoint.gameObject.activeSelf) yield break;
-
-        RectTransform r = weakPoint.rectTransform;
-        Vector3 start = r.localScale;
-        Color startColor = weakPoint.color;
-        float total = .10f;
-        float t = 0f;
-
-        while (t < total)
-        {
-            t += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(t / total);
-            r.localScale = Vector3.Lerp(start * 1.12f, Vector3.one * .18f, p);
-            weakPoint.color = Color.Lerp(new Color(1f, .82f, .16f, 1f), Color.white, p);
-            yield return null;
-        }
-
-        weakPoint.color = startColor;
     }
 
     void VibrateTouch(bool strong)
@@ -2996,9 +2992,13 @@ public sealed class XTapBattleController : MonoBehaviour
     void PlayCombatSfx(string id, float volume)
     {
         if (!sfxEnabled) return;
-        if (audioSource == null) return;
+        if (combatSfxSource == null) return;
         AudioClip clip = LoadCombatSfx(id);
-        if (clip != null) audioSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+        if (clip != null)
+        {
+            combatSfxSource.pitch = 1f + combatState.ComboTier * .04f;
+            combatSfxSource.PlayOneShot(clip, Mathf.Clamp01(volume));
+        }
     }
 
     AudioClip LoadCombatSfx(string id)

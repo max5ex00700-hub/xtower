@@ -1,0 +1,2 @@
+PASS: 570 actual combat-rule checks; 21 actual controller-method adapter checks; 25 C# files syntax parsed.
+Controller-local calls resolved. Unity API compilation, real rendering/audio/touch, Cloud Build and APK remain untested.
