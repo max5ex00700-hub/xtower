@@ -1,5 +1,10 @@
 # 11.73 Unity 6.3 LTS 이전
 
+> 2026-09-29 후속 확인: Cloud Build #84에서 아래 버전/커밋의 실제 실행을 확인했다.
+> `com.unity.modules.inputlegacy`는 찾을 수 없는 패키지여서 UPM 해석이 중단됐다.
+> 이 문서의 Input Legacy 모듈 추가는 11.73 당시의 잘못된 변경 기록이다.
+> 11.74에서 제거했으며, 현재 기준은 `UNITY_PACKAGE_FIX_11_74.md`를 따른다.
+
 기준 HEAD: `16a10375204dbd690dc081884362c8394de8cb2e` (11.72).
 사용자가 Unity 6 이전을 확정했다. 중간 f3 수정은 GitHub에 게시하지 않았으며
 이번 Unity 6 변경으로 대체했다.
