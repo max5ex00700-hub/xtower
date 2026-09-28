@@ -2406,8 +2406,8 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void SetActionSprite(string prefix)
     {
-        int i = UnityEngine.Random.Range(0, 10);
         int visualFloor = CurrentVisualFloor();
+        int i = UnityEngine.Random.Range(0, XTapCodex.ActionImageCount(visualFloor, prefix));
         string code = prefix + i.ToString("00");
         Sprite s = assets.GetSprite("assets/f" + visualFloor + "_" + code + ".jpg");
         if (s != null)

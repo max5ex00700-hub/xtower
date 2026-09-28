@@ -13,6 +13,7 @@ import argparse
 import base64
 import io
 import json
+import re
 from pathlib import Path
 import struct
 import subprocess
@@ -26,6 +27,9 @@ ROOT = Path(__file__).resolve().parents[1]
 RESOURCES = "unity/XTapUnity/Assets/Resources/"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 BUILD_INPUTS = {
+    "XTapBlacksmithUI/atlas.bytes",
+    "XTapMainUI/main_atlas.png",
+    "XTapMainUI/main_atlas_runtime.bytes",
     "XTapCombatUI/hit_gold.bytes",
     "XTapCombatUI/hit_followup.bytes",
     "XTapCombatUI/shield_crystal.bytes",
@@ -153,6 +157,24 @@ def main():
                     failures.append((label, str(error)))
         except Exception as error:
             failures.append((path, str(error)))
+    # The forge's missing-Resources fallback is a separate compiled copy.
+    # Check it too so it cannot silently retain an old corrupt JPEG.
+    source_path = "unity/XTapUnity/Assets/Scripts/XTapBlacksmith.cs"
+    source = git("show", revision + ":" + source_path).decode() if revision else (ROOT / source_path).read_text()
+    embedded = re.search(r'EmbeddedBlacksmithAtlas(?:Jpeg|Png)Base64 = "([^"]+)";', source)
+    if embedded:
+        checked += 1
+        try:
+            data = base64.b64decode(embedded.group(1), validate=True)
+            validate_image(data)
+            atlas_path = RESOURCES + "XTapBlacksmithUI/atlas.bytes"
+            resource = git("show", revision + ":" + atlas_path) if revision else (ROOT / atlas_path).read_bytes()
+            if data != base64.b64decode(resource.strip(), validate=True):
+                raise ValueError("embedded fallback differs from the resource atlas")
+        except Exception as error:
+            failures.append((source_path + ":embedded atlas", str(error)))
+    else:
+        failures.append((source_path, "embedded atlas declaration missing"))
     for label, error in failures:
         print(f"FAIL {label}: {error}", file=sys.stderr)
     scope = "build inputs" if args.build_inputs else "all resource images"

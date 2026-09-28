@@ -6,7 +6,7 @@
 - Unity project subfolder: unity/XTapUnity
 - Unity version: 2022.3.62f2
 - Android package: com.xtower.game.unity
-- Version code: source-controlled; current 1111
+- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1172)
 - Test APK signing: Unity Build Automation의 Auto-generated debug keystore 사용
 
 ## 폰에서 최초 1회 설정
@@ -45,6 +45,10 @@
 
 ## 최신 커밋 검증
 - 11.11부터 Unity Build Automation의 `GIT_COMMIT`을 Android versionName에 자동 삽입한다.
-- 옵션 > 버전 정보에서 `11.11-main-ref-<커밋 앞 8자리> (1111)` 형식으로 확인한다.
+- 옵션 > 버전 정보에서 `11.72-git-audit-<커밋 앞 8자리> (1172)` 형식으로 확인한다.
 - Unity Build Automation 빌드 로그에서도 `X탑 BUILD FINGERPRINT`를 검색하면 branch와 commit이 표시된다.
 - 11.11은 기준 이미지에서 추출한 메인 버튼 9개를 pre-build 단계에서 검증한다. 누락/손상 시 APK를 만들지 않고 빌드를 실패시킨다.
+
+## 2026-09-28 Git 점검
+- Unity 2022.3.62f2 공식 리비전: `7670c08855a9`.
+- 점검 결과/실제 검증 한계: `unity/GIT_AUDIT_11_72.md`.

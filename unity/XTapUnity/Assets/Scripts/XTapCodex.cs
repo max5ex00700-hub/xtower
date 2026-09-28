@@ -107,7 +107,7 @@ public sealed class XTapCodex : MonoBehaviour
         int c = NormalizeCharacter(characterId);
         if (c <= 0) return false;
 
-        List<string> codes = AllImageCodes();
+        List<string> codes = AllImageCodes(c);
         for (int i = 0; i < codes.Count; i++)
             if (!IsImageDiscovered(c, codes[i]))
                 return false;
@@ -131,13 +131,19 @@ public sealed class XTapCodex : MonoBehaviour
         return ImageKeyPrefix + characterId + "_" + imageCode;
     }
 
-    static List<string> AllImageCodes()
+    public static int ActionImageCount(int characterId, string prefix)
+    {
+        // Floor 2 has k00..k08 only. Its absent k09 is not a codex requirement.
+        return NormalizeCharacter(characterId) == 2 && prefix == "k" ? 9 : 10;
+    }
+
+    static List<string> AllImageCodes(int characterId)
     {
         List<string> codes = new List<string>(41);
         string[] prefixes = {"p", "k", "b", "d"};
 
         for (int p = 0; p < prefixes.Length; p++)
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < ActionImageCount(characterId, prefixes[p]); i++)
                 codes.Add(prefixes[p] + i.ToString("00"));
 
         codes.Add("cap");
@@ -147,7 +153,7 @@ public sealed class XTapCodex : MonoBehaviour
     int DiscoveredImageCount(int characterId)
     {
         int count = 0;
-        List<string> codes = AllImageCodes();
+        List<string> codes = AllImageCodes(characterId);
         for (int i = 0; i < codes.Count; i++)
             if (IsImageDiscovered(characterId, codes[i]))
                 count++;
@@ -162,7 +168,7 @@ public sealed class XTapCodex : MonoBehaviour
 
     Sprite FirstDiscoveredSprite(int characterId)
     {
-        List<string> codes = AllImageCodes();
+        List<string> codes = AllImageCodes(characterId);
         for (int i = 0; i < codes.Count; i++)
         {
             if (!IsImageDiscovered(characterId, codes[i])) continue;
@@ -233,7 +239,7 @@ public sealed class XTapCodex : MonoBehaviour
         Anchor(next.GetComponent<RectTransform>(), .72f, .02f, .92f, .095f);
         next.onClick.AddListener(delegate
         {
-            int maxPage = Mathf.Max(0, Mathf.CeilToInt(AllImageCodes().Count / (float)ImagesPerPage) - 1);
+            int maxPage = Mathf.Max(0, Mathf.CeilToInt(AllImageCodes(selectedCharacter).Count / (float)ImagesPerPage) - 1);
             galleryPageIndex = Mathf.Min(maxPage, galleryPageIndex + 1);
             RefreshGallery();
         });
@@ -297,8 +303,9 @@ public sealed class XTapCodex : MonoBehaviour
                 Anchor(name.rectTransform, .39f, .48f, .96f, .88f);
 
                 int collected = DiscoveredImageCount(characterId);
-                Text progress = MakeText(card.transform, collected + " / 41", 13, TextAnchor.MiddleLeft, true);
-                progress.color = collected >= 41
+                int total = AllImageCodes(characterId).Count;
+                Text progress = MakeText(card.transform, collected + " / " + total, 13, TextAnchor.MiddleLeft, true);
+                progress.color = collected >= total
                     ? new Color(.62f, 1f, .64f, 1f)
                     : new Color(.78f, .76f, .72f, 1f);
                 Anchor(progress.rectTransform, .39f, .12f, .96f, .46f);
@@ -335,7 +342,7 @@ public sealed class XTapCodex : MonoBehaviour
         if (galleryGrid == null) return;
         ClearChildren(galleryGrid);
 
-        List<string> codes = AllImageCodes();
+        List<string> codes = AllImageCodes(selectedCharacter);
         int pageCount = Mathf.CeilToInt(codes.Count / (float)ImagesPerPage);
         galleryPageIndex = Mathf.Clamp(galleryPageIndex, 0, Mathf.Max(0, pageCount - 1));
 
