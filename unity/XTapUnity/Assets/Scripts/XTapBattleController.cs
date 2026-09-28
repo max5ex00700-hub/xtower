@@ -530,7 +530,7 @@ public sealed class XTapBattleController : MonoBehaviour
         // Unity UI Buttons need an EventSystem. The battle prototype previously
         // used raw Input touches only, so no EventSystem existed and every main
         // screen Button looked correct but ignored taps on device.
-        if (FindObjectOfType<EventSystem>() == null)
+        if (FindFirstObjectByType<EventSystem>() == null)
         {
             var eventGo = new GameObject("EventSystem", typeof(EventSystem), typeof(StandaloneInputModule));
             eventGo.transform.SetParent(transform, false);
@@ -3257,7 +3257,7 @@ public sealed class XTapBattleController : MonoBehaviour
             Debug.LogWarning("X탑 폰트 초기화 실패: " + e.Message);
         }
 
-        Font fallback = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        Font fallback = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         if (fallback != null)
             fallback.RequestCharactersInTexture("0123456789+-/%.,:()[]ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz", 64, FontStyle.Normal);
         return fallback;
