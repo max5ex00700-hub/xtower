@@ -49,43 +49,26 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         {
             string path = Path.Combine(baseDir, required[i]);
             if (!File.Exists(path))
-                throw new BuildFailedException("X탑 11.61 필수 메인 UI 자산 누락: " + required[i]);
+                throw new BuildFailedException("X탑 11.62 필수 메인 UI 자산 누락: " + required[i]);
 
             ValidatePngContainer(path, "메인 UI " + required[i]);
             ValidateRuntimeImage(path, 1, 1, "메인 UI " + required[i]);
         }
 
-        string forgeDuelBackgroundPath = Path.Combine(
-            Application.dataPath,
-            "Resources/XTapBlacksmithUI/forge_duel_background.bytes"
-        );
-        string forgeDuelAtlasPath = Path.Combine(
-            Application.dataPath,
-            "Resources/XTapBlacksmithUI/forge_duel_atlas.bytes"
-        );
-
-        if (!File.Exists(forgeDuelBackgroundPath))
-            throw new BuildFailedException("X탑 11.61 대장간 9:16 듀얼 배경 에셋 누락.");
-        if (!File.Exists(forgeDuelAtlasPath))
-            throw new BuildFailedException("X탑 11.61 대장간 천사/악마/모루 atlas 에셋 누락.");
-
-        // 11.60: complete chunks can still contain damaged compressed bytes.
-        // Check each chunk's CRC before Unity performs the actual image decode.
-        ValidatePngContainer(forgeDuelBackgroundPath, "대장간 9:16 듀얼 배경");
-        ValidatePngContainer(forgeDuelAtlasPath, "대장간 천사/악마/모루 atlas");
-
-        ValidateRuntimeImage(
-            forgeDuelBackgroundPath,
-            300,
-            500,
-            "대장간 9:16 듀얼 배경"
-        );
-        ValidateRuntimeImage(
-            forgeDuelAtlasPath,
-            400,
-            200,
-            "대장간 천사/악마/모루 atlas"
-        );
+        string forgeDir = Path.Combine(Application.dataPath, "Resources/XTapBlacksmithUI");
+        string[] forgeAssets = {"forge_duel_background.bytes", "forge_angel_poses.bytes",
+            "forge_demon_poses.bytes", "forge_anvil.bytes"};
+        for (int i = 0; i < forgeAssets.Length; i++)
+        {
+            string path = Path.Combine(forgeDir, forgeAssets[i]);
+            if (!File.Exists(path))
+                throw new BuildFailedException("X탑 11.62 대장간 필수 에셋 누락: " + forgeAssets[i]);
+            ValidatePngContainer(path, "대장간 " + forgeAssets[i]);
+            bool poseSheet = i == 1 || i == 2;
+            ValidateRuntimeImage(path, i == 0 ? 900 : (poseSheet ? 1536 : 600),
+                i == 0 ? 1600 : (poseSheet ? 512 : 400),
+                "대장간 " + forgeAssets[i], i != 0, poseSheet ? 3 : 1);
+        }
 
         string gachaUiDir = Path.Combine(Application.dataPath, "Resources/XTapGachaUI");
         string[] gachaAssets =
@@ -98,7 +81,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         {
             string path = Path.Combine(gachaUiDir, gachaAssets[i]);
             if (!File.Exists(path))
-                throw new BuildFailedException("X탑 11.61 블록 머신 에셋 누락: " + gachaAssets[i]);
+                throw new BuildFailedException("X탑 11.62 블록 머신 에셋 누락: " + gachaAssets[i]);
 
             int minWidth = gachaAssets[i].IndexOf("machine", StringComparison.OrdinalIgnoreCase) >= 0 ? 500 : 300;
             int minHeight = gachaAssets[i].IndexOf("machine", StringComparison.OrdinalIgnoreCase) >= 0 ? 900 : 300;
@@ -112,7 +95,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             "Resources/XTapSigilBeat/x_sigil_beat_stage1.ogg"
         );
         if (!File.Exists(sigilBeatAudioPath))
-            throw new BuildFailedException("X탑 11.61 X SIGIL BEAT 음악 에셋 누락.");
+            throw new BuildFailedException("X탑 11.62 X SIGIL BEAT 음악 에셋 누락.");
 
         byte[] sigilBeatAudio = File.ReadAllBytes(sigilBeatAudioPath);
         if (sigilBeatAudio.Length < 100000 ||
@@ -120,22 +103,22 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             sigilBeatAudio[1] != (byte)'g' ||
             sigilBeatAudio[2] != (byte)'g' ||
             sigilBeatAudio[3] != (byte)'S')
-            throw new BuildFailedException("X탑 11.61 X SIGIL BEAT OGG 음악 에셋 손상.");
+            throw new BuildFailedException("X탑 11.62 X SIGIL BEAT OGG 음악 에셋 손상.");
 
         string visualPackPath = Path.Combine(
             Application.dataPath,
             "Resources/XTapSigilBeat/visual_pack.bytes"
         );
         if (!File.Exists(visualPackPath))
-            throw new BuildFailedException("X탑 11.61 X SIGIL BEAT visual pack 누락.");
+            throw new BuildFailedException("X탑 11.62 X SIGIL BEAT visual pack 누락.");
 
         string visualPack = File.ReadAllText(visualPackPath);
         if (visualPack.Length < 1000000)
-            throw new BuildFailedException("X탑 11.61 X SIGIL BEAT visual pack 크기 비정상.");
+            throw new BuildFailedException("X탑 11.62 X SIGIL BEAT visual pack 크기 비정상.");
 
         SigilVisualPackData pack = JsonUtility.FromJson<SigilVisualPackData>(visualPack);
         if (pack == null)
-            throw new BuildFailedException("X탑 11.61 X SIGIL BEAT visual pack JSON 파싱 실패.");
+            throw new BuildFailedException("X탑 11.62 X SIGIL BEAT visual pack JSON 파싱 실패.");
 
         ValidatePackedImage(pack.sigil_background, 800, 1400, "9:16 배경");
         ValidatePackedImage(pack.thumb_left, 200, 300, "왼엄지");
@@ -151,14 +134,14 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         ValidatePackedImage(pack.judgement_frame, 200, 120, "판정 프레임");
         ValidatePackedImage(pack.title_plate, 500, 70, "타이틀 플레이트");
 
-        Debug.Log("X탑 11.61 UI 검증 완료: 메인 + 머신 + 대장간 듀얼 + X SIGIL BEAT 음악 + 13개 시각 에셋 실제 디코딩 정상.");
+        Debug.Log("X탑 11.62 UI 검증 완료: 메인 + 머신 + 대장간 듀얼 + X SIGIL BEAT 음악 + 13개 시각 에셋 실제 디코딩 정상.");
     }
 
 
     static void ValidatePackedImage(string encoded, int minWidth, int minHeight, string label)
     {
         if (string.IsNullOrEmpty(encoded))
-            throw new BuildFailedException("X탑 11.61 X SIGIL BEAT " + label + " 데이터 누락.");
+            throw new BuildFailedException("X탑 11.62 X SIGIL BEAT " + label + " 데이터 누락.");
 
         byte[] bytes;
         try
@@ -167,18 +150,18 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         }
         catch (Exception e)
         {
-            throw new BuildFailedException("X탑 11.61 X SIGIL BEAT " + label + " base64 손상: " + e.Message);
+            throw new BuildFailedException("X탑 11.62 X SIGIL BEAT " + label + " base64 손상: " + e.Message);
         }
 
         Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
         try
         {
             if (!texture.LoadImage(bytes, false))
-                throw new BuildFailedException("X탑 11.61 X SIGIL BEAT " + label + " Unity 이미지 디코딩 실패.");
+                throw new BuildFailedException("X탑 11.62 X SIGIL BEAT " + label + " Unity 이미지 디코딩 실패.");
 
             if (texture.width < minWidth || texture.height < minHeight)
                 throw new BuildFailedException(
-                    "X탑 11.61 X SIGIL BEAT " + label + " 해상도 비정상: " +
+                    "X탑 11.62 X SIGIL BEAT " + label + " 해상도 비정상: " +
                     texture.width + "x" + texture.height);
         }
         finally
@@ -191,11 +174,11 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
     {
         byte[] bytes = File.ReadAllBytes(path);
         if (bytes == null || bytes.Length < 33)
-            throw new BuildFailedException("X탑 11.61 " + label + " PNG 파일 크기 비정상.");
+            throw new BuildFailedException("X탑 11.62 " + label + " PNG 파일 크기 비정상.");
 
         if (bytes[0] != 0x89 || bytes[1] != 0x50 || bytes[2] != 0x4E || bytes[3] != 0x47 ||
             bytes[4] != 0x0D || bytes[5] != 0x0A || bytes[6] != 0x1A || bytes[7] != 0x0A)
-            throw new BuildFailedException("X탑 11.61 " + label + " PNG 시그니처 손상.");
+            throw new BuildFailedException("X탑 11.62 " + label + " PNG 시그니처 손상.");
 
         bool sawIHDR = false;
         bool sawIDAT = false;
@@ -221,7 +204,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             long chunkEnd = pos + 12L + chunkLength;
             if (chunkEnd > bytes.Length)
                 throw new BuildFailedException(
-                    "X탑 11.61 " + label + " PNG 잘림: " +
+                    "X탑 11.62 " + label + " PNG 잘림: " +
                     chunkType + " 길이 " + chunkLength +
                     " / 파일 " + bytes.Length + " bytes.");
 
@@ -234,7 +217,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
             uint actualCrc = ComputePngCrc(bytes, pos + 4, crcOffset);
             if (storedCrc != actualCrc)
                 throw new BuildFailedException(
-                    "X탑 11.61 " + label + " PNG CRC 손상: " + chunkType +
+                    "X탑 11.62 " + label + " PNG CRC 손상: " + chunkType +
                     " offset=" + pos + " stored=" + storedCrc.ToString("X8") +
                     " actual=" + actualCrc.ToString("X8") + ".");
 
@@ -252,12 +235,12 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         if (!sawIHDR || !sawIDAT || !sawIEND)
             throw new BuildFailedException(
-                "X탑 11.61 " + label + " PNG 구조 손상: " +
+                "X탑 11.62 " + label + " PNG 구조 손상: " +
                 "IHDR=" + sawIHDR + " IDAT=" + sawIDAT + " IEND=" + sawIEND + ".");
 
         if (pos != bytes.Length)
             throw new BuildFailedException(
-                "X탑 11.61 " + label + " PNG 끝 뒤 불필요 데이터: " +
+                "X탑 11.62 " + label + " PNG 끝 뒤 불필요 데이터: " +
                 (bytes.Length - pos) + " bytes.");
     }
 
@@ -273,33 +256,40 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         return crc ^ 0xFFFFFFFFu;
     }
 
-    static void ValidateRuntimeImage(string path, int minWidth, int minHeight, string label, bool requireTransparency = false)
+    static void ValidateRuntimeImage(string path, int minWidth, int minHeight, string label, bool requireTransparency = false, int frameCount = 1)
     {
         byte[] bytes = File.ReadAllBytes(path);
         if (bytes == null || bytes.Length < 1024)
-            throw new BuildFailedException("X탑 11.61 " + label + " 파일 크기 비정상.");
+            throw new BuildFailedException("X탑 11.62 " + label + " 파일 크기 비정상.");
 
         Texture2D texture = new Texture2D(2, 2, TextureFormat.RGBA32, false);
         try
         {
             if (!texture.LoadImage(bytes, false))
-                throw new BuildFailedException("X탑 11.61 " + label + " Unity 이미지 디코딩 실패.");
+                throw new BuildFailedException("X탑 11.62 " + label + " Unity 이미지 디코딩 실패.");
 
             if (texture.width < minWidth || texture.height < minHeight)
                 throw new BuildFailedException(
-                    "X탑 11.61 " + label + " 해상도 비정상: " +
+                    "X탑 11.62 " + label + " 해상도 비정상: " +
                     texture.width + "x" + texture.height +
                     " / 최소 " + minWidth + "x" + minHeight);
 
+            if (frameCount > 1 && texture.width != texture.height * frameCount)
+                throw new BuildFailedException("X탑 11.62 " + label + " 3프레임 정사각 셀 비율 오류.");
             if (requireTransparency)
             {
                 Color32[] pixels = texture.GetPixels32();
-                int transparent = 0;
+                int[] transparent = new int[frameCount];
+                int frameWidth = texture.width / frameCount;
                 for (int i = 0; i < pixels.Length; i++)
-                    if (pixels[i].a < 16) transparent++;
-                float fraction = (float)transparent / pixels.Length;
-                if (fraction < .25f || fraction > .90f)
-                    throw new BuildFailedException("X탑 11.61 룰렛 장식 투명 영역 비정상: " + fraction);
+                    if (pixels[i].a < 16) transparent[(i % texture.width) / frameWidth]++;
+                for (int frame = 0; frame < frameCount; frame++)
+                {
+                    float fraction = (float)transparent[frame] / (frameWidth * texture.height);
+                    if (fraction < .25f || fraction > .90f)
+                        throw new BuildFailedException("X탑 11.62 " + label +
+                            " 투명 영역 비정상, frame=" + frame + ": " + fraction);
+                }
             }
         }
         finally
@@ -328,7 +318,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
 
         PlayerSettings.productName = "X탑";
         PlayerSettings.companyName = "XTap";
-        PlayerSettings.bundleVersion = "11.61-fullscreen-block-gear-" + shortCommit;
+        PlayerSettings.bundleVersion = "11.62-forge-hammer-duel-" + shortCommit;
         PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, "com.xtower.game.unity");
 
         Debug.Log("X탑 BUILD FINGERPRINT / branch=" + (gitBranch ?? "local") + " / commit=" + (gitCommit ?? "local"));
@@ -337,7 +327,7 @@ public sealed class XTapBuildConfig : IPreprocessBuildWithReport
         PlayerSettings.SplashScreen.showUnityLogo = true;
         PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel24;
         PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
-        PlayerSettings.Android.bundleVersionCode = 1161;
+        PlayerSettings.Android.bundleVersionCode = 1162;
 
         // 64-bit Android is required for current 64-bit-only devices.
         PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);

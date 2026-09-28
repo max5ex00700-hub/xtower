@@ -27,7 +27,9 @@ RESOURCES = "unity/XTapUnity/Assets/Resources/"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 BUILD_INPUTS = {
     "XTapBlacksmithUI/forge_duel_background.bytes",
-    "XTapBlacksmithUI/forge_duel_atlas.bytes",
+    "XTapBlacksmithUI/forge_angel_poses.bytes",
+    "XTapBlacksmithUI/forge_demon_poses.bytes",
+    "XTapBlacksmithUI/forge_anvil.bytes",
     "XTapGachaUI/block_gear_machine.bytes",
     "XTapGachaUI/block_gear_wheel.bytes",
     "XTapSigilBeat/visual_pack.bytes",
@@ -116,7 +118,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ref", help="Audit this Git ref instead of working tree files")
     parser.add_argument("--build-inputs", action="store_true",
-                        help="Check only the 27 images required by XTapBuildConfig")
+                        help="Check only the images required by XTapBuildConfig")
     args = parser.parse_args()
     if args.ref:
         # Resolve the ref once so all reads use the same immutable revision.
