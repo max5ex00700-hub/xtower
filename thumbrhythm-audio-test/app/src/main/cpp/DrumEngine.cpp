@@ -46,16 +46,16 @@ public:
         if (stream_) return true;
 
         oboe::AudioStreamBuilder b;
-        b.setDirection(oboe::Direction::Output)
-         .setPerformanceMode(oboe::PerformanceMode::LowLatency)
-         .setSharingMode(oboe::SharingMode::Exclusive)
-         .setFormat(oboe::AudioFormat::Float)
-         .setChannelCount(kChannels)
-         .setSampleRate(kRate)
-         .setUsage(oboe::Usage::Game)
-         .setContentType(oboe::ContentType::Music)
-         .setDataCallback(this)
-         .setErrorCallback(this);
+        b.setDirection(oboe::Direction::Output);
+        b.setPerformanceMode(oboe::PerformanceMode::LowLatency);
+        b.setSharingMode(oboe::SharingMode::Exclusive);
+        b.setFormat(oboe::AudioFormat::Float);
+        b.setChannelCount(kChannels);
+        b.setSampleRate(kRate);
+        b.setUsage(oboe::Usage::Game);
+        b.setContentType(oboe::ContentType::Music);
+        b.setDataCallback(this);
+        b.setErrorCallback(this);
 
         oboe::Result r = b.openStream(stream_);
         if (r != oboe::Result::OK) {
