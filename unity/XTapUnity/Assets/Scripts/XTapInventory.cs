@@ -154,6 +154,7 @@ public sealed class XTapInventory : MonoBehaviour
     Text bagTitleText;
     Text bagCountText;
     Text totalText;
+    Text descriptorMultiplierText;
     Text heldCountText;
     Text groundCountText;
     Text heldPageText;
@@ -324,12 +325,16 @@ public sealed class XTapInventory : MonoBehaviour
         closeTop.onClick.AddListener(Close);
 
         RectTransform statBar = Panel(panel, "BagStatBar", new Color(.035f, .032f, .030f, 1f));
-        Anchor(statBar, .025f, .895f, .975f, .948f);
+        Anchor(statBar, .025f, .870f, .975f, .948f);
         ApplyPanelSkin(statBar, XTapUiSkin.StatusBar, new Color(.90f, .84f, .72f, 1f));
+
+        descriptorMultiplierText = MakeText(panel, "", 14, TextAnchor.MiddleCenter, true);
+        descriptorMultiplierText.color = new Color(.39f, .85f, 1f, 1f);
+        Anchor(descriptorMultiplierText.rectTransform, .045f, .917f, .955f, .947f);
 
         totalText = MakeText(panel, "", 16, TextAnchor.MiddleCenter, true);
         totalText.color = new Color(1f, .82f, .42f, 1f);
-        Anchor(totalText.rectTransform, .045f, .900f, .955f, .944f);
+        Anchor(totalText.rectTransform, .045f, .875f, .955f, .917f);
 
         GameObject viewportGo = new GameObject(
             "BagGridViewport",
@@ -341,7 +346,7 @@ public sealed class XTapInventory : MonoBehaviour
         );
         viewportGo.transform.SetParent(panel, false);
         gridViewport = viewportGo.GetComponent<RectTransform>();
-        Anchor(gridViewport, .02f, .400f, .98f, .900f);
+        Anchor(gridViewport, .02f, .400f, .98f, .870f);
 
         Image viewportBg = viewportGo.GetComponent<Image>();
         viewportBg.color = new Color(.035f, .045f, .060f, 1f);
@@ -588,9 +593,6 @@ public sealed class XTapInventory : MonoBehaviour
         int bagCount = 0;
         int heldCount = 0;
         int groundCount = 0;
-        double atk = 0d;
-        double def = 0d;
-        double hp = 0d;
 
         for (int i = 0; i < items.Count; i++)
         {
@@ -601,9 +603,6 @@ public sealed class XTapInventory : MonoBehaviour
                 item.bagOwnerCharacterId == activeBagOwnerCharacterId)
             {
                 bagCount++;
-                atk = XTapStatFormat.SafeAdd(atk, item.attack);
-                def = XTapStatFormat.SafeAdd(def, item.defense);
-                hp = XTapStatFormat.SafeAdd(hp, item.hp);
                 CreateGridItemView(item);
             }
             else if (item.location == XTapGearBlockData.LocationHeld &&
@@ -626,6 +625,11 @@ public sealed class XTapInventory : MonoBehaviour
         RenderPage(XTapGearBlockData.LocationHeld, heldContent, heldPage);
         RenderPage(XTapGearBlockData.LocationGround, groundContent, groundPage);
 
+        double atk, def, hp, descriptorMultiplier;
+        GetBagDisplayStats(activeBagOwnerCharacterId, out atk, out def, out hp, out descriptorMultiplier);
+
+        descriptorMultiplierText.text = "이 가방 장비 합계 · 전체 수식어 ×" +
+            XTapStatFormat.Compact(descriptorMultiplier) + " 적용";
         totalText.text = "공격력 +" + XTapStatFormat.Compact(atk) +
                          "     방어력 +" + XTapStatFormat.Compact(def) +
                          "     체력 +" + XTapStatFormat.Compact(hp);
@@ -1064,6 +1068,22 @@ public sealed class XTapInventory : MonoBehaviour
                 items[i].bagOwnerCharacterId == ownerCharacterId)
                 total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].hp));
         return total;
+    }
+
+    public void GetBagDisplayStats(
+        int ownerCharacterId,
+        out double attack,
+        out double defense,
+        out double hp,
+        out double descriptorMultiplier)
+    {
+        // Every bag/list/detail displays its own contribution with the same
+        // global multiplier used in battle. Raw getters and saved blocks stay
+        // unchanged: battle multiplies (base player + all equipment) only once.
+        descriptorMultiplier = DescriptorSetMultiplier;
+        attack = Math.Min(double.MaxValue, GetEquippedAttack(ownerCharacterId) * descriptorMultiplier);
+        defense = Math.Min(double.MaxValue, GetEquippedDefense(ownerCharacterId) * descriptorMultiplier);
+        hp = Math.Min(double.MaxValue, GetEquippedHp(ownerCharacterId) * descriptorMultiplier);
     }
 
     public int GetEquippedCellCount(int ownerCharacterId)

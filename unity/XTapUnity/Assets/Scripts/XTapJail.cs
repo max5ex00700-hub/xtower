@@ -148,8 +148,8 @@ public sealed class XTapJail : MonoBehaviour
         detailText.color = new Color(.90f, .94f, 1f, 1f);
         detailText.resizeTextForBestFit = true;
         detailText.resizeTextMinSize = 44;
-        detailText.resizeTextMaxSize = 62;
-        Anchor(detailText.rectTransform, .06f, .185f, .94f, .305f);
+        detailText.resizeTextMaxSize = 54;
+        Anchor(detailText.rectTransform, .06f, .165f, .94f, .305f);
 
         openMiniGameButton = MakeButton(panel, "전용 미니게임", 17, new Color(.31f, .075f, .07f, 1f));
         Anchor(openMiniGameButton.GetComponent<RectTransform>(), .055f, .055f, .45f, .145f);
@@ -197,19 +197,23 @@ public sealed class XTapJail : MonoBehaviour
                 bg.color = new Color(.075f, .10f, .145f, 1f);
 
             LayoutElement le = row.GetComponent<LayoutElement>();
-            le.preferredHeight = 180f;
+            le.preferredHeight = captured ? 252f : 180f;
 
-            string state = captured ? "포획됨" : "미포획";
-            string stats = captured
-                ? "가방 " + inventory.GetEquippedCellCount(characterId) + "/24칸  ·  공+" +
-                  XTapStatFormat.Compact(inventory.GetEquippedAttack(characterId)) + "  방+" +
-                  XTapStatFormat.Compact(inventory.GetEquippedDefense(characterId)) + "  체+" +
-                  XTapStatFormat.Compact(inventory.GetEquippedHp(characterId))
-                : "0% 룰렛에서 포획 성공 시 해금";
+            string rowText = "캐릭터 " + characterId + "   미포획\n0% 룰렛에서 포획 성공 시 해금";
+            if (captured)
+            {
+                double attack, defense, hp, multiplier;
+                inventory.GetBagDisplayStats(characterId, out attack, out defense, out hp, out multiplier);
+                rowText = "캐릭터 " + characterId + " · 포획됨 · " +
+                    inventory.GetEquippedCellCount(characterId) + "/24칸\n" +
+                    "전체 수식어 ×" + XTapStatFormat.Compact(multiplier) + " 적용\n" +
+                    "공+" + XTapStatFormat.Compact(attack) + "   방+" +
+                    XTapStatFormat.Compact(defense) + "   체+" + XTapStatFormat.Compact(hp);
+            }
 
             Text t = MakeText(
                 row.transform,
-                "캐릭터 " + characterId + "   " + state + "\n" + stats,
+                rowText,
                 16,
                 TextAnchor.MiddleLeft,
                 captured
@@ -219,8 +223,8 @@ public sealed class XTapJail : MonoBehaviour
                 : new Color(.43f, .45f, .50f, 1f);
             t.resizeTextForBestFit = true;
             t.resizeTextMinSize = 44;
-            t.resizeTextMaxSize = 62;
-            Anchor(t.rectTransform, .045f, .10f, .955f, .90f);
+            t.resizeTextMaxSize = 54;
+            Anchor(t.rectTransform, .045f, .08f, .955f, .92f);
 
             Button b = row.GetComponent<Button>();
             b.targetGraphic = bg;
@@ -246,11 +250,14 @@ public sealed class XTapJail : MonoBehaviour
             return;
         }
 
+        double attack, defense, hp, multiplier;
+        inventory.GetBagDisplayStats(selectedCharacterId, out attack, out defense, out hp, out multiplier);
         detailText.text =
             "캐릭터 " + selectedCharacterId + " 전용 가방   8 × 3 / 24칸\n" +
-            "장착 합계  공 +" + XTapStatFormat.Compact(inventory.GetEquippedAttack(selectedCharacterId)) +
-            "   방 +" + XTapStatFormat.Compact(inventory.GetEquippedDefense(selectedCharacterId)) +
-            "   체 +" + XTapStatFormat.Compact(inventory.GetEquippedHp(selectedCharacterId));
+            "전체 수식어 ×" + XTapStatFormat.Compact(multiplier) + " 적용\n" +
+            "장착 합계  공 +" + XTapStatFormat.Compact(attack) +
+            "   방 +" + XTapStatFormat.Compact(defense) +
+            "   체 +" + XTapStatFormat.Compact(hp);
 
         openBagButton.interactable = true;
 

@@ -71,6 +71,7 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainFloorSubText;
     Text mainStatusText;
     Text mainMoveText;
+    Text mainDescriptorText;
     Text mainAttackText;
     Text mainDefenseText;
     Text mainHpText;
@@ -89,6 +90,7 @@ public sealed class XTapBattleController : MonoBehaviour
     Text mainTicketTimerText;
     int hourlyTicketCount;
     long hourlyTicketAnchorUtc;
+    bool hourlyTicketStateLoaded;
     float nextTicketClockRefresh;
 
     GameObject splashOverlay;
@@ -206,6 +208,13 @@ public sealed class XTapBattleController : MonoBehaviour
         "female_breath1", "female_sigh1", "female_sigh2",
         "female_moan4", "female_exhale1"
     };
+
+    void Awake()
+    {
+        // Unity can send the initial OnApplicationPause(false) before Start.
+        // Read persisted tickets BEFORE any lifecycle callback can accrue/save.
+        LoadHourlyTicketState();
+    }
 
     IEnumerator Start()
     {
@@ -638,19 +647,23 @@ public sealed class XTapBattleController : MonoBehaviour
 
         mainMoveText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainMoveText.color = new Color(.96f, .90f, .76f, 1f);
-        Anchor(mainMoveText.rectTransform, .10f, .61f, .92f, .79f);
+        Anchor(mainMoveText.rectTransform, .10f, .67f, .92f, .81f);
+
+        mainDescriptorText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
+        mainDescriptorText.color = new Color(.39f, .85f, 1f, 1f);
+        Anchor(mainDescriptorText.rectTransform, .10f, .52f, .94f, .66f);
 
         mainAttackText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainAttackText.color = new Color(1f, .70f, .22f, 1f);
-        Anchor(mainAttackText.rectTransform, .10f, .40f, .94f, .59f);
+        Anchor(mainAttackText.rectTransform, .10f, .35f, .94f, .51f);
 
         mainDefenseText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainDefenseText.color = new Color(.48f, .76f, 1f, 1f);
-        Anchor(mainDefenseText.rectTransform, .10f, .21f, .94f, .40f);
+        Anchor(mainDefenseText.rectTransform, .10f, .19f, .94f, .35f);
 
         mainHpText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainHpText.color = new Color(1f, .46f, .46f, 1f);
-        Anchor(mainHpText.rectTransform, .10f, .02f, .94f, .21f);
+        Anchor(mainHpText.rectTransform, .10f, .03f, .94f, .19f);
 
         // Three compact utility buttons are part of the drawer itself.
         Button drawerOptionButton = MakeDrawerMenuButton(mainInfoDrawer, "DrawerOptionsButton", "옵션", .230f, .320f);
@@ -1601,6 +1614,12 @@ public sealed class XTapBattleController : MonoBehaviour
         double def = CurrentPlayerDefense();
         double hp = CurrentPlayerMaxHp();
 
+        // These three values already include the descriptor multiplier via
+        // CurrentPlayer*. Display its source once; never multiply them again.
+        if (mainDescriptorText != null)
+            mainDescriptorText.text = "수식어 ×" +
+                XTapStatFormat.Compact(inventory != null ? inventory.DescriptorSetMultiplier : 1d);
+
         if (mainAttackText != null)
             mainAttackText.text = "공격력  " + XTapStatFormat.Compact(atk);
 
@@ -1613,25 +1632,26 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void LoadHourlyTicketState()
     {
+        if (hourlyTicketStateLoaded) return;
         hourlyTicketCount = Mathf.Max(0, PlayerPrefs.GetInt(HourlyTicketCountKey, 0));
 
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
         long savedAnchor;
         string raw = PlayerPrefs.GetString(HourlyTicketAnchorUtcKey, "");
 
-        if (!long.TryParse(raw, out savedAnchor) || savedAnchor <= 0L)
-        {
-            hourlyTicketAnchorUtc = now;
-            SaveHourlyTicketState();
-            return;
-        }
-
-        hourlyTicketAnchorUtc = savedAnchor;
+        bool validAnchor = long.TryParse(raw, out savedAnchor) && savedAnchor > 0L;
+        hourlyTicketAnchorUtc = validAnchor ? savedAnchor : now;
+        hourlyTicketStateLoaded = true;
+        Debug.Log("X탑 HOURLY_TICKET_LOAD / count=" + hourlyTicketCount +
+            " / validAnchor=" + validAnchor + " / elapsedSeconds=" +
+            Math.Max(0L, now - hourlyTicketAnchorUtc));
+        if (!validAnchor) SaveHourlyTicketState();
         AccrueHourlyTickets();
     }
 
     void AccrueHourlyTickets()
     {
+        if (!hourlyTicketStateLoaded) return;
         long now = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
         if (hourlyTicketAnchorUtc <= 0L)
@@ -1658,10 +1678,14 @@ public sealed class XTapBattleController : MonoBehaviour
         hourlyTicketCount = total >= int.MaxValue ? int.MaxValue : (int)total;
         hourlyTicketAnchorUtc += earned * HourlyTicketIntervalSeconds;
         SaveHourlyTicketState();
+        Debug.Log("X탑 HOURLY_TICKET_ACCRUE / earned=" + earned +
+            " / count=" + hourlyTicketCount + " / remainderSeconds=" +
+            (now - hourlyTicketAnchorUtc));
     }
 
     void SaveHourlyTicketState()
     {
+        if (!hourlyTicketStateLoaded) return;
         PlayerPrefs.SetInt(HourlyTicketCountKey, Mathf.Max(0, hourlyTicketCount));
         PlayerPrefs.SetString(HourlyTicketAnchorUtcKey, hourlyTicketAnchorUtc.ToString());
         PlayerPrefs.Save();
@@ -1669,6 +1693,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void ConsumeHourlyTicket()
     {
+        if (!hourlyTicketStateLoaded) return;
         if (hourlyTicketCount > 0)
             hourlyTicketCount--;
 
@@ -1678,7 +1703,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void RefreshMainTicketUi()
     {
-        if (mainTicketCountText == null || mainTicketTimerText == null)
+        if (!hourlyTicketStateLoaded || mainTicketCountText == null || mainTicketTimerText == null)
             return;
 
         mainTicketCountText.text = "티켓  ×" + hourlyTicketCount;
@@ -1733,6 +1758,13 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void OnApplicationPause(bool paused)
     {
+        AccrueHourlyTickets();
+        RefreshMainTicketUi();
+    }
+
+    void OnApplicationFocus(bool focused)
+    {
+        if (!focused) return;
         AccrueHourlyTickets();
         RefreshMainTicketUi();
     }
