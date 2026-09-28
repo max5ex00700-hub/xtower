@@ -377,7 +377,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (mode == ForgeMode.Enhance)
             ruleText.text = "제물가치  -% 1 · +% 2 · 전용 3 · 수식어 5  |  안전 강화: 가치×10%";
         else if (mode == ForgeMode.Synthesis)
-            ruleText.text = "대상 블록 + 제물 블록 1개  ·  성공률 1%  ·  제물의 강화 포함 현재 공/방/체 전부 합산";
+            ruleText.text = "대상 블록 + 제물 블록 1개  ·  기본 성공률 1%  ·  제물의 강화 포함 현재 공/방/체 전부 합산";
         else
             ruleText.text = "제물가치  -% 1 · +% 2 · 전용 3 · 수식어 5  |  분해: 가치×10%";
     }
@@ -637,21 +637,21 @@ public sealed class XTapBlacksmith : MonoBehaviour
                 ? "파괴 강화  +" + (target.enhanceLevel + 1) + "  ·  제물가치 " + sacrificeValue
                 : "안전 강화  +" + (target != null ? target.enhanceLevel + 1 : 1) + "  ·  제물가치 " + sacrificeValue + "/10";
             chanceText.text = destructive
-                ? "성공률 10%  ·  실패 시 대상 파괴"
-                : "성공률 " + chance + "%  ·  실패 시 대상 유지";
+                ? "기본 10% · 실패 시 파괴"
+                : "기본 " + chance + "% · 실패 시 유지";
             executeButton.interactable = target != null && sacrificeValue > 0 && target.enhanceLevel < 20;
         }
         else if (mode == ForgeMode.Synthesis)
         {
             selectionText.text = sacrificeCount == 1 ? "대상 + 제물 준비" : "대상 + 제물 1개";
-            chanceText.text = "성공률 1%";
+            chanceText.text = "기본 성공률 1%";
             executeButton.interactable = target != null && sacrificeCount == 1;
         }
         else
         {
             int chance = Mathf.Clamp(sacrificeValue * 10, 0, 100);
             selectionText.text = "제물가치 " + sacrificeValue + "/10  ·  블럭 " + sacrificeCount + "개";
-            chanceText.text = "가방 +1칸  " + chance + "%";
+            chanceText.text = "기본 가방 +1칸  " + chance + "%";
             executeButton.interactable = sacrificeValue > 0;
         }
     }
@@ -750,23 +750,44 @@ public sealed class XTapBlacksmith : MonoBehaviour
         if (displayedBlock == null && materialIds.Count > 0)
             displayedBlock = inventory.FindForgeItem(materialIds[0]);
 
-        // Exactly one roll. The view only reveals this outcome on the final impact.
-        int finalRoll = UnityEngine.Random.Range(0, 100);
-        bool success = finalRoll < chance;
-        yield return duelView.Play(operationName, chance, success, destructive,
-            displayedBlock, GetSelectedSacrificeValue());
-
-        if (operationMode == ForgeMode.Enhance) ResolveEnhance(success);
-        else if (operationMode == ForgeMode.Synthesis) ResolveSynthesis(success);
-        else ResolveDismantle(success);
-
-        probabilityOverlay.SetActive(false);
-        probabilityBusy = false;
-        probabilityRoutine = null;
-        Refresh();
+        // Independent 1% reversal, conditional on whichever finisher was selected.
+        // Both rolls and the cosmetic line are fixed before any animation starts.
+        XTapForgeOutcome outcome = XTapForgeOutcome.FromRolls(chance,
+            UnityEngine.Random.Range(0, 100), UnityEngine.Random.Range(0, 100));
+        string[] lines = outcome.AngelFinisher ? XTapForgeDialogue.AngelFinishers : XTapForgeDialogue.DemonFinishers;
+        string finisherLine = lines[UnityEngine.Random.Range(0, lines.Length)];
+        string reward = operationMode == ForgeMode.Dismantle ? "가방 배치칸 +" + outcome.RewardMultiplier :
+            (operationMode == ForgeMode.Synthesis ? "제물 능력 흡수 ×" + outcome.RewardMultiplier :
+            "강화 +" + (target == null ? 0 : outcome.EnhancedLevel(target.enhanceLevel)) + "  ·  최대 +20");
+        bool applied = false;
+        Action applyOutcome = delegate
+        {
+            if (applied) return;
+            applied = true;
+            if (operationMode == ForgeMode.Enhance) ResolveEnhance(outcome);
+            else if (operationMode == ForgeMode.Synthesis) ResolveSynthesis(outcome);
+            else ResolveDismantle(outcome);
+            if (outcome.Reversal)
+                resultText.text = (outcome.AngelFinisher ? "천사 실수! " : "악마 반전 · 보상 2배! ") + resultText.text;
+            Debug.Log("X탑 FORGE_RESULT / mode=" + operationMode + " / baseChance=" + chance +
+                " / angelFinisher=" + outcome.AngelFinisher + " / reversal=" + outcome.Reversal +
+                " / success=" + outcome.Success + " / rewardMultiplier=" + outcome.RewardMultiplier);
+        };
+        try
+        {
+            yield return duelView.Play(operationName, chance, outcome, destructive,
+                displayedBlock, GetSelectedSacrificeValue(), finisherLine, reward, applyOutcome);
+        }
+        finally
+        {
+            probabilityOverlay.SetActive(false);
+            probabilityBusy = false;
+            probabilityRoutine = null;
+            Refresh();
+        }
     }
 
-    void ResolveEnhance(bool success)
+    void ResolveEnhance(XTapForgeOutcome outcome)
     {
         XTapGearBlockData target = inventory.FindForgeItem(targetId);
         if (target == null)
@@ -781,9 +802,9 @@ public sealed class XTapBlacksmith : MonoBehaviour
         inventory.EnsureEnhancementBaseStats(target);
         ConsumeMaterials();
 
-        if (success)
+        if (outcome.Success)
         {
-            target.enhanceLevel++;
+            target.enhanceLevel = outcome.EnhancedLevel(target.enhanceLevel);
             inventory.RecalculateEnhancedStats(target);
             inventory.CommitForgeChanges();
             resultText.text =
@@ -809,7 +830,7 @@ public sealed class XTapBlacksmith : MonoBehaviour
         ClearSelection();
     }
 
-    void ResolveSynthesis(bool success)
+    void ResolveSynthesis(XTapForgeOutcome outcome)
     {
         XTapGearBlockData target = inventory.FindForgeItem(targetId);
         XTapGearBlockData material = materialIds.Count == 1
@@ -831,8 +852,14 @@ public sealed class XTapBlacksmith : MonoBehaviour
 
         inventory.RemoveForgeItem(material.id);
 
-        if (success)
+        if (outcome.Success)
         {
+            if (outcome.RewardMultiplier == 2)
+            {
+                addAttack = XTapStatFormat.SafeAdd(addAttack, addAttack);
+                addDefense = XTapStatFormat.SafeAdd(addDefense, addDefense);
+                addHp = XTapStatFormat.SafeAdd(addHp, addHp);
+            }
             inventory.MergeSynthesisStats(target, addAttack, addDefense, addHp);
             inventory.CommitForgeChanges();
 
@@ -849,16 +876,16 @@ public sealed class XTapBlacksmith : MonoBehaviour
         ClearSelection();
     }
 
-    void ResolveDismantle(bool success)
+    void ResolveDismantle(XTapForgeOutcome outcome)
     {
         int count = materialIds.Count;
         ConsumeMaterials();
 
-        if (success)
+        if (outcome.Success)
         {
-            inventory.AddGridCellExpansion(1);
+            inventory.AddGridCellExpansion(outcome.RewardMultiplier);
             resultText.text =
-                "분해 성공! 가방 배치칸 +1.  현재 " + inventory.GridCapacity + "칸";
+                "분해 성공! 가방 배치칸 +" + outcome.RewardMultiplier + ".  현재 " + inventory.GridCapacity + "칸";
         }
         else
         {
