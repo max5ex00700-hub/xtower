@@ -278,6 +278,7 @@ public sealed class XTapBattleController : MonoBehaviour
         assets = assetGo.AddComponent<XTapOriginalApkAssets>();
         SetStartupProgress(.35f);
         yield return assets.Load();
+        jail.SetAssets(assets);
         SetStartupProgress(.72f);
 
         audioSource = gameObject.AddComponent<AudioSource>();
@@ -444,6 +445,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         if (assets == null || !assets.Ready) return;
         if (sigilBeatMiniGame != null && sigilBeatMiniGame.IsOpen) return;
+        if (jail != null && jail.IsOpen) return;
 
         UpdateWeakPoint();
         UpdateShieldPoint();

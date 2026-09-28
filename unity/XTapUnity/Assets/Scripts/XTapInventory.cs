@@ -1108,7 +1108,13 @@ public sealed class XTapInventory : MonoBehaviour
 
     int ActiveGridCapacity
     {
-        get { return activeBagOwnerCharacterId == 0 ? GridCapacity : BaseGridCells; }
+        get { return GetBagCapacity(activeBagOwnerCharacterId); }
+    }
+
+    public int GetBagCapacity(int ownerCharacterId)
+    {
+        int owner = CharacterSlot(ownerCharacterId);
+        return owner == 0 ? GridCapacity : BaseGridCells + XTapJailAffinity.ExtraCells(owner);
     }
 
     int ActiveGridRows
@@ -1249,7 +1255,8 @@ public sealed class XTapInventory : MonoBehaviour
             return false;
 
         // Completing every image for one character permanently expands only the
-        // player's bag by one full row (8 cells). Captured-character bags stay 8x3.
+        // player's bag by one full row (8 cells). Character bags grow separately
+        // from their own affinity and never inherit this reward.
         PlayerPrefs.SetInt(key, 1);
         PlayerPrefs.SetInt(ExpansionKey, ExpansionBonus + 8);
         PlayerPrefs.Save();

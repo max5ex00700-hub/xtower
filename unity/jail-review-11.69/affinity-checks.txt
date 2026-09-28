@@ -1,0 +1,2 @@
+PASS: 1023 actual rule checks; 56 storage/bag/dialogue adapter checks; 22 C# files syntax parsed.
+Not a Unity compilation, Unity JsonUtility test, Cloud Build, or device test.
