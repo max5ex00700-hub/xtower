@@ -86,10 +86,9 @@ public class MainActivity extends Activity {
             try {
                 File stickFile = DrumSamples.write(getCacheDir(), "stick-h.wav", DrumSamples.STICK_B64);
                 File hatFile = DrumSamples.write(getCacheDir(), "hihat-closed-short.wav", DrumSamples.HAT_B64);
-                boolean a = NativeAudio.nativeLoadDrum(0, stickFile.getAbsolutePath());
-                boolean b = NativeAudio.nativeLoadDrum(1, hatFile.getAbsolutePath());
+                boolean okNative = NativeAudio.nativeLoadDrums(stickFile.getAbsolutePath(), hatFile.getAbsolutePath());
                 runOnUiThread(() -> {
-                    boolean ok = a && b;
+                    boolean ok = okNative;
                     stick.setEnabled(ok);
                     hat.setEnabled(ok);
                     layer.setEnabled(ok);
@@ -151,7 +150,7 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onDestroy() {
-        NativeAudio.nativeDrumStop();
+        NativeAudio.nativeStop();
         super.onDestroy();
     }
 }
