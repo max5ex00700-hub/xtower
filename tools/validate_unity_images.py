@@ -26,6 +26,9 @@ ROOT = Path(__file__).resolve().parents[1]
 RESOURCES = "unity/XTapUnity/Assets/Resources/"
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 BUILD_INPUTS = {
+    "XTapCombatUI/hit_gold.bytes",
+    "XTapCombatUI/hit_followup.bytes",
+    "XTapCombatUI/shield_crystal.bytes",
     "XTapBlacksmithUI/forge_duel_background.bytes",
     "XTapBlacksmithUI/forge_angel_poses.bytes",
     "XTapBlacksmithUI/forge_demon_poses.bytes",

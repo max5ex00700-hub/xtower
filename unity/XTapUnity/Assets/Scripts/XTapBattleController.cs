@@ -107,6 +107,8 @@ public sealed class XTapBattleController : MonoBehaviour
 
     Font koreanFont;
     Sprite ringSprite;
+    Sprite weakPointSprite;
+    Sprite followupWeakPointSprite;
     Sprite shieldSprite;
     Sprite vignetteSprite;
     Sprite speechBubbleSprite;
@@ -235,7 +237,6 @@ public sealed class XTapBattleController : MonoBehaviour
 
         koreanFont = CreateKoreanFont();
         ringSprite = CreateRingSprite(128, 9);
-        shieldSprite = CreateShieldSprite(128);
         vignetteSprite = CreateVignetteSprite(256);
         speechBubbleSprite = CreateSpeechBubbleSprite(320, 120);
 
@@ -246,6 +247,13 @@ public sealed class XTapBattleController : MonoBehaviour
         BuildStartupSplash();
         SetStartupProgress(.06f);
         yield return null;
+
+        // Load the required combat skins after the loading screen is visible.
+        weakPointSprite = XTapCombatCueSkin.Get("hit_gold");
+        followupWeakPointSprite = XTapCombatCueSkin.Get("hit_followup");
+        shieldSprite = XTapCombatCueSkin.Get("shield_crystal");
+        weakPoint.sprite = weakPointSprite;
+        shieldPoint.sprite = shieldSprite;
 
         XTapMainSkin.EnsureLoaded();
         SetStartupProgress(.12f);
@@ -522,23 +530,25 @@ public sealed class XTapBattleController : MonoBehaviour
 
         weakPoint = new GameObject("WeakPoint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
         weakPoint.transform.SetParent(root, false);
-        weakPoint.sprite = ringSprite;
-        weakPoint.color = new Color(1f, .78f, .16f, .95f);
+        weakPoint.sprite = weakPointSprite;
+        weakPoint.color = Color.white;
         weakPoint.raycastTarget = false;
         weakPoint.gameObject.SetActive(false);
         SetSize(weakPoint.rectTransform, 94, 94);
 
         weakPointHitText = MakeText(weakPoint.transform, "HIT", 12, TextAnchor.MiddleCenter, true);
-        weakPointHitText.color = new Color(1f, .92f, .48f, 1f);
-        weakPointHitText.resizeTextForBestFit = true;
-        weakPointHitText.resizeTextMinSize = 20;
-        weakPointHitText.resizeTextMaxSize = 34;
-        Anchor(weakPointHitText.rectTransform, .12f, .20f, .88f, .80f);
+        weakPointHitText.color = new Color(1f, .96f, .86f, 1f);
+        weakPointHitText.resizeTextForBestFit = false;
+        // Korean font line metrics can exceed the small plaque's rectangle.
+        // These fixed short labels must stay visible on one line.
+        weakPointHitText.horizontalOverflow = HorizontalWrapMode.Overflow;
+        weakPointHitText.verticalOverflow = VerticalWrapMode.Overflow;
+        Anchor(weakPointHitText.rectTransform, .29f, .39f, .71f, .61f);
 
         shieldPoint = new GameObject("ShieldPoint", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image)).GetComponent<Image>();
         shieldPoint.transform.SetParent(root, false);
         shieldPoint.sprite = shieldSprite;
-        shieldPoint.color = new Color(.28f, .72f, 1f, .98f);
+        shieldPoint.color = Color.white;
         shieldPoint.raycastTarget = false;
         shieldPoint.gameObject.SetActive(false);
         SetSize(shieldPoint.rectTransform, 94, 94);
@@ -1930,7 +1940,7 @@ public sealed class XTapBattleController : MonoBehaviour
         if (shieldActive)
         {
             Vector2 shieldScreen = new Vector2(shieldNorm.x * Screen.width, shieldNorm.y * Screen.height);
-            float shieldRadius = Mathf.Max(58f, Screen.width * .06f);
+            float shieldRadius = CombatCueRadiusPixels();
             if (Vector2.Distance(shieldScreen, end) <= shieldRadius)
             {
                 ResolveShieldBlock(shieldScreen);
@@ -1965,7 +1975,7 @@ public sealed class XTapBattleController : MonoBehaviour
 
         bool weakHit = weakActive && Vector2.Distance(
             new Vector2(weakNorm.x * Screen.width, weakNorm.y * Screen.height), impact
-        ) <= Mathf.Max(58f, Screen.width * .06f);
+        ) <= CombatCueRadiusPixels();
         bool followupWeakHit = weakHit && followupWeakActive;
 
         bool dodged = !weakHit && UnityEngine.Random.value < CharacterDodgeChance;
@@ -2421,6 +2431,8 @@ public sealed class XTapBattleController : MonoBehaviour
         weakUntil = Time.unscaledTime + CombatCueSeconds;
         weakNorm = new Vector2(UnityEngine.Random.Range(.34f, .66f), UnityEngine.Random.Range(.34f, .68f));
         weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
+        weakPoint.sprite = weakPointSprite;
+        weakPoint.color = Color.white;
         if (weakPointHitText != null) weakPointHitText.text = "HIT";
         weakPoint.gameObject.SetActive(true);
         weakPoint.transform.SetAsLastSibling();
@@ -2436,6 +2448,8 @@ public sealed class XTapBattleController : MonoBehaviour
         weakUntil = Time.unscaledTime + FollowupHitCueSeconds;
         weakNorm = new Vector2(UnityEngine.Random.Range(.31f, .69f), UnityEngine.Random.Range(.31f, .71f));
         weakVelocity = UnityEngine.Random.insideUnitCircle.normalized * (.34f * 1.5f);
+        weakPoint.sprite = followupWeakPointSprite;
+        weakPoint.color = Color.white;
         if (weakPointHitText != null) weakPointHitText.text = "HIT!!";
         weakPoint.gameObject.SetActive(true);
         weakPoint.transform.SetAsLastSibling();
@@ -2465,10 +2479,10 @@ public sealed class XTapBattleController : MonoBehaviour
             weakNorm.y = Mathf.Clamp(weakNorm.y, .27f, .73f);
         }
 
-        // Obvious breathing target: roughly 55% -> 130% size, not a subtle wobble.
+        // Keep the ornate silhouette stable; breathe light, not the touch target.
         float phase = (Mathf.Sin(Time.unscaledTime * 8.5f) + 1f) * .5f;
-        float pulse = Mathf.Lerp(.55f, 1.30f, phase);
-        weakPoint.rectTransform.localScale = Vector3.one * pulse;
+        weakPoint.rectTransform.localScale = Vector3.one;
+        weakPoint.color = new Color(1f, 1f, 1f, Mathf.Lerp(.88f, 1f, phase));
         PositionWeakPoint();
     }
 
@@ -2478,6 +2492,22 @@ public sealed class XTapBattleController : MonoBehaviour
         Vector2 local;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screen, null, out local);
         weakPoint.rectTransform.anchoredPosition = local;
+        SizeCombatCue(weakPoint);
+    }
+
+    float CombatCueRadiusPixels()
+    {
+        return Mathf.Max(58f, Screen.width * .06f);
+    }
+
+    void SizeCombatCue(Image cue)
+    {
+        // CanvasScaler varies with both width and height. Match the visible square
+        // to the unchanged circular hit area's diameter in physical screen pixels.
+        float diameter = 2f * CombatCueRadiusPixels() / Mathf.Max(.01f, canvas.scaleFactor);
+        cue.rectTransform.sizeDelta = new Vector2(diameter, diameter);
+        if (cue == weakPoint && weakPointHitText != null)
+            weakPointHitText.fontSize = Mathf.Max(12, Mathf.RoundToInt(diameter * (followupWeakActive ? .145f : .18f)));
     }
 
     void HideWeakPoint()
@@ -2487,6 +2517,8 @@ public sealed class XTapBattleController : MonoBehaviour
         if (weakPoint != null)
         {
             weakPoint.rectTransform.localScale = Vector3.one;
+            weakPoint.sprite = weakPointSprite;
+            weakPoint.color = Color.white;
             weakPoint.gameObject.SetActive(false);
         }
         if (weakPointHitText != null) weakPointHitText.text = "HIT";
@@ -2509,6 +2541,7 @@ public sealed class XTapBattleController : MonoBehaviour
         shieldVelocity = UnityEngine.Random.insideUnitCircle.normalized * .34f;
 
         shieldPoint.rectTransform.localScale = Vector3.one;
+        shieldPoint.color = Color.white;
         shieldPoint.gameObject.SetActive(true);
         shieldPoint.transform.SetAsLastSibling();
         PositionShieldPoint();
@@ -2542,8 +2575,8 @@ public sealed class XTapBattleController : MonoBehaviour
         }
 
         float phase = (Mathf.Sin(Time.unscaledTime * 8.5f) + 1f) * .5f;
-        float pulse = Mathf.Lerp(.55f, 1.30f, phase);
-        shieldPoint.rectTransform.localScale = Vector3.one * pulse;
+        shieldPoint.rectTransform.localScale = Vector3.one;
+        shieldPoint.color = new Color(1f, 1f, 1f, Mathf.Lerp(.88f, 1f, phase));
         PositionShieldPoint();
     }
 
@@ -2555,6 +2588,7 @@ public sealed class XTapBattleController : MonoBehaviour
         Vector2 local;
         RectTransformUtility.ScreenPointToLocalPointInRectangle(root, screen, null, out local);
         shieldPoint.rectTransform.anchoredPosition = local;
+        SizeCombatCue(shieldPoint);
     }
 
     void ResolveShieldBlock(Vector2 shieldScreen)
@@ -3368,51 +3402,6 @@ public sealed class XTapBattleController : MonoBehaviour
         tex.SetPixels(pixels);
         tex.Apply(false, false);
 
-        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(.5f, .5f), 100f);
-    }
-
-    Sprite CreateShieldSprite(int size)
-    {
-        Texture2D tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
-        tex.wrapMode = TextureWrapMode.Clamp;
-        tex.filterMode = FilterMode.Bilinear;
-
-        Color clear = new Color(1f, 1f, 1f, 0f);
-        Color solid = Color.white;
-        Color[] pixels = new Color[size * size];
-
-        for (int y = 0; y < size; y++)
-        {
-            for (int x = 0; x < size; x++)
-            {
-                float nx = (x + .5f) / size;
-                float ny = (y + .5f) / size;
-
-                bool inside = false;
-                if (ny >= .08f && ny <= .92f)
-                {
-                    float halfWidth;
-                    if (ny >= .60f)
-                        halfWidth = Mathf.Lerp(.34f, .38f, (ny - .60f) / .32f);
-                    else
-                        halfWidth = Mathf.Lerp(.03f, .34f, (ny - .08f) / .52f);
-
-                    // Slightly clipped upper corners make the silhouette read as a shield,
-                    // while the tapered lower half forms the protective point.
-                    inside = Mathf.Abs(nx - .5f) <= halfWidth;
-                    if (ny > .82f)
-                    {
-                        float cornerCut = (ny - .82f) / .10f;
-                        inside &= Mathf.Abs(nx - .5f) <= Mathf.Lerp(.38f, .29f, cornerCut);
-                    }
-                }
-
-                pixels[y * size + x] = inside ? solid : clear;
-            }
-        }
-
-        tex.SetPixels(pixels);
-        tex.Apply(false, false);
         return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(.5f, .5f), 100f);
     }
 
