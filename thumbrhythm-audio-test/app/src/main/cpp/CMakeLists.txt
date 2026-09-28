@@ -24,6 +24,6 @@ if(NOT miniaudio_POPULATED)
     FetchContent_Populate(miniaudio)
 endif()
 
-add_library(native-audio SHARED NativeAudioEngine.cpp DrumEngine.cpp)
+add_library(native-audio SHARED NativeAudioEngine.cpp)
 target_include_directories(native-audio PRIVATE ${miniaudio_SOURCE_DIR})
 target_link_libraries(native-audio PRIVATE oboe log android)
