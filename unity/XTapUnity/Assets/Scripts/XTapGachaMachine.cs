@@ -1048,11 +1048,12 @@ public sealed class XTapGachaMachine : MonoBehaviour
         const float footerHeight = 88f;
         float footerTop = height - safeBottom - footerHeight;
 
-        // Anchor the upper rim near the women's wrists in the cover-scaled art.
-        // Account for vertical cropping on 16:9 instead of drifting down on tall phones.
+        // User reference 32312.jpg places the top casing tip near 27% height.
+        // A 26.5% stage origin accounts for the ornament PNG's transparent padding.
+        // Keep the same art-relative line when EnvelopeParent crops a 16:9 screen.
         float backdropHeight = machineSkin == null ? height :
             Mathf.Max(height, DesignWidth * machineSkin.rect.height / machineSkin.rect.width);
-        float wristTop = backdropHeight * .30f - (backdropHeight - height) * .5f;
+        float wristTop = backdropHeight * .265f - (backdropHeight - height) * .5f;
         float wheelTop = Mathf.Max(wristTop, safeTop + 312f);
         float wheelSpace = footerTop - 16f - minimumCardHeight - 24f - wheelTop;
         float diameter = Mathf.Max(120f, Mathf.Min(980f, contentWidth, wheelSpace));

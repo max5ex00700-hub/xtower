@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Static design review, NOT a Unity render or an Android screenshot.
 
-Reproduce the 11.63 layout geometry and assets at four portrait aspect ratios.
+Reproduce the 11.64 layout geometry and assets at four portrait aspect ratios.
 Requires Pillow, numpy and PyMuPDF. Writes previews outside Assets.
 """
 import argparse
@@ -108,7 +108,7 @@ def layout(height, top_inset, bottom_inset):
     footer = height - safe_bottom - 88
     bg = Image.open(ASSETS / 'Resources/XTapGachaUI/block_gear_machine.bytes')
     bg_height = max(height, 1080 * bg.height / bg.width)
-    wheel_top = max(bg_height * .30 - (bg_height-height)*.5, safe_top+312)
+    wheel_top = max(bg_height * .265 - (bg_height-height)*.5, safe_top+312)
     diameter = max(120, min(980, width, footer-16-440-24-wheel_top))
     card = wheel_top + diameter + 24
     card_height = footer - 16 - card
