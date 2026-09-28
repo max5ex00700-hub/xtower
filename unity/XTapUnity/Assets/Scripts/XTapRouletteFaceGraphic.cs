@@ -37,7 +37,7 @@ public sealed class XTapRouletteFaceGraphic : MaskableGraphic
             float startDeg = centerDeg + step * .5f;
             float endDeg = centerDeg - step * .5f;
 
-            const int slices = 10;
+            const int slices = 32;
             for (int slice = 0; slice < slices; slice++)
             {
                 float t0 = (float)slice / slices;
@@ -152,7 +152,7 @@ public sealed class XTapRouletteFaceGraphic : MaskableGraphic
 
     static void AddRing(VertexHelper vh, Vector2 center, float radius, float thickness, Color color)
     {
-        const int steps = 96;
+        const int steps = 352;
         float half = thickness * .5f;
 
         for (int i = 0; i < steps; i++)
@@ -201,7 +201,7 @@ public sealed class XTapFixedPointerGraphic : MaskableGraphic
         AddDiamond(vh, gemCenter, 13f, 19f, blue);
         AddDiamond(vh, gemCenter + Vector2.up * 4f, 6f, 10f, new Color(.76f, .92f, 1f, 1f));
 
-        // One stationary selector. The ornament and all values rotate beneath it.
+        // One stationary selector. Only the circular face and values rotate beneath it.
         AddTriangle(
             vh,
             center + Vector2.down * 45f,

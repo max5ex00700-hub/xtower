@@ -264,17 +264,8 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         ApplyResponsiveLayout(true);
 
-        wheel.localScale = Vector3.one * .94f;
-        float intro = 0f;
-        while (intro < .18f)
-        {
-            intro += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(intro / .18f);
-            float e = 1f - Mathf.Pow(1f - p, 3f);
-            wheel.localScale = Vector3.one * Mathf.Lerp(.94f, 1f, e);
-            yield return null;
-        }
         wheel.localScale = Vector3.one;
+        yield return new WaitForSecondsRealtime(.18f);
 
         for (int spin = 0; spin < ticketCount; spin++)
         {
@@ -367,17 +358,8 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         ApplyResponsiveLayout(true);
 
-        wheel.localScale = Vector3.one * .94f;
-        float intro = 0f;
-        while (intro < .18f)
-        {
-            intro += Time.unscaledDeltaTime;
-            float p = Mathf.Clamp01(intro / .18f);
-            float e = 1f - Mathf.Pow(1f - p, 3f);
-            wheel.localScale = Vector3.one * Mathf.Lerp(.94f, 1f, e);
-            yield return null;
-        }
         wheel.localScale = Vector3.one;
+        yield return new WaitForSecondsRealtime(.18f);
 
         int correctionIndex = UnityEngine.Random.Range(0, corrections.Length);
         int correction = corrections[correctionIndex];
@@ -590,9 +572,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
         nameText.text = XTapGearNameColor.Rich(r) + "  ·  " + r.cellCount + "칸";
         statsText.text = "";
         statRow.gameObject.SetActive(true);
-        attackText.text = "<size=23>공격</size>\n<color=#FFBF70>" + XTapStatFormat.Compact(r.attack) + "</color>";
-        defenseText.text = "<size=23>방어</size>\n<color=#76CFFF>" + XTapStatFormat.Compact(r.defense) + "</color>";
-        hpText.text = "<size=23>체력</size>\n<color=#FF8585>" + XTapStatFormat.Compact(r.hp) + "</color>";
+        attackText.text = XTapStatFormat.Compact(r.attack);
+        defenseText.text = XTapStatFormat.Compact(r.defense);
+        hpText.text = XTapStatFormat.Compact(r.hp);
         descriptorText.text = string.IsNullOrEmpty(r.descriptorEffectText) ? "" : r.descriptorEffectText;
         DrawBlock(r);
     }
@@ -651,7 +633,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         }
 
         if (cells.Count == 0) return;
-        float cell = Mathf.Min(54f,
+        float cell = Mathf.Min(72f,
             (rewardRoot.rect.width - 16f) / (maxX - minX + 1),
             (rewardRoot.rect.height - 16f) / (maxY - minY + 1));
         float width = (maxX - minX + 1) * cell;
@@ -911,13 +893,13 @@ public sealed class XTapGachaMachine : MonoBehaviour
         machine.anchorMin = machine.anchorMax = new Vector2(.5f, .5f);
         machine.pivot = new Vector2(.5f, .5f);
 
-        gameHeading = MakeText(machine, "BLOCK GEAR", 76, TextAnchor.MiddleCenter, true);
+        gameHeading = MakeText(machine, "BLOCK GEAR", 112, TextAnchor.MiddleCenter, true);
         gameHeading.color = new Color(1f, .88f, .64f, 1f);
         Outline headingOutline = gameHeading.gameObject.AddComponent<Outline>();
         headingOutline.effectColor = new Color(.05f, .025f, .01f, 1f);
         headingOutline.effectDistance = new Vector2(3f, -3f);
 
-        ticketStatusText = MakeText(machine, "", 28, TextAnchor.MiddleCenter, true);
+        ticketStatusText = MakeText(machine, "", 34, TextAnchor.MiddleCenter, true);
         ticketStatusText.color = new Color(.96f, .86f, .65f, 1f);
         ticketStatusText.gameObject.SetActive(false);
 
@@ -944,13 +926,16 @@ public sealed class XTapGachaMachine : MonoBehaviour
         Anchor(face, 0f, 0f, 1f, 1f);
         face.GetComponent<XTapRouletteFaceGraphic>().raycastTarget = false;
 
-        RectTransform ornament = MakePanel(wheel, "TransparentWheelOrnament", Color.white);
+        BuildRouletteLabels();
+
+        // This hand-painted casing is not a circle of constant radius. Keep it
+        // and the jewel stationary; only the concentric mesh and its values spin.
+        RectTransform ornament = MakePanel(wheelStage, "FixedWheelCasingAndHub", Color.white);
         Anchor(ornament, 0f, 0f, 1f, 1f);
         wheelCore = ornament.GetComponent<Image>();
         wheelCore.sprite = wheelSkin;
         wheelCore.preserveAspect = true;
         wheelCore.color = wheelSkin == null ? Color.clear : Color.white;
-        BuildRouletteLabels();
 
         fixedPointer = new GameObject("SingleFixedPointer", typeof(RectTransform),
             typeof(CanvasRenderer), typeof(XTapFixedPointerGraphic)).GetComponent<RectTransform>();
@@ -974,45 +959,59 @@ public sealed class XTapGachaMachine : MonoBehaviour
         rewardRoot.SetParent(rewardSlot, false);
         Anchor(rewardRoot, 0f, 0f, 1f, 1f);
 
-        title = MakeText(chute, "", 23, TextAnchor.MiddleLeft, true);
+        title = MakeText(chute, "", 32, TextAnchor.MiddleLeft, true);
         title.color = new Color(.88f, .74f, .49f, 1f);
-        Anchor(title.rectTransform, .33f, .86f, .97f, .98f);
+        Anchor(title.rectTransform, .33f, .87f, .97f, .98f);
 
-        nameText = MakeText(chute, "", 42, TextAnchor.MiddleLeft, true);
+        nameText = MakeText(chute, "", 60, TextAnchor.MiddleLeft, true);
         nameText.color = new Color(1f, .97f, .90f, 1f);
         nameText.resizeTextForBestFit = true;
-        nameText.resizeTextMinSize = 30;
-        nameText.resizeTextMaxSize = 42;
-        Anchor(nameText.rectTransform, .33f, .52f, .97f, .86f);
+        nameText.resizeTextMinSize = 32;
+        nameText.resizeTextMaxSize = 60;
+        Anchor(nameText.rectTransform, .33f, .66f, .97f, .87f);
 
-        statsText = MakeText(chute, "", 32, TextAnchor.MiddleLeft, true);
+        statsText = MakeText(chute, "", 40, TextAnchor.MiddleLeft, true);
         statsText.color = new Color(.9f, .9f, .94f, 1f);
-        Anchor(statsText.rectTransform, .33f, .18f, .97f, .50f);
+        Anchor(statsText.rectTransform, .33f, .25f, .97f, .65f);
 
         statRow = new GameObject("StatRow", typeof(RectTransform)).GetComponent<RectTransform>();
         statRow.SetParent(chute, false);
-        Anchor(statRow, .33f, .20f, .97f, .50f);
-        attackText = MakeText(statRow, "", 42, TextAnchor.MiddleLeft, true);
-        defenseText = MakeText(statRow, "", 42, TextAnchor.MiddleLeft, true);
-        hpText = MakeText(statRow, "", 42, TextAnchor.MiddleLeft, true);
-        Anchor(attackText.rectTransform, 0f, 0f, .32f, 1f);
-        Anchor(defenseText.rectTransform, .34f, 0f, .66f, 1f);
-        Anchor(hpText.rectTransform, .68f, 0f, 1f, 1f);
+        Anchor(statRow, .33f, .25f, .97f, .65f);
+        attackText = MakeStatColumn("공격", 0f, new Color(1f, .75f, .44f, 1f));
+        defenseText = MakeStatColumn("방어", .34f, new Color(.46f, .81f, 1f, 1f));
+        hpText = MakeStatColumn("체력", .68f, new Color(1f, .52f, .52f, 1f));
         statRow.gameObject.SetActive(false);
 
-        descriptorText = MakeText(chute, "", 23, TextAnchor.MiddleLeft, false);
+        descriptorText = MakeText(chute, "", 30, TextAnchor.MiddleLeft, false);
         descriptorText.color = new Color(.85f, .77f, .97f, 1f);
         descriptorText.resizeTextForBestFit = true;
-        descriptorText.resizeTextMinSize = 18;
-        descriptorText.resizeTextMaxSize = 23;
-        Anchor(descriptorText.rectTransform, .33f, .025f, .97f, .17f);
+        descriptorText.resizeTextMinSize = 24;
+        descriptorText.resizeTextMaxSize = 30;
+        Anchor(descriptorText.rectTransform, .33f, .035f, .97f, .23f);
 
         footer = MakePanel(machine, "CollectHint", new Color(.008f, .012f, .024f, .78f));
         MakeFrame(footer, new Color(.72f, .52f, .24f, .45f), 1.5f);
-        hintText = MakeText(footer, "", 30, TextAnchor.MiddleCenter, true);
+        hintText = MakeText(footer, "", 38, TextAnchor.MiddleCenter, true);
         hintText.color = new Color(1f, .92f, .76f, 1f);
         Anchor(hintText.rectTransform, .035f, .10f, .965f, .90f);
         ApplyResponsiveLayout(true);
+    }
+
+    Text MakeStatColumn(string caption, float left, Color valueColor)
+    {
+        Text label = MakeText(statRow, caption, 32, TextAnchor.MiddleLeft, true);
+        Anchor(label.rectTransform, left, .64f, left + .32f, 1f);
+
+        // Separate Text components prevent Unity's rich-text line metrics from
+        // truncating the second line (the actual value) on Android.
+        Text value = MakeText(statRow, "", 66, TextAnchor.MiddleLeft, true);
+        value.color = valueColor;
+        value.horizontalOverflow = HorizontalWrapMode.Wrap;
+        value.resizeTextForBestFit = true;
+        value.resizeTextMinSize = 38;
+        value.resizeTextMaxSize = 66;
+        Anchor(value.rectTransform, left, 0f, left + .32f, .64f);
+        return value;
     }
 
     void LateUpdate()
@@ -1042,20 +1041,27 @@ public sealed class XTapGachaMachine : MonoBehaviour
         machine.localScale = Vector3.one * scale;
         machine.anchoredPosition = Vector2.zero;
 
-        SetRectFromTop(gameHeading.rectTransform, side, safeTop, contentWidth, 108f);
-        SetRectFromTop(ticketStatusText.rectTransform, side, safeTop + 112f, contentWidth, 56f);
+        SetRectFromTop(gameHeading.rectTransform, side, safeTop, contentWidth, 160f);
+        SetRectFromTop(ticketStatusText.rectTransform, side, safeTop + 168f, contentWidth, 60f);
 
-        const float cardHeight = 300f;
-        const float footerHeight = 76f;
+        const float minimumCardHeight = 440f;
+        const float footerHeight = 88f;
         float footerTop = height - safeBottom - footerHeight;
-        float cardTop = footerTop - 18f - cardHeight;
-        float wheelBottom = cardTop - 28f;
-        float wheelTopLimit = Mathf.Max(height * .32f, safeTop + 238f);
-        float diameter = Mathf.Max(120f, Mathf.Min(980f, contentWidth, wheelBottom - wheelTopLimit));
-        wheelStage.anchoredPosition = new Vector2(DesignWidth * .5f, -(wheelBottom - diameter * .5f));
+
+        // Anchor the upper rim near the women's wrists in the cover-scaled art.
+        // Account for vertical cropping on 16:9 instead of drifting down on tall phones.
+        float backdropHeight = machineSkin == null ? height :
+            Mathf.Max(height, DesignWidth * machineSkin.rect.height / machineSkin.rect.width);
+        float wristTop = backdropHeight * .30f - (backdropHeight - height) * .5f;
+        float wheelTop = Mathf.Max(wristTop, safeTop + 312f);
+        float wheelSpace = footerTop - 16f - minimumCardHeight - 24f - wheelTop;
+        float diameter = Mathf.Max(120f, Mathf.Min(980f, contentWidth, wheelSpace));
+        float cardTop = wheelTop + diameter + 24f;
+        float cardHeight = footerTop - 16f - cardTop;
+        wheelStage.anchoredPosition = new Vector2(DesignWidth * .5f, -(wheelTop + diameter * .5f));
         wheelStage.localScale = Vector3.one * (diameter / WheelDesignSize);
 
-        SetRectFromTop(correctionText.rectTransform, side, wheelBottom - diameter - 64f, contentWidth, 56f);
+        SetRectFromTop(correctionText.rectTransform, side, wheelTop - 64f, contentWidth, 56f);
         SetRectFromTop(chute, side, cardTop, contentWidth, cardHeight);
         SetRectFromTop(footer, side, footerTop, contentWidth, footerHeight);
     }
@@ -1139,11 +1145,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
             tickKick = Mathf.MoveTowards(tickKick, 0f, Time.unscaledDeltaTime * 7.5f);
 
-            // Tick feedback belongs to the wheel/pointer only. Never shake the full-screen background.
-            float wheelNudge = Mathf.Sin(Time.unscaledTime * 92f) * tickKick * 2.5f;
-            wheel.anchoredPosition = new Vector2(wheelNudge, 0f);
-            wheel.localScale = Vector3.one * (1f + tickKick * .025f);
-
+            // Constant center and radius throughout rotation; only the pointer ticks.
             if (fixedPointer != null)
                 fixedPointer.localScale = Vector3.one * (1f + tickKick * .11f);
 
