@@ -64,7 +64,7 @@ public sealed class XTapCodex : MonoBehaviour
     public static void MarkImageDiscovered(int characterId, string imageCode, XTapInventory bag)
     {
         int c = NormalizeCharacter(characterId);
-        if (c <= 0 || string.IsNullOrEmpty(imageCode)) return;
+        if (!XTapCharacterArt.IsImageAvailable(c, imageCode)) return;
 
         string imageKey = ImageKey(c, imageCode);
         bool changed = false;
@@ -98,7 +98,7 @@ public sealed class XTapCodex : MonoBehaviour
     {
         int c = NormalizeCharacter(characterId);
         return c > 0 &&
-               !string.IsNullOrEmpty(imageCode) &&
+               XTapCharacterArt.IsImageAvailable(c, imageCode) &&
                PlayerPrefs.GetInt(ImageKey(c, imageCode), 0) == 1;
     }
 
@@ -133,21 +133,12 @@ public sealed class XTapCodex : MonoBehaviour
 
     public static int ActionImageCount(int characterId, string prefix)
     {
-        // Floor 2 has k00..k08 only. Its absent k09 is not a codex requirement.
-        return NormalizeCharacter(characterId) == 2 && prefix == "k" ? 9 : 10;
+        return XTapCharacterArt.ActionImageCount(characterId, prefix);
     }
 
     static List<string> AllImageCodes(int characterId)
     {
-        List<string> codes = new List<string>(41);
-        string[] prefixes = {"p", "k", "b", "d"};
-
-        for (int p = 0; p < prefixes.Length; p++)
-            for (int i = 0; i < ActionImageCount(characterId, prefixes[p]); i++)
-                codes.Add(prefixes[p] + i.ToString("00"));
-
-        codes.Add("cap");
-        return codes;
+        return XTapCharacterArt.AllImageCodes(characterId);
     }
 
     int DiscoveredImageCount(int characterId)

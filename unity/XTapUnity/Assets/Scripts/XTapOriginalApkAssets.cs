@@ -78,6 +78,7 @@ public sealed class XTapOriginalApkAssets : MonoBehaviour
     public Sprite GetSprite(string entry)
     {
         if (!Ready || apkBytes == null) return null;
+        if (XTapCharacterArt.IsBlockedSourceEntry(entry)) return null;
         Sprite cached;
         if (sprites.TryGetValue(entry, out cached)) return cached;
 

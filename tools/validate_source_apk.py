@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Check the source APK ZIP and every image required by the current codex.
+"""Check the source APK ZIP, image decoding and reviewed floor 6 identities.
 
 Reports missing artwork without substituting other character images or awarding
 unearned codex discoveries. Requires Pillow. This is not a Unity/Android build.
 """
 import io
+import hashlib
+import json
 from pathlib import Path
 import sys
 import zipfile
@@ -21,6 +23,8 @@ def main():
     failures = []
     checked = 0
     required = 0
+    review = json.loads((ROOT / 'tools/character_art_review.json').read_text())
+    supported = 0
     with zipfile.ZipFile(io.BytesIO(data)) as archive:
         corrupt = archive.testzip()
         if corrupt:
@@ -33,6 +37,8 @@ def main():
                 if character == 2 and code == 'k09':
                     continue
                 required += 1
+                if character != 6 or code in review['verified_floor_6']:
+                    supported += 1
                 name = f'assets/f{character}_{code}.jpg'
                 if name not in names:
                     failures.append((name, 'missing required codex image'))
@@ -43,9 +49,17 @@ def main():
                     checked += 1
                 except Exception as error:
                     failures.append((name, str(error)))
+        # Pin the visual identity review to the actual bytes. Filename/CRC/decode
+        # checks alone cannot detect a valid image of the wrong character.
+        for section in ('verified_floor_6', 'rejected_floor_6'):
+            for code, expected_hash in review[section].items():
+                name = f'assets/f6_{code}.jpg'
+                if name in names and hashlib.sha256(archive.read(name)).hexdigest() != expected_hash:
+                    failures.append((name, 'bytes changed since character identity review; review the image again'))
     for name, error in failures:
         print(f'FAIL {name}: {error}', file=sys.stderr)
-    print(f'Source APK: {checked}/{required} required codex images decoded; {len(failures)} failures')
+    print(f'Source APK: {checked}/{required} source images decoded; {supported} supported codex images; '
+          f'{len(review["rejected_floor_6"])} mixed floor 6 images excluded; {len(failures)} failures')
     return 1 if failures else 0
 
 

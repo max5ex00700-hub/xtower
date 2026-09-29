@@ -1949,17 +1949,13 @@ public sealed class XTapBattleController : MonoBehaviour
 
     IEnumerator PreloadCurrentImages()
     {
-        string[] prefixes = {"p","k","b","d"};
+        int visualFloor = CurrentVisualFloor();
         int c = 0;
-        foreach (string prefix in prefixes)
+        foreach (string code in XTapCharacterArt.AllImageCodes(visualFloor))
         {
-            for (int i = 0; i < 10; i++)
-            {
-                assets.GetSprite("assets/f" + CurrentVisualFloor() + "_" + prefix + i.ToString("00") + ".jpg");
-                if (++c % 5 == 0) yield return null;
-            }
+            assets.GetSprite("assets/f" + visualFloor + "_" + code + ".jpg");
+            if (++c % 5 == 0) yield return null;
         }
-        assets.GetSprite("assets/f" + CurrentVisualFloor() + "_cap.jpg");
     }
 
     void ResetFight()
@@ -2387,8 +2383,7 @@ public sealed class XTapBattleController : MonoBehaviour
         // Floor battles must only use that floor's character art.
         // Every image actually shown is registered in the codex.
         int visualFloor = CurrentVisualFloor();
-        int index = Mathf.Clamp(stage, 0, 4) * 2;
-        string code = "p" + index.ToString("00");
+        string code = XTapCharacterArt.StageImageCode(visualFloor, stage);
         Sprite s = assets.GetSprite("assets/f" + visualFloor + "_" + code + ".jpg");
 
         if (s == null)
@@ -2404,19 +2399,11 @@ public sealed class XTapBattleController : MonoBehaviour
         }
     }
 
-    Sprite TryFloorStageSprite(int floor, int stage)
-    {
-        // Use a stable pose sequence from the current floor only.
-        // stage 0..4 -> p00, p02, p04, p06, p08.
-        int index = Mathf.Clamp(stage, 0, 4) * 2;
-        return assets.GetSprite("assets/f" + floor + "_p" + index.ToString("00") + ".jpg");
-    }
-
     void SetActionSprite(string prefix)
     {
         int visualFloor = CurrentVisualFloor();
-        int i = UnityEngine.Random.Range(0, XTapCodex.ActionImageCount(visualFloor, prefix));
-        string code = prefix + i.ToString("00");
+        int i = UnityEngine.Random.Range(0, XTapCharacterArt.ActionImageCount(visualFloor, prefix));
+        string code = XTapCharacterArt.ActionImageCode(visualFloor, prefix, i);
         Sprite s = assets.GetSprite("assets/f" + visualFloor + "_" + code + ".jpg");
         if (s != null)
         {

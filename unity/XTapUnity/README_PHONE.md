@@ -9,7 +9,7 @@
 - 테스트 서명: Unity Build Automation의 Auto-generated debug keystore
 
 앱 버전과 Android versionCode는 Assets/Editor/XTapBuildConfig.cs가 빌드 전에 설정합니다.
-현재 소스: 11.77-unity6-<commit> / 1177. 실제 설치 버전은 APK와 빌드 로그로 확인해야 합니다.
+현재 소스: 11.78-unity6-<commit> / 1178. 실제 설치 버전은 APK와 빌드 로그로 확인해야 합니다.
 
 시작 씬은 Assets/Main.unity이며 XTapBootstrap이 런타임 UI를 생성합니다.
 캐릭터 데이터는 StreamingAssets/xtop_source.part1, part2를 결합해서 읽습니다.
@@ -36,3 +36,7 @@ Cloud Build가 f2로 고정되어 있으면 Unity version을 6000.3.24f1로 변�
 11.77은 감옥 UI를 대형 캐릭터 배경·초상화 목록·금속 프레임·교감 정보 패널로 재구성합니다.
 ../JAIL_UI_11_77.md 및 ../jail-review-11.77/jail-layout-design.jpg를 참고합니다.
 11.75 소리와 11.76 블럭 머신 확률 수정도 포함하며, 11.77 실기기 동작은 아직 확인하지 못했습니다.
+
+11.78은 6층 전투 이미지에 섞인 5층 캐릭터 31장을 차단합니다.
+확인된 6층 이미지 10장으로 전투·도감 연결을 통일합니다.
+../CHARACTER_ART_FIX_11_78.md를 참고합니다. 실제 Unity 컴파일 및 기기 검증은 미완료입니다.

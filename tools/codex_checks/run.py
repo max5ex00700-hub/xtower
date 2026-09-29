@@ -22,7 +22,7 @@ def members(filename, names):
     source = (scripts / filename).read_text()
     result = []
     for name in names:
-        match = re.search(r'^    (?:(?:public|static) )*(?:bool|int|string|void|List<string>) '
+        match = re.search(r'^    (?:(?:public|static) )*(?:bool|int|string|void|IEnumerator|List<string>) '
                           + name + r'\b', source, re.M)
         if not match:
             raise RuntimeError('Missing member: ' + name)
@@ -58,12 +58,21 @@ with tempfile.TemporaryDirectory(prefix='xtap-codex-') as tmp:
         'const string ExpansionKey="xtap_bag_extra_cells";\n'
         'const string CodexRewardKeyPrefix="xtap_codex_complete_reward_";\n'
         'public bool IsOpen; void Render() {}\n' + inventory + '\n}\n')
+    controller = build / 'ArtControllerMethods.cs'
+    controller.write_text('using System; using System.Collections; using UnityEngine;\n'
+        'partial class ArtProbe {\n' + members('XTapBattleController.cs', [
+            'TowerFloor', 'CurrentCharacterId', 'CurrentVisualFloor',
+            'SetStageOrFallback', 'SetActionSprite', 'PreloadCurrentImages']) + '\n}\n')
+    asset_source = (scripts / 'XTapOriginalApkAssets.cs').read_text()
+    guard = asset_source.index('if (XTapCharacterArt.IsBlockedSourceEntry(entry)) return null;')
+    assert guard < asset_source.index('sprites.TryGetValue(entry'), 'guard must precede sprite cache'
     dll = build / 'Checks.dll'
     args = ['-nologo', '-noconfig', '-nostdlib+', '-langversion:9', '-target:exe',
             '-out:' + str(dll)]
     args += ['-r:' + str(p) for p in refs.glob('*.dll')]
-    args += [str(probe), str(Path(__file__).with_name('Run.cs'))]
+    args += [str(probe), str(controller), str(scripts / 'XTapCharacterArt.cs'),
+             str(Path(__file__).with_name('Run.cs')), str(Path(__file__).with_name('ArtProbe.cs'))]
     subprocess.run([str(dotnet / 'dotnet'), str(compiler), *args], check=True)
     dll.with_suffix('.runtimeconfig.json').write_text(json.dumps({'runtimeOptions': {
         'tfm': 'net8.0', 'framework': {'name': 'Microsoft.NETCore.App', 'version': runtime}}}))
-    subprocess.run([str(dotnet / 'dotnet'), str(dll)], check=True)
+    subprocess.run([str(dotnet / 'dotnet'), str(dll), str(repo)], check=True)

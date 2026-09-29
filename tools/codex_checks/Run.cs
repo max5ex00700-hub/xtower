@@ -8,8 +8,9 @@ static class Run
     static void Check(bool ok, string reason) { checks++; if (!ok) throw new Exception(reason); }
     static string Key(int id, string code) { return "xtap_codex_img_" + id + "_" + code; }
 
-    static void Main()
+    static void Main(string[] args)
     {
+        ArtChecks.Run(args[0]);
         var bag = new XTapInventory();
         var codex = new XTapCodex(bag);
         int total = 0;
@@ -17,11 +18,11 @@ static class Run
         {
             var codes = XTapCodex.Codes(id);
             total += codes.Count;
-            Check(codes.Count == (id == 2 ? 40 : 41), "per-character requirement");
+            Check(codes.Count == (id == 6 ? 10 : id == 2 ? 40 : 41), "per-character requirement");
             Check(new HashSet<string>(codes).Count == codes.Count, "no duplicate entries");
-            Check(codes.Contains("k09") == (id != 2), "only floor 2 k09 excluded");
+            Check(codes.Contains("k09") == (id != 2 && id != 6), "missing/mixed k09 excluded");
             foreach (string prefix in new[] { "p", "k", "b", "d" })
-                Check(XTapCodex.ActionImageCount(id, prefix) == (id == 2 && prefix == "k" ? 9 : 10), "combat action range");
+                Check(XTapCodex.ActionImageCount(id, prefix) == (id == 6 ? 8 : id == 2 && prefix == "k" ? 9 : 10), "combat action range");
             PlayerPrefs.Clear();
             Check(!XTapCodex.IsCharacterComplete(id), "empty collection incomplete");
             foreach (string code in codes) PlayerPrefs.SetInt(Key(id, code), 1);
@@ -38,7 +39,27 @@ static class Run
             XTapCodex.MarkImageDiscovered(id, "cap", bag);
             Check(bag.ExpansionBonus == 8, "reopen/rediscovery must not duplicate reward");
         }
-        Check(total == 409, "total codex images");
+        Check(total == 378, "total valid codex images");
+        PlayerPrefs.Clear();
+        PlayerPrefs.SetInt(Key(6, "p02"), 1); // Old wrong-character discovery survives in storage.
+        XTapCodex.MarkImageDiscovered(6, "k00", bag);
+        Check(!XTapCodex.IsImageDiscovered(6, "p02") && codex.Count(6) == 0, "legacy mixed art is not displayed/counted");
+        Check(PlayerPrefs.GetInt(Key(6, "p02"), 0) == 1 && PlayerPrefs.GetInt(Key(6, "k00"), 0) == 0,
+            "keep old saves but reject new invalid discoveries");
+        foreach (string code in XTapCodex.Codes(6))
+            if (code != "cap") XTapCodex.MarkImageDiscovered(6, code, bag);
+        Check(codex.Count(6) == 9 && !XTapCodex.IsCharacterComplete(6) && bag.ExpansionBonus == 0,
+            "battle images cannot unlock cap or completion reward");
+        XTapCodex.MarkImageDiscovered(6, "cap", bag);
+        Check(codex.Count(6) == 10 && bag.ExpansionBonus == 8, "sixth floor completion still requires capture");
+        codex.OpenForTest(6);
+        Check(bag.ExpansionBonus == 8, "sixth floor reward remains one-time");
+        PlayerPrefs.Clear();
+        PlayerPrefs.SetInt("xtap_bag_extra_cells", 8);
+        PlayerPrefs.SetInt("xtap_codex_complete_reward_6", 1);
+        foreach (string code in XTapCodex.Codes(6)) XTapCodex.MarkImageDiscovered(6, code, bag);
+        codex.OpenForTest(6);
+        Check(bag.ExpansionBonus == 8, "pre-fix receipt prevents duplicate reward");
         PlayerPrefs.Clear();
         PlayerPrefs.SetInt("xtap_bag_extra_cells", 85);
         var floor2 = XTapCodex.Codes(2);

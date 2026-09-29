@@ -6,7 +6,7 @@
 - Unity project subfolder: unity/XTapUnity
 - Unity version: Unity 6.3 LTS / 6000.3.24f1
 - Android package: com.xtower.game.unity
-- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1177)
+- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1178)
 - Test APK signing: Unity Build Automation의 Auto-generated debug keystore 사용
 
 ## 폰에서 최초 1회 설정
@@ -51,7 +51,7 @@
 
 ## 최신 커밋 검증
 - 11.11부터 Unity Build Automation의 `GIT_COMMIT`을 Android versionName에 자동 삽입한다.
-- 옵션 > 버전 정보에서 `11.77-unity6-<커밋 앞 8자리> (1177)` 형식으로 확인한다.
+- 옵션 > 버전 정보에서 `11.78-unity6-<커밋 앞 8자리> (1178)` 형식으로 확인한다.
 - Unity Build Automation 빌드 로그에서도 `X탑 BUILD FINGERPRINT`를 검색하면 branch와 commit이 표시된다.
 - 11.11은 기준 이미지에서 추출한 메인 버튼 9개를 pre-build 단계에서 검증한다. 누락/손상 시 APK를 만들지 않고 빌드를 실패시킨다.
 
@@ -87,3 +87,8 @@
 - 기존 대화 보상·가방 확장·저장 규칙을 유지한다.
 - 변경 및 실제 검증 범위: `unity/JAIL_UI_11_77.md`.
 - `unity/jail-review-11.77/` 이미지는 배치 미리보기이며 Unity 실행 캡처가 아니다.
+
+## 11.78 6층 캐릭터 혼입 수정
+- 원본 6층 파일 중 5층 캐릭터가 들어 있는 31장을 전투·도감·직접 로딩에서 제외했다.
+- 실제 6층 기본 이미지, 전투 포즈 8장, 포획 이미지에 맞춰 도감을 10장으로 정리했다.
+- 기존 저장값·획득 보상은 유지한다. 상세 내용: `unity/CHARACTER_ART_FIX_11_78.md`.
