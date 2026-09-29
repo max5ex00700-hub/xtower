@@ -9,7 +9,7 @@
 - 테스트 서명: Unity Build Automation의 Auto-generated debug keystore
 
 앱 버전과 Android versionCode는 Assets/Editor/XTapBuildConfig.cs가 빌드 전에 설정합니다.
-현재 소스: 11.75-unity6-<commit> / 1175. 실제 설치 버전은 APK와 빌드 로그로 확인해야 합니다.
+현재 소스: 11.76-unity6-<commit> / 1176. 실제 설치 버전은 APK와 빌드 로그로 확인해야 합니다.
 
 시작 씬은 Assets/Main.unity이며 XTapBootstrap이 런타임 UI를 생성합니다.
 캐릭터 데이터는 StreamingAssets/xtop_source.part1, part2를 결합해서 읽습니다.
@@ -28,3 +28,7 @@ Cloud Build가 f2로 고정되어 있으면 Unity version을 6000.3.24f1로 변�
 게임 루트 생성 시 리스너를 자동으로 붙이고, 실제 Unity 컴포넌트 의존성 검사를 빌드 전 실행합니다.
 원인·로컬 검증·기기 확인 항목은 ../AUDIO_OUTPUT_FIX_11_75.md를 참고합니다.
 11.75 실제 Unity 컴파일, Cloud Build 및 기기 청취 결과는 아직 확인하지 못했습니다.
+
+11.76은 블럭 머신의 0 선택 후 포획/캐릭터 전용 블럭 획득에 같은 1% 판정을 적용합니다.
+기존 포획은 1%였고 전용 블럭의 확정 지급을 1%로 변경했습니다.
+../GACHA_ZERO_CHANCE_11_76.md를 참고합니다. 11.76 Cloud Build 및 기기 검증은 미완료입니다.

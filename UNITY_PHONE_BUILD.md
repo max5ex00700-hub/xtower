@@ -6,7 +6,7 @@
 - Unity project subfolder: unity/XTapUnity
 - Unity version: Unity 6.3 LTS / 6000.3.24f1
 - Android package: com.xtower.game.unity
-- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1175)
+- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1176)
 - Test APK signing: Unity Build Automation의 Auto-generated debug keystore 사용
 
 ## 폰에서 최초 1회 설정
@@ -51,7 +51,7 @@
 
 ## 최신 커밋 검증
 - 11.11부터 Unity Build Automation의 `GIT_COMMIT`을 Android versionName에 자동 삽입한다.
-- 옵션 > 버전 정보에서 `11.75-unity6-<커밋 앞 8자리> (1175)` 형식으로 확인한다.
+- 옵션 > 버전 정보에서 `11.76-unity6-<커밋 앞 8자리> (1176)` 형식으로 확인한다.
 - Unity Build Automation 빌드 로그에서도 `X탑 BUILD FINGERPRINT`를 검색하면 branch와 commit이 표시된다.
 - 11.11은 기준 이미지에서 추출한 메인 버튼 9개를 pre-build 단계에서 검증한다. 누락/손상 시 APK를 만들지 않고 빌드를 실패시킨다.
 
@@ -75,3 +75,8 @@
 - 원인 및 검증 범위: `unity/AUDIO_OUTPUT_FIX_11_75.md`.
 - 빌드 시 `X탑 AUDIO_PREFLIGHT`, 실행 시 `X탑 AUDIO / listener=True` 로그를 확인한다.
 - Cloud Build 및 기기 청취 검증은 아직 완료하지 않았다. 진행 중인 빌드가 있으면 중복 실행하지 않는다.
+
+## 11.76 블럭 머신 0 선택 보상 확률
+- 전투 보상 룰렛의 0 선택 후: 미포획 캐릭터 포획 1%, 포획한 캐릭터의 전용 블럭 획득 1%.
+- 나머지 99%는 실패로 표시하고 보상을 지급하지 않는다.
+- 변경 근거와 검증 범위: `unity/GACHA_ZERO_CHANCE_11_76.md`.

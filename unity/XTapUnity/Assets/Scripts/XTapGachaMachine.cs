@@ -387,10 +387,12 @@ public sealed class XTapGachaMachine : MonoBehaviour
         if (correction == 0)
         {
             bool captured = IsCharacterCaptured(activeCharacterId);
+            // Once 0 is selected, either special reward has the same 1% chance.
+            bool specialRewardSucceeded = UnityEngine.Random.Range(0, 100) == 0;
             if (!captured)
             {
                 outcome.captureAttempt = true;
-                outcome.captureSucceeded = UnityEngine.Random.Range(0, 100) == 0; // 1% capture after landing on 0%.
+                outcome.captureSucceeded = specialRewardSucceeded;
 
                 if (outcome.captureSucceeded)
                 {
@@ -400,7 +402,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
                 return outcome;
             }
 
-            outcome.block = RollBlock(0, true);
+            outcome.exclusiveAttempt = true;
+            if (specialRewardSucceeded)
+                outcome.block = RollBlock(0, true);
             return outcome;
         }
 
@@ -536,6 +540,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
 
         if (outcome.captureAttempt)
         {
+            correctionText.text = "0 선택 · 포획 1%";
             title.text = "포획 결과";
             nameText.text = outcome.captureSucceeded ? "포획 성공!" : "포획 실패";
             statsText.text = outcome.captureSucceeded
@@ -563,6 +568,18 @@ public sealed class XTapGachaMachine : MonoBehaviour
                 DrawCaptureBall(false);
             }
             return;
+        }
+
+        if (outcome.exclusiveAttempt)
+        {
+            correctionText.text = "0 선택 · 전용 블럭 1%";
+            if (outcome.block == null)
+            {
+                title.text = "캐릭터 전용 블럭";
+                nameText.text = "획득 실패";
+                statsText.text = "캐릭터 " + activeCharacterId + " 전용 블럭\n획득 확률 1%";
+                return;
+            }
         }
 
         if (outcome.block == null) return;
@@ -1285,6 +1302,7 @@ public sealed class XTapGachaMachine : MonoBehaviour
         public int correction;
         public bool captureAttempt;
         public bool captureSucceeded;
+        public bool exclusiveAttempt;
         public XTapGearBlockData block;
     }
 }
