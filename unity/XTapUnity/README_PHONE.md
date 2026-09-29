@@ -9,7 +9,7 @@
 - 테스트 서명: Unity Build Automation의 Auto-generated debug keystore
 
 앱 버전과 Android versionCode는 Assets/Editor/XTapBuildConfig.cs가 빌드 전에 설정합니다.
-현재 소스: 11.78-unity6-<commit> / 1178. 실제 설치 버전은 APK와 빌드 로그로 확인해야 합니다.
+현재 소스: 11.79-unity6-<commit> / 1179. 실제 설치 버전은 APK와 빌드 로그로 확인해야 합니다.
 
 시작 씬은 Assets/Main.unity이며 XTapBootstrap이 런타임 UI를 생성합니다.
 캐릭터 데이터는 StreamingAssets/xtop_source.part1, part2를 결합해서 읽습니다.
@@ -40,3 +40,7 @@ Cloud Build가 f2로 고정되어 있으면 Unity version을 6000.3.24f1로 변�
 11.78은 6층 전투 이미지에 섞인 5층 캐릭터 31장을 차단합니다.
 확인된 6층 이미지 10장으로 전투·도감 연결을 통일합니다.
 ../CHARACTER_ART_FIX_11_78.md를 참고합니다. 실제 Unity 컴파일 및 기기 검증은 미완료입니다.
+
+11.79는 장착한 캐릭터 전용 블럭 1칸마다 전체 장착 블럭 능력치 합계에 +1%를 적용합니다.
+24칸이면 ×1.24이며, 여러 캐릭터의 장착 칸수를 더한 뒤 한 번 적용합니다.
+../EXCLUSIVE_CELL_BONUS_11_79.md를 참고합니다. Unity 컴파일·Cloud Build·기기 검증은 미완료입니다.

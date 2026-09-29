@@ -593,6 +593,9 @@ public sealed class XTapGachaMachine : MonoBehaviour
         defenseText.text = XTapStatFormat.Compact(r.defense);
         hpText.text = XTapStatFormat.Compact(r.hp);
         descriptorText.text = string.IsNullOrEmpty(r.descriptorEffectText) ? "" : r.descriptorEffectText;
+        if (r.exclusive)
+            descriptorText.text = "장착 시 전체 블럭 능력치 +" + XTapInventory.ExclusiveBlockBonusPercent(r) + "%" +
+                (descriptorText.text.Length > 0 ? "\n" + descriptorText.text : "");
         DrawBlock(r);
     }
 

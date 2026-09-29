@@ -266,10 +266,10 @@ public sealed class XTapJail : MonoBehaviour
         progressFill.gameObject.AddComponent<XTapJailGradient>();
 
         statsPanel = Surface(content, "EquippedStats", new Color(.033f, .049f, .068f, .98f), .30f);
-        equipmentCaption = Label(statsPanel, "전용 장비 능력치", 26, Muted);
-        Anchor(equipmentCaption.rectTransform, .025f, .69f, .48f, .98f);
+        equipmentCaption = Label(statsPanel, "장비 능력치", 26, Muted);
+        Anchor(equipmentCaption.rectTransform, .025f, .69f, .32f, .98f);
         multiplierText = Label(statsPanel, "", 27, Gold, TextAnchor.MiddleRight);
-        Anchor(multiplierText.rectTransform, .48f, .69f, .975f, .98f);
+        Anchor(multiplierText.rectTransform, .32f, .69f, .975f, .98f);
         attackValue = StatColumn(statsPanel, "공격", .025f, new Color(1f, .74f, .57f));
         defenseValue = StatColumn(statsPanel, "방어", .355f, new Color(.57f, .77f, .91f));
         hpValue = StatColumn(statsPanel, "체력", .685f, new Color(.94f, .58f, .64f));
@@ -434,7 +434,8 @@ public sealed class XTapJail : MonoBehaviour
         targetProgress = (points % 100) / 100f;
         double attack = 0, defense = 0, hp = 0, multiplier = 1;
         if (owned) inventory.GetBagDisplayStats(id, out attack, out defense, out hp, out multiplier);
-        multiplierText.text = "수식어 ×" + XTapStatFormat.Compact(multiplier) + " 적용";
+        multiplierText.text = "수식어 ×" + XTapStatFormat.Compact(multiplier) +
+            " · 전체 블럭 +" + inventory.ExclusiveEquipmentBonusPercent + "%";
         attackValue.text = "+" + XTapStatFormat.Compact(attack);
         defenseValue.text = "+" + XTapStatFormat.Compact(defense);
         hpValue.text = "+" + XTapStatFormat.Compact(hp);

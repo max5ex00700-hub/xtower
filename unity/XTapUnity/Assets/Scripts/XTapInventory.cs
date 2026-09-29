@@ -330,6 +330,9 @@ public sealed class XTapInventory : MonoBehaviour
 
         descriptorMultiplierText = MakeText(panel, "", 14, TextAnchor.MiddleCenter, true);
         descriptorMultiplierText.color = new Color(.39f, .85f, 1f, 1f);
+        descriptorMultiplierText.resizeTextForBestFit = true;
+        descriptorMultiplierText.resizeTextMinSize = 20;
+        descriptorMultiplierText.resizeTextMaxSize = Mathf.RoundToInt(14 * UiFontScale);
         Anchor(descriptorMultiplierText.rectTransform, .045f, .917f, .955f, .947f);
 
         totalText = MakeText(panel, "", 16, TextAnchor.MiddleCenter, true);
@@ -435,6 +438,9 @@ public sealed class XTapInventory : MonoBehaviour
 
         detailText = MakeText(panel, "", 12, TextAnchor.MiddleCenter, true);
         detailText.color = new Color(.90f, .87f, .80f, 1f);
+        detailText.resizeTextForBestFit = true;
+        detailText.resizeTextMinSize = 16;
+        detailText.resizeTextMaxSize = Mathf.RoundToInt(12 * UiFontScale);
         Anchor(detailText.rectTransform, .04f, .052f, .96f, .088f);
 
         tidyButton = MakeButton(panel, "자동 정리", 15);
@@ -628,8 +634,9 @@ public sealed class XTapInventory : MonoBehaviour
         double atk, def, hp, descriptorMultiplier;
         GetBagDisplayStats(activeBagOwnerCharacterId, out atk, out def, out hp, out descriptorMultiplier);
 
-        descriptorMultiplierText.text = "이 가방 장비 합계 · 전체 수식어 ×" +
-            XTapStatFormat.Compact(descriptorMultiplier) + " 적용";
+        descriptorMultiplierText.text = "가방 합계 · 수식어 ×" +
+            XTapStatFormat.Compact(descriptorMultiplier) +
+            " · 전체 블럭 +" + ExclusiveEquipmentBonusPercent + "% 적용";
         totalText.text = "공격력 +" + XTapStatFormat.Compact(atk) +
                          "     방어력 +" + XTapStatFormat.Compact(def) +
                          "     체력 +" + XTapStatFormat.Compact(hp);
@@ -954,7 +961,8 @@ public sealed class XTapInventory : MonoBehaviour
 
     bool CountsTowardPlayerStats(XTapGearBlockData item)
     {
-        if (item == null || item.location != XTapGearBlockData.LocationBag)
+        if (item == null || item.location != XTapGearBlockData.LocationBag ||
+            !IsCompatibleWithBagOwner(item, item.bagOwnerCharacterId))
             return false;
 
         int ownerCharacterId = item.bagOwnerCharacterId;
@@ -1004,6 +1012,41 @@ public sealed class XTapInventory : MonoBehaviour
         }
     }
 
+    public static int ExclusiveBlockBonusPercent(XTapGearBlockData item)
+    {
+        // One occupied cell of an exclusive block grants one percentage point.
+        // Enhancement, synthesis and descriptors do not change its cell count.
+        return item != null && item.exclusive ? Math.Max(0, item.cellCount) : 0;
+    }
+
+    public int ExclusiveEquipmentBonusPercent
+    {
+        get
+        {
+            int total = 0;
+            for (int i = 0; i < items.Count; i++)
+            {
+                XTapGearBlockData item = items[i];
+                if (!CountsTowardPlayerStats(item)) continue;
+                total = (int)Math.Min(int.MaxValue,
+                    (long)total + ExclusiveBlockBonusPercent(item));
+            }
+            return total;
+        }
+    }
+
+    public double ExclusiveEquipmentMultiplier
+    {
+        get { return 1d + ExclusiveEquipmentBonusPercent / 100d; }
+    }
+
+    double ApplyExclusiveEquipmentBonus(double total)
+    {
+        // Apply once to equipment only. Never write the bonus into saved items:
+        // equipping/unequipping any character's block must update every bag.
+        return Math.Min(double.MaxValue, total * ExclusiveEquipmentMultiplier);
+    }
+
     public double EquippedAttack
     {
         get
@@ -1012,7 +1055,7 @@ public sealed class XTapInventory : MonoBehaviour
             for (int i = 0; i < items.Count; i++)
                 if (CountsTowardPlayerStats(items[i]))
                     total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].attack));
-            return total;
+            return ApplyExclusiveEquipmentBonus(total);
         }
     }
 
@@ -1024,7 +1067,7 @@ public sealed class XTapInventory : MonoBehaviour
             for (int i = 0; i < items.Count; i++)
                 if (CountsTowardPlayerStats(items[i]))
                     total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].defense));
-            return total;
+            return ApplyExclusiveEquipmentBonus(total);
         }
     }
 
@@ -1036,7 +1079,7 @@ public sealed class XTapInventory : MonoBehaviour
             for (int i = 0; i < items.Count; i++)
                 if (CountsTowardPlayerStats(items[i]))
                     total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].hp));
-            return total;
+            return ApplyExclusiveEquipmentBonus(total);
         }
     }
 
@@ -1044,7 +1087,7 @@ public sealed class XTapInventory : MonoBehaviour
     {
         double total = 0d;
         for (int i = 0; i < items.Count; i++)
-            if (items[i].location == XTapGearBlockData.LocationBag &&
+            if (CountsTowardPlayerStats(items[i]) &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
                 total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].attack));
         return total;
@@ -1054,7 +1097,7 @@ public sealed class XTapInventory : MonoBehaviour
     {
         double total = 0d;
         for (int i = 0; i < items.Count; i++)
-            if (items[i].location == XTapGearBlockData.LocationBag &&
+            if (CountsTowardPlayerStats(items[i]) &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
                 total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].defense));
         return total;
@@ -1064,7 +1107,7 @@ public sealed class XTapInventory : MonoBehaviour
     {
         double total = 0d;
         for (int i = 0; i < items.Count; i++)
-            if (items[i].location == XTapGearBlockData.LocationBag &&
+            if (CountsTowardPlayerStats(items[i]) &&
                 items[i].bagOwnerCharacterId == ownerCharacterId)
                 total = XTapStatFormat.SafeAdd(total, Math.Max(0d, items[i].hp));
         return total;
@@ -1077,13 +1120,13 @@ public sealed class XTapInventory : MonoBehaviour
         out double hp,
         out double descriptorMultiplier)
     {
-        // Every bag/list/detail displays its own contribution with the same
-        // global multiplier used in battle. Raw getters and saved blocks stay
-        // unchanged: battle multiplies (base player + all equipment) only once.
+        // Display this bag's contribution with both global equipment effects.
+        // Raw per-bag getters/saved items stay unchanged. Battle uses the
+        // boosted Equipped* total, adds base stats, then applies descriptors.
         descriptorMultiplier = DescriptorSetMultiplier;
-        attack = Math.Min(double.MaxValue, GetEquippedAttack(ownerCharacterId) * descriptorMultiplier);
-        defense = Math.Min(double.MaxValue, GetEquippedDefense(ownerCharacterId) * descriptorMultiplier);
-        hp = Math.Min(double.MaxValue, GetEquippedHp(ownerCharacterId) * descriptorMultiplier);
+        attack = Math.Min(double.MaxValue, ApplyExclusiveEquipmentBonus(GetEquippedAttack(ownerCharacterId)) * descriptorMultiplier);
+        defense = Math.Min(double.MaxValue, ApplyExclusiveEquipmentBonus(GetEquippedDefense(ownerCharacterId)) * descriptorMultiplier);
+        hp = Math.Min(double.MaxValue, ApplyExclusiveEquipmentBonus(GetEquippedHp(ownerCharacterId)) * descriptorMultiplier);
     }
 
     public int GetEquippedCellCount(int ownerCharacterId)
@@ -1975,6 +2018,7 @@ public sealed class XTapInventory : MonoBehaviour
             (item.enhanceLevel > 0 ? "  +" + item.enhanceLevel : "") +
             "  [" + item.cellCount + "칸 / " + corr + "]\n" +
             XTapStatFormat.BlockTriplet(item.attack, item.defense, item.hp, "     ") +
+            (item.exclusive ? " · 장착 시 전체 블럭 +" + ExclusiveBlockBonusPercent(item) + "%" : "") +
             (string.IsNullOrEmpty(item.descriptorEffectText)
                 ? ""
                 : "\n수식어  " + item.descriptorEffectText);

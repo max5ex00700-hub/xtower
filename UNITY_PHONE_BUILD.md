@@ -6,7 +6,7 @@
 - Unity project subfolder: unity/XTapUnity
 - Unity version: Unity 6.3 LTS / 6000.3.24f1
 - Android package: com.xtower.game.unity
-- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1178)
+- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1179)
 - Test APK signing: Unity Build Automation의 Auto-generated debug keystore 사용
 
 ## 폰에서 최초 1회 설정
@@ -51,7 +51,7 @@
 
 ## 최신 커밋 검증
 - 11.11부터 Unity Build Automation의 `GIT_COMMIT`을 Android versionName에 자동 삽입한다.
-- 옵션 > 버전 정보에서 `11.78-unity6-<커밋 앞 8자리> (1178)` 형식으로 확인한다.
+- 옵션 > 버전 정보에서 `11.79-unity6-<커밋 앞 8자리> (1179)` 형식으로 확인한다.
 - Unity Build Automation 빌드 로그에서도 `X탑 BUILD FINGERPRINT`를 검색하면 branch와 commit이 표시된다.
 - 11.11은 기준 이미지에서 추출한 메인 버튼 9개를 pre-build 단계에서 검증한다. 누락/손상 시 APK를 만들지 않고 빌드를 실패시킨다.
 
@@ -92,3 +92,10 @@
 - 원본 6층 파일 중 5층 캐릭터가 들어 있는 31장을 전투·도감·직접 로딩에서 제외했다.
 - 실제 6층 기본 이미지, 전투 포즈 8장, 포획 이미지에 맞춰 도감을 10장으로 정리했다.
 - 기존 저장값·획득 보상은 유지한다. 상세 내용: `unity/CHARACTER_ART_FIX_11_78.md`.
+
+## 11.79 전용 블럭 장착 칸수 보너스
+- 포획 캐릭터의 전용 가방에 장착한 전용 블럭 1칸마다 전체 장착 블럭의 공격·방어·체력 합계 +1%.
+- 한 캐릭터 24칸 장착 시 (유저 가방 + 모든 캐릭터 가방) ×1.24, 두 캐릭터 48칸이면 ×1.48.
+- 메인·가방·감옥 능력치 및 전용 블럭 보상/상세 설명에 반영합니다.
+- 상세 계산 순서와 검증 범위: `unity/EXCLUSIVE_CELL_BONUS_11_79.md`.
+- Cloud Build를 자동 실행하지 않았으며 실제 Unity 컴파일·APK 확인은 미완료입니다.

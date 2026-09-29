@@ -21,10 +21,10 @@ PlayerSettings:
   androidRenderOutsideSafeArea: 1
   androidApplicationEntry: 1
   runInBackground: 0
-  bundleVersion: 11.78-unity6
+  bundleVersion: 11.79-unity6
   applicationIdentifier:
     Android: com.xtower.game.unity
-  AndroidBundleVersionCode: 1178
+  AndroidBundleVersionCode: 1179
   AndroidMinSdkVersion: 24
   AndroidTargetSdkVersion: 0
   AndroidTargetArchitectures: 2

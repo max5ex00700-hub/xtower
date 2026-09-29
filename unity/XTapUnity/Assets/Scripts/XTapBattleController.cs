@@ -717,6 +717,9 @@ public sealed class XTapBattleController : MonoBehaviour
 
         mainDescriptorText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
         mainDescriptorText.color = new Color(.39f, .85f, 1f, 1f);
+        mainDescriptorText.resizeTextForBestFit = true;
+        mainDescriptorText.resizeTextMinSize = 20;
+        mainDescriptorText.resizeTextMaxSize = Mathf.RoundToInt(14 * UiFontScale);
         Anchor(mainDescriptorText.rectTransform, .10f, .52f, .94f, .66f);
 
         mainAttackText = MakeOutlinedText(statPanel.transform, "", 14, TextAnchor.MiddleLeft, true);
@@ -1680,11 +1683,12 @@ public sealed class XTapBattleController : MonoBehaviour
         double def = CurrentPlayerDefense();
         double hp = CurrentPlayerMaxHp();
 
-        // These three values already include the descriptor multiplier via
+        // These values already include exclusive-cell and descriptor effects via
         // CurrentPlayer*. Display its source once; never multiply them again.
         if (mainDescriptorText != null)
             mainDescriptorText.text = "수식어 ×" +
-                XTapStatFormat.Compact(inventory != null ? inventory.DescriptorSetMultiplier : 1d);
+                XTapStatFormat.Compact(inventory != null ? inventory.DescriptorSetMultiplier : 1d) +
+                " · 블럭 +" + (inventory != null ? inventory.ExclusiveEquipmentBonusPercent : 0) + "%";
 
         if (mainAttackText != null)
             mainAttackText.text = "공격력  " + XTapStatFormat.Compact(atk);
