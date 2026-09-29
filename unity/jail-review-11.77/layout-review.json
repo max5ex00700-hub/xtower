@@ -1,0 +1,49 @@
+{
+  "note": "Design approximation, not Unity rendering. Stats/ownership are sample data.",
+  "layouts": [
+    {
+      "height": 1920,
+      "selector_bottom": 416,
+      "name_top": 888,
+      "speech_top": 1044,
+      "bond_top": 1234,
+      "stats_top": 1430,
+      "talk_top": 1570,
+      "actions_top": 1708,
+      "reset_top": 1840
+    },
+    {
+      "height": 2340,
+      "selector_bottom": 416,
+      "name_top": 1308,
+      "speech_top": 1464,
+      "bond_top": 1654,
+      "stats_top": 1850,
+      "talk_top": 1990,
+      "actions_top": 2128,
+      "reset_top": 2260
+    },
+    {
+      "height": 1920,
+      "selector_bottom": 416,
+      "name_top": 888,
+      "speech_top": 1044,
+      "bond_top": 1234,
+      "stats_top": 1430,
+      "talk_top": 1570,
+      "actions_top": 1708,
+      "reset_top": 1840
+    },
+    {
+      "height": 1920,
+      "selector_bottom": 416,
+      "name_top": 888,
+      "speech_top": 1044,
+      "bond_top": 1234,
+      "stats_top": 1430,
+      "talk_top": 1570,
+      "actions_top": 1708,
+      "reset_top": 1840
+    }
+  ]
+}

@@ -6,7 +6,7 @@
 - Unity project subfolder: unity/XTapUnity
 - Unity version: Unity 6.3 LTS / 6000.3.24f1
 - Android package: com.xtower.game.unity
-- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1176)
+- Version code: source-controlled in `unity/XTapUnity/Assets/Editor/XTapBuildConfig.cs` (현재 1177)
 - Test APK signing: Unity Build Automation의 Auto-generated debug keystore 사용
 
 ## 폰에서 최초 1회 설정
@@ -51,7 +51,7 @@
 
 ## 최신 커밋 검증
 - 11.11부터 Unity Build Automation의 `GIT_COMMIT`을 Android versionName에 자동 삽입한다.
-- 옵션 > 버전 정보에서 `11.76-unity6-<커밋 앞 8자리> (1176)` 형식으로 확인한다.
+- 옵션 > 버전 정보에서 `11.77-unity6-<커밋 앞 8자리> (1177)` 형식으로 확인한다.
 - Unity Build Automation 빌드 로그에서도 `X탑 BUILD FINGERPRINT`를 검색하면 branch와 commit이 표시된다.
 - 11.11은 기준 이미지에서 추출한 메인 버튼 9개를 pre-build 단계에서 검증한다. 누락/손상 시 APK를 만들지 않고 빌드를 실패시킨다.
 
@@ -80,3 +80,10 @@
 - 전투 보상 룰렛의 0 선택 후: 미포획 캐릭터 포획 1%, 포획한 캐릭터의 전용 블럭 획득 1%.
 - 나머지 99%는 실패로 표시하고 보상을 지급하지 않는다.
 - 변경 근거와 검증 범위: `unity/GACHA_ZERO_CHANCE_11_76.md`.
+
+## 11.77 감옥 UI 고급화
+- 대형 캐릭터 배경, 초상화 선택 목록, 금속 프레임과 어두운 그라데이션 패널로 재구성했다.
+- 캐릭터 10명의 얼굴 높이에 맞춰 배치를 조정하고, 호감도·가방·장비 정보와 대화 버튼을 분리했다.
+- 기존 대화 보상·가방 확장·저장 규칙을 유지한다.
+- 변경 및 실제 검증 범위: `unity/JAIL_UI_11_77.md`.
+- `unity/jail-review-11.77/` 이미지는 배치 미리보기이며 Unity 실행 캡처가 아니다.
