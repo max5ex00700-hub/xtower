@@ -5,6 +5,9 @@ using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
 
+// The UI-only boot scene has no camera (and therefore no default listener).
+// Keep one listener on the persistent game root for every 2D audio source.
+[RequireComponent(typeof(AudioListener))]
 public sealed class XTapBattleController : MonoBehaviour
 {
     const float UiFontScale = 2.15f;
@@ -214,6 +217,11 @@ public sealed class XTapBattleController : MonoBehaviour
 
     void Awake()
     {
+        AudioListener listener = GetComponent<AudioListener>();
+        Debug.Log("X탑 AUDIO / listener=" + (listener != null && listener.isActiveAndEnabled) +
+            " / volume=" + AudioListener.volume + " / paused=" + AudioListener.pause +
+            " / sampleRate=" + AudioSettings.outputSampleRate);
+
         // Unity can send the initial OnApplicationPause(false) before Start.
         // Read persisted tickets BEFORE any lifecycle callback can accrue/save.
         LoadHourlyTicketState();
