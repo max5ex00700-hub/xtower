@@ -1,0 +1,133 @@
+name: Build XTap Native Engine APK
+
+on:
+  push:
+    branches: [ native-engine-prototype ]
+    paths:
+      - 'app/**'
+      - 'assets_parts/**'
+      - 'unity/XTapUnity/Assets/StreamingAssets/**'
+      - 'unity/XTapUnity/Assets/Resources/XTapVoices/**'
+      - 'unity/XTapUnity/Assets/Resources/XTapCombatSfx/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/native-engine-apk.yml'
+  pull_request:
+    branches: [ unity-prototype ]
+    paths:
+      - 'app/**'
+      - 'assets_parts/**'
+      - 'unity/XTapUnity/Assets/StreamingAssets/**'
+      - 'unity/XTapUnity/Assets/Resources/XTapVoices/**'
+      - 'unity/XTapUnity/Assets/Resources/XTapCombatSfx/**'
+      - 'build.gradle'
+      - 'settings.gradle'
+      - 'gradle.properties'
+      - '.github/workflows/native-engine-apk.yml'
+  workflow_dispatch:
+
+jobs:
+  build-native-engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Verify Android SDK
+        shell: bash
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          test -d "$ANDROID_HOME"
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses >/dev/null 2>&1 || true
+          "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "platforms;android-35" "build-tools;35.0.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.2'
+
+      - name: Restore native test assets
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p app/src/main/res/drawable-nodpi app/src/main/res/raw /tmp/xtap-native
+
+          # Old native prototype fallback art/audio.
+          if compgen -G "assets_parts/p*" > /dev/null; then
+            cat assets_parts/p* > /tmp/xtap-native/fallback.b64
+            base64 -d /tmp/xtap-native/fallback.b64 > /tmp/xtap-native/fallback.zip
+            unzip -o /tmp/xtap-native/fallback.zip -d /tmp/xtap-native/fallback >/dev/null
+            for i in 0 1 2 3 4; do
+              test -f "/tmp/xtap-native/fallback/s${i}.jpg" && cp "/tmp/xtap-native/fallback/s${i}.jpg" "app/src/main/res/drawable-nodpi/s${i}.jpg"
+            done
+            for n in hit hurt sparkle win; do
+              test -f "/tmp/xtap-native/fallback/${n}.ogg" && cp "/tmp/xtap-native/fallback/${n}.ogg" "app/src/main/res/raw/${n}.ogg"
+            done
+          fi
+
+          # Reuse the exact 1F art bundle used by the Unity prototype when available.
+          P1="unity/XTapUnity/Assets/StreamingAssets/xtop_source.part1"
+          P2="unity/XTapUnity/Assets/StreamingAssets/xtop_source.part2"
+          if [ -s "$P1" ] && [ -s "$P2" ]; then
+            cat "$P1" "$P2" > /tmp/xtap-native/xtop_source.apk
+            unzip -t /tmp/xtap-native/xtop_source.apk >/dev/null
+
+            extract_jpg() {
+              local entry="$1"
+              local out="$2"
+              local tmp="/tmp/xtap-native/extract.jpg"
+              rm -f "$tmp"
+              if unzip -p /tmp/xtap-native/xtop_source.apk "$entry" > "$tmp" 2>/dev/null && [ -s "$tmp" ]; then
+                mv "$tmp" "$out"
+              else
+                rm -f "$tmp"
+              fi
+            }
+
+            for floor in 1 2 3; do
+              for prefix in p k b d; do
+                for n in $(seq 0 9); do
+                  i=$(printf "%02d" "$n")
+                  extract_jpg "assets/f${floor}_${prefix}${i}.jpg" "app/src/main/res/drawable-nodpi/f${floor}_${prefix}${i}.jpg"
+                done
+              done
+              extract_jpg "assets/f${floor}_cap.jpg" "app/src/main/res/drawable-nodpi/f${floor}_cap.jpg"
+            done
+          fi
+
+          # Decode the same female reactions and combat impacts currently used in Unity.
+          decode_audio_glob() {
+            local pattern="$1"
+            for src in $pattern; do
+              [ -f "$src" ] || continue
+              local name
+              name="$(basename "$src" .txt)"
+              tr -d '\r\n\t ' < "$src" | base64 -d > "app/src/main/res/raw/${name}.wav"
+            done
+          }
+
+          decode_audio_glob "unity/XTapUnity/Assets/Resources/XTapVoices/female_*.txt"
+          decode_audio_glob "unity/XTapUnity/Assets/Resources/XTapCombatSfx/fight_*.txt"
+
+          echo "Drawable assets:"
+          ls -lh app/src/main/res/drawable-nodpi | head -60 || true
+          echo "Audio assets:"
+          ls -lh app/src/main/res/raw | head -80 || true
+
+      - name: Build native engine debug APK
+        run: gradle :app:assembleDebug --stacktrace
+
+      - name: Rename APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk XTap-NativeEngine-Test.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: XTap-NativeEngine-Test-APK
+          path: XTap-NativeEngine-Test.apk
+          if-no-files-found: error
