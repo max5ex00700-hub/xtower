@@ -1,0 +1,3306 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a1220">
+<meta name="color-scheme" content="dark">
+<title>전자 근로계약서 · 현장직</title>
+<style>
+/* =====================================================================
+   전자 근로계약서 v2.1 — 범용 단일 파일 앱 (premium single-file app)
+   제작: 포시즌jo
+   ===================================================================== */
+:root{
+  --bg:#0a1220;
+  --bg-2:#0d1828;
+  --bg-3:#111c30;
+  --panel:rgba(20,32,54,.92);
+  --panel-2:rgba(26,40,66,.72);
+  --gold:#d4af6a;
+  --gold-2:#f0d399;
+  --gold-3:#b8934f;
+  --gold-line:rgba(212,175,106,.25);
+  --gold-line-soft:rgba(212,175,106,.14);
+  --text:#f3f6fb;
+  --text-2:#dbe4f0;
+  --muted:#9fb0c9;
+  --eme:#3ecf8e;
+  --eme-bg:rgba(62,207,142,.12);
+  --red:#e0576a;
+  --red-bg:rgba(224,87,106,.12);
+  --line:rgba(255,255,255,.08);
+  --line-2:rgba(255,255,255,.05);
+  --radius:20px;
+  --r-sm:12px;
+  --shadow:0 22px 50px rgba(0,0,0,.42), inset 0 1px 0 rgba(255,255,255,.045);
+  --font:'Pretendard','Pretendard Variable',-apple-system,BlinkMacSystemFont,'Apple SD Gothic Neo','Noto Sans KR','Noto Sans CJK KR','Malgun Gothic','맑은 고딕',system-ui,'Segoe UI',Roboto,sans-serif;
+  --serif:'Noto Serif KR',var(--font);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+body{
+  font-family:var(--font);
+  color:var(--text);
+  background:
+    radial-gradient(1100px 520px at 50% -12%, #182944 0%, rgba(24,41,68,0) 62%),
+    linear-gradient(180deg,#0a1220 0%,#0b1526 45%,#091120 100%);
+  background-attachment:fixed;
+  -webkit-text-size-adjust:100%;
+  line-height:1.45;
+  font-size:15px;
+  padding-bottom:calc(96px + env(safe-area-inset-bottom));
+  min-height:100vh;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.55;
+  background-image:
+    linear-gradient(rgba(212,175,106,.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,175,106,.045) 1px, transparent 1px);
+  background-size:64px 64px, 64px 64px;
+  mask-image:radial-gradient(120% 80% at 50% 0%, #000 0%, transparent 72%);
+  -webkit-mask-image:radial-gradient(120% 80% at 50% 0%, #000 0%, transparent 72%);
+}
+body.has-dock{padding-bottom:calc(190px + env(safe-area-inset-bottom))}
+main,header,nav,footer,.dock{position:relative;z-index:1}
+h1,h2,h3,p{margin:0}
+button{font-family:inherit;font-size:inherit;cursor:pointer;border:0;background:none;color:inherit}
+input,select,textarea{font-family:inherit;font-size:16px;color:var(--text)}
+::selection{background:rgba(212,175,106,.28)}
+input[type="date"]{color-scheme:dark}
+
+/* ============ 스플래시 (로딩) ============ */
+.splash{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  background:
+    radial-gradient(900px 700px at 50% 18%, #16304f 0%, rgba(17,35,61,0) 62%),
+    linear-gradient(160deg,#0b1526 0%,#12233d 52%,#0a1526 100%);
+  overflow:hidden;
+  transition:opacity .55s ease, visibility 0s linear .55s;
+}
+.splash::before{
+  content:'';position:absolute;inset:-10%;
+  background-image:
+    linear-gradient(rgba(212,175,106,.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(212,175,106,.075) 1px, transparent 1px),
+    linear-gradient(rgba(120,170,230,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(120,170,230,.05) 1px, transparent 1px);
+  background-size:96px 96px, 96px 96px, 24px 24px, 24px 24px;
+  mask-image:radial-gradient(72% 62% at 50% 45%, #000 0%, transparent 78%);
+  -webkit-mask-image:radial-gradient(72% 62% at 50% 45%, #000 0%, transparent 78%);
+  animation:gridDrift 18s linear infinite;
+}
+.splash::after{
+  content:'';position:absolute;left:50%;top:50%;width:min(88vw,520px);height:min(88vw,520px);
+  transform:translate(-50%,-54%);
+  background:radial-gradient(circle, rgba(212,175,106,.10) 0%, rgba(212,175,106,0) 62%);
+  pointer-events:none;
+}
+@keyframes gridDrift{from{transform:translate3d(0,0,0)}to{transform:translate3d(96px,96px,0)}}
+.splash.hide{opacity:0;visibility:hidden;pointer-events:none}
+.sp-inner{position:relative;z-index:2;text-align:center;padding:0 26px;width:100%;max-width:560px}
+.sp-mark{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:78px;height:78px;border-radius:22px;
+  border:1px solid rgba(212,175,106,.45);
+  background:linear-gradient(160deg, rgba(212,175,106,.18), rgba(212,175,106,.03));
+  box-shadow:0 18px 44px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.14);
+  animation:markIn .85s cubic-bezier(.2,.7,.2,1) both;
+}
+.sp-mark svg{width:52px;height:auto;opacity:.96}
+@keyframes markIn{from{opacity:0;transform:translateY(10px) scale(.92)}to{opacity:1;transform:none}}
+.sp-eyebrow{
+  margin-top:26px;font-size:10.5px;font-weight:700;letter-spacing:.42em;
+  color:rgba(212,175,106,.82);text-transform:uppercase;
+  animation:fadeUp .8s .12s cubic-bezier(.2,.7,.2,1) both;
+}
+.sp-title{
+  margin:14px 0 0;font-size:clamp(30px,9.2vw,46px);line-height:1.16;
+  font-weight:800;letter-spacing:.14em;
+  background:linear-gradient(178deg,#ffffff 0%,#f7e9c9 34%,#f0d399 55%,#d4af6a 78%,#b8934f 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 6px 22px rgba(212,175,106,.22));
+  animation:titleIn 1s .2s cubic-bezier(.2,.7,.2,1) both;
+}
+@keyframes titleIn{
+  from{opacity:0;letter-spacing:.34em;transform:translateY(8px)}
+  to{opacity:1;letter-spacing:.14em;transform:none}
+}
+.sp-rule{
+  width:min(72%,300px);height:1px;margin:20px auto 0;
+  background:linear-gradient(90deg,transparent,rgba(212,175,106,.75),transparent);
+  animation:fadeUp .8s .42s cubic-bezier(.2,.7,.2,1) both;
+}
+.sp-rule span{display:block;width:6px;height:6px;margin:-3px auto 0;transform:rotate(45deg);
+  background:var(--gold);box-shadow:0 0 12px rgba(212,175,106,.8)}
+.sp-sub{
+  margin-top:16px;font-size:12.5px;font-weight:600;letter-spacing:.16em;
+  color:#9fb0c9;
+  animation:fadeUp .8s .5s cubic-bezier(.2,.7,.2,1) both;
+}
+.sp-bar{
+  position:relative;width:min(62%,240px);height:2px;margin:34px auto 0;
+  border-radius:2px;background:rgba(255,255,255,.09);overflow:hidden;
+  animation:fadeUp .8s .58s cubic-bezier(.2,.7,.2,1) both;
+}
+.sp-bar i{
+  position:absolute;inset:0;width:0;border-radius:2px;
+  background:linear-gradient(90deg,rgba(212,175,106,.35),#f0d399);
+  box-shadow:0 0 14px rgba(240,211,153,.55);
+  animation:barFill 1.15s cubic-bezier(.4,.05,.2,1) .45s forwards;
+}
+@keyframes barFill{to{width:100%}}
+.sp-load{margin-top:12px;font-size:10.5px;letter-spacing:.3em;color:rgba(159,176,201,.6);font-weight:700;
+  animation:fadeUp .8s .62s cubic-bezier(.2,.7,.2,1) both}
+.sp-foot{
+  position:absolute;left:0;right:0;bottom:calc(30px + env(safe-area-inset-bottom));
+  text-align:center;font-size:11.5px;font-weight:700;letter-spacing:.24em;
+  color:rgba(159,176,201,.78);
+  animation:fadeUp .9s .7s cubic-bezier(.2,.7,.2,1) both;z-index:2;
+}
+.sp-foot b{color:var(--gold);font-weight:800;letter-spacing:.18em}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+/* ============ 헤더 ============ */
+.topbar{
+  position:sticky;top:0;z-index:40;
+  background:linear-gradient(180deg, rgba(9,17,30,.96) 0%, rgba(9,17,30,.86) 70%, rgba(9,17,30,.55) 100%);
+  backdrop-filter:saturate(160%) blur(14px);
+  -webkit-backdrop-filter:saturate(160%) blur(14px);
+  border-bottom:1px solid var(--gold-line-soft);
+  padding-top:env(safe-area-inset-top);
+}
+.topbar-in{
+  max-width:1000px;margin:0 auto;
+  display:flex;align-items:center;gap:12px;
+  padding:12px 16px 11px;
+}
+.monogram{
+  flex:0 0 auto;width:42px;height:42px;border-radius:13px;
+  display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(212,175,106,.38);
+  background:linear-gradient(160deg, rgba(212,175,106,.16), rgba(212,175,106,.02));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+}
+.monogram svg{width:28px;height:auto}
+.brand-title{
+  font-size:15.5px;font-weight:800;letter-spacing:.02em;
+  background:linear-gradient(180deg,#fff,#e8dcc3);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.brand-sub{font-size:11px;color:var(--muted);font-weight:600;letter-spacing:.09em;margin-top:2px}
+.topbar-spacer{flex:1}
+.year-chip{
+  font-size:10.5px;font-weight:800;color:var(--gold);
+  border:1px solid rgba(212,175,106,.34);background:rgba(212,175,106,.09);
+  border-radius:999px;padding:5px 10px;letter-spacing:.1em;
+}
+
+/* ============ 레이아웃 ============ */
+main{max-width:1000px;margin:0 auto;padding:18px 14px 26px}
+.panel{display:none;animation:fade .28s ease}
+.panel.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+.card{
+  position:relative;
+  background:linear-gradient(180deg, rgba(23,37,60,.94) 0%, rgba(16,27,46,.92) 100%);
+  border:1px solid var(--gold-line-soft);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  padding:18px 16px 16px;
+  margin-bottom:14px;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}
+.card::before{
+  content:'';position:absolute;left:16px;right:16px;top:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,175,106,.35),transparent);
+}
+.card-head{display:flex;align-items:center;gap:10px;margin-bottom:15px}
+.card-head .num{
+  width:26px;height:26px;border-radius:9px;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+  font-size:11.5px;font-weight:800;color:#1b1206;
+  background:linear-gradient(160deg,#f0d399,#d4af6a);
+  box-shadow:0 4px 12px rgba(212,175,106,.22);
+}
+.card-head h2{font-size:14.5px;font-weight:800;letter-spacing:.01em;color:var(--text)}
+.card-head .hint{
+  font-size:10.5px;color:var(--muted);font-weight:700;margin-left:auto;
+  letter-spacing:.06em;border:1px solid var(--line);border-radius:999px;padding:3px 8px;
+}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}
+@media(min-width:680px){.grid.two{grid-template-columns:1fr 1fr}}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>label{font-size:11.5px;font-weight:700;color:var(--muted);letter-spacing:.05em}
+.field .req{color:var(--gold);margin-left:2px}
+.field input,.field select{
+  width:100%;height:48px;padding:0 13px;
+  border:1px solid rgba(255,255,255,.09);border-radius:var(--r-sm);
+  background:rgba(7,13,24,.62);outline:none;
+  font-weight:600;letter-spacing:.01em;
+  transition:border-color .18s,box-shadow .18s,background .18s;
+}
+.field input::placeholder{color:rgba(159,176,201,.42);font-weight:500}
+.field input:hover{border-color:rgba(255,255,255,.16)}
+.field input:focus,.field select:focus,.field textarea:focus{
+  border-color:rgba(212,175,106,.62);background:rgba(9,16,29,.9);
+  box-shadow:0 0 0 3.5px rgba(212,175,106,.13);
+}
+.field .sub{font-size:11px;color:rgba(159,176,201,.72);font-weight:600}
+.row-inline{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+
+.check{
+  display:inline-flex;align-items:center;gap:9px;
+  font-size:12.5px;font-weight:700;color:var(--text-2);
+  padding:10px 13px;border:1px solid rgba(255,255,255,.09);border-radius:var(--r-sm);
+  background:rgba(7,13,24,.55);cursor:pointer;transition:.18s;
+}
+.check input{width:17px;height:17px;accent-color:#d4af6a;margin:0}
+.check.on{border-color:rgba(212,175,106,.5);background:rgba(212,175,106,.10);color:var(--gold-2)}
+
+.seg{display:flex;gap:5px;background:rgba(7,13,24,.62);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:5px}
+.seg label{
+  position:relative;flex:1;text-align:center;padding:10px 6px;border-radius:10px;
+  font-size:13px;font-weight:700;color:var(--muted);cursor:pointer;transition:.18s;
+}
+.seg input{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;margin:0}
+.seg label:has(input:checked){
+  background:linear-gradient(160deg,rgba(212,175,106,.20),rgba(212,175,106,.07));
+  color:var(--gold-2);border:1px solid rgba(212,175,106,.34);
+  box-shadow:0 4px 14px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.06);
+}
+
+/* 최저임금 배지 */
+.wage-badge{
+  display:flex;gap:9px;align-items:flex-start;
+  margin-top:4px;padding:11px 12px;border-radius:12px;
+  font-size:12px;font-weight:700;line-height:1.45;
+  background:var(--eme-bg);color:#8ff0bf;border:1px solid rgba(62,207,142,.28);
+}
+.wage-badge u{text-decoration-color:rgba(143,240,191,.6)}
+.wage-badge.warn{background:var(--red-bg);color:#ffb1bc;border-color:rgba(224,87,106,.34)}
+.wage-badge .ico{
+  flex:0 0 auto;width:18px;height:18px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:900;background:rgba(62,207,142,.22);color:#bdf7d9;margin-top:1px;
+}
+.wage-badge.warn .ico{background:rgba(224,87,106,.24);color:#ffd0d6}
+.wage-badge small{display:block;font-weight:600;font-size:11px;opacity:.8;margin-top:3px;color:inherit}
+
+/* 버튼 */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  height:50px;padding:0 18px;border-radius:14px;
+  font-weight:800;font-size:14.5px;letter-spacing:-.005em;
+  transition:transform .12s,filter .18s,background .18s,border-color .18s,box-shadow .18s;
+  white-space:nowrap;
+}
+.btn:active{transform:scale(.985)}
+.btn-primary{
+  background:linear-gradient(160deg,#f2d9a6 0%,#e2c184 38%,#d4af6a 72%,#c19a51 100%);
+  color:#1b1305;box-shadow:0 10px 26px rgba(212,175,106,.24), inset 0 1px 0 rgba(255,255,255,.5);
+}
+.btn-primary:hover{filter:brightness(1.06)}
+.btn-ghost{background:rgba(255,255,255,.04);color:var(--text-2);border:1px solid rgba(255,255,255,.11)}
+.btn-ghost:hover{background:rgba(255,255,255,.08);border-color:rgba(212,175,106,.34);color:#fff}
+.btn-soft{background:rgba(212,175,106,.12);color:var(--gold-2);border:1px solid rgba(212,175,106,.28)}
+.btn-danger{background:rgba(224,87,106,.10);color:#ffb1bc;border:1px solid rgba(224,87,106,.3)}
+.btn svg{width:18px;height:18px}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px}
+.actions .btn{flex:1 1 150px}
+
+/* ============ 미리보기 ============ */
+.pv-bar{display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pv-bar .btn{height:38px;padding:0 13px;font-size:12.5px;border-radius:11px;flex:0 0 auto}
+.pv-bar .spacer{flex:1}
+.pv-state{
+  font-size:10.5px;font-weight:800;letter-spacing:.08em;
+  padding:6px 11px;border-radius:999px;border:1px solid rgba(224,87,106,.34);
+  background:var(--red-bg);color:#ffb1bc;
+}
+.note-strip{
+  display:flex;gap:9px;align-items:flex-start;
+  font-size:11.5px;font-weight:600;color:#b9c7db;line-height:1.5;
+  background:linear-gradient(180deg,rgba(26,40,66,.7),rgba(16,27,46,.7));
+  border:1px solid var(--line);border-radius:14px;
+  padding:11px 13px;margin-bottom:13px;
+}
+.note-strip b{color:var(--gold-2);font-weight:800}
+
+.sig-card{
+  background:linear-gradient(180deg,rgba(23,37,60,.94),rgba(14,24,41,.92));
+  border:1px solid var(--gold-line-soft);border-radius:var(--radius);
+  box-shadow:var(--shadow);padding:16px;margin-bottom:14px;
+}
+.sig-card-head{display:flex;align-items:center;gap:9px;margin-bottom:2px}
+.sig-card-head h2{font-size:14px;font-weight:800;letter-spacing:.01em}
+.sig-card-head .hint{font-size:10.5px;color:var(--muted);font-weight:700;margin-left:auto;letter-spacing:.05em;border:1px solid var(--line);border-radius:999px;padding:3px 9px}
+.pads{display:grid;grid-template-columns:1fr;gap:11px;margin-top:12px}
+@media(min-width:780px){.pads{grid-template-columns:1fr 1fr}}
+
+/* 성명 단계 */
+.name-step{
+  margin-top:12px;padding:12px 13px;border-radius:15px;
+  border:1px solid rgba(212,175,106,.24);background:rgba(212,175,106,.06);
+}
+.ns-head{display:flex;align-items:center;gap:7px;margin-bottom:9px}
+.ns-head .n{width:18px;height:18px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:800;color:#1b1305;background:linear-gradient(160deg,#f0d399,#d4af6a)}
+.ns-head .t{font-size:12px;font-weight:800;color:var(--text-2)}
+.ns-ok{margin-left:auto;font-size:10px;font-weight:800;color:var(--muted);letter-spacing:.04em}
+.ns-ok.on{color:#8ff0bf}
+.name-step input{
+  width:100%;height:46px;padding:0 13px;border-radius:12px;border:1px solid rgba(255,255,255,.12);
+  background:rgba(7,13,24,.7);outline:none;font-weight:700;font-size:16px;letter-spacing:.02em;
+}
+.name-step input:focus{border-color:rgba(212,175,106,.62);box-shadow:0 0 0 3.5px rgba(212,175,106,.12)}
+.name-step input::placeholder{color:rgba(159,176,201,.45);font-weight:500}
+.ns-note{font-size:11px;color:rgba(159,176,201,.78);font-weight:600;line-height:1.6;margin-top:8px}
+.ns-note b{color:var(--gold-2)}
+
+/* 사본 수령함 입력 방식 */
+.rc-tabs{display:flex;gap:6px;padding:9px 10px 0}
+.rc-tab{
+  flex:1;height:36px;border-radius:10px;font-size:11.5px;font-weight:800;
+  border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--muted);
+}
+.rc-tab.on{background:linear-gradient(160deg,rgba(212,175,106,.2),rgba(212,175,106,.06));border-color:rgba(212,175,106,.4);color:var(--gold-2)}
+.rc-text-wrap{display:flex;gap:8px;padding:9px 10px 10px}
+.rc-text-wrap input{
+  flex:1;min-width:0;height:42px;padding:0 12px;border-radius:11px;
+  border:1px solid rgba(255,255,255,.12);background:rgba(7,13,24,.7);outline:none;font-weight:700;
+  font-family:var(--serif);font-size:15px;letter-spacing:.08em;
+}
+.rc-text-wrap input:focus{border-color:rgba(212,175,106,.6)}
+.rc-stamp{
+  flex:0 0 auto;height:42px;padding:0 13px;border-radius:11px;font-size:11.5px;font-weight:800;
+  border:1px solid rgba(212,175,106,.34);background:rgba(212,175,106,.12);color:var(--gold-2);
+}
+.rc-stamp:active{transform:scale(.98)}
+.receipt-pad.signed{border-color:rgba(62,207,142,.4)}
+
+/* 선택 · 대표이사 서명 */
+.opt-toggle{
+  width:100%;margin-top:11px;height:44px;border-radius:12px;
+  border:1px dashed rgba(212,175,106,.3);background:rgba(212,175,106,.05);
+  color:var(--gold-2);font-size:12px;font-weight:800;
+}
+.opt-pad{margin-top:10px}
+.pad{
+  border:1px solid rgba(212,175,106,.16);border-radius:15px;overflow:hidden;
+  background:rgba(9,17,30,.55);transition:border-color .2s,box-shadow .2s;
+}
+.pad.signed{border-color:rgba(62,207,142,.4);box-shadow:0 0 0 3px rgba(62,207,142,.07)}
+.pad-head{display:flex;align-items:center;gap:7px;padding:9px 11px;border-bottom:1px solid var(--line-2)}
+.pad-head .n{
+  width:18px;height:18px;border-radius:6px;flex:0 0 auto;
+  display:flex;align-items:center;justify-content:center;
+  font-size:10.5px;font-weight:800;color:#1b1305;
+  background:linear-gradient(160deg,#f0d399,#d4af6a);
+}
+.pad-head .t{font-size:11.5px;font-weight:700;color:var(--text-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pad-head .ok{margin-left:auto;font-size:10.5px;font-weight:800;color:var(--eme);display:none}
+.pad.signed .ok{display:inline}
+.pad-clear{font-size:11px;font-weight:800;color:rgba(159,176,201,.8);padding:4px 8px;border-radius:8px;margin-left:auto}
+.pad.signed .pad-clear{margin-left:0}
+.pad-clear:hover{background:rgba(255,255,255,.07);color:#fff}
+.pad-paper{position:relative;padding:7px 7px 0;background:linear-gradient(180deg,#f6f8fc 0%,#eaeff7 100%)}
+.pad-paper::before,.pad-paper::after,
+.pad-paper .tick-b::before,.pad-paper .tick-b::after{
+  content:'';position:absolute;width:9px;height:9px;border:1.5px solid rgba(212,175,106,.85);
+}
+.pad-paper::before{top:5px;left:5px;border-right:0;border-bottom:0}
+.pad-paper::after{top:5px;right:5px;border-left:0;border-bottom:0}
+.pad-paper .tick-b::before{bottom:5px;left:5px;border-right:0;border-top:0}
+.pad-paper .tick-b::after{bottom:5px;right:5px;border-left:0;border-top:0}
+.pad canvas{
+  display:block;width:100%;height:112px;touch-action:none;cursor:crosshair;
+  background:transparent;
+  box-shadow:inset 0 0 0 1px rgba(11,21,38,.08);
+}
+.pad-baseline{
+  position:absolute;left:14px;right:14px;bottom:22px;height:1px;
+  background:repeating-linear-gradient(90deg, rgba(11,21,38,.28) 0 6px, transparent 6px 11px);
+  pointer-events:none;
+}
+.pad-hint{padding:8px 11px 10px;font-size:10.5px;color:rgba(159,176,201,.68);font-weight:600}
+
+/* 시트 래퍼 */
+.sheet-wrap{
+  position:relative;border-radius:16px;padding:12px;overflow:hidden;
+  background:linear-gradient(180deg,rgba(12,21,36,.9),rgba(8,14,26,.9));
+  border:1px solid rgba(212,175,106,.18);
+  box-shadow:0 24px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.04);
+}
+.sheet-wrap.zoom{overflow-x:auto}
+.sheet-wrap.zoom .sheet{transform:none!important;margin:0 auto}
+
+/* ============ A4 계약서 (인쇄용 흰 종이) ============ */
+.sheet{
+  width:194mm;background:#fff;color:#000;
+  font-family:var(--font);font-size:8.5pt;line-height:1.5;letter-spacing:-.005em;
+  box-shadow:0 10px 30px rgba(0,0,0,.35);
+  position:relative;transform-origin:top left;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact;
+}
+.sheet-inner{
+  min-height:277mm;
+  border:2.4pt solid #000;padding:2.2pt;
+  display:flex;flex-direction:column;
+}
+.sheet-frame{border:0.6pt solid #000;flex:1;display:flex;flex-direction:column}
+.sh-head{
+  display:flex;align-items:center;gap:8mm;
+  padding:3.4mm 4mm 2.4mm 5mm;
+  border-bottom:1.1pt solid #000;
+}
+.sh-title{font-size:23pt;font-weight:900;letter-spacing:.14em;white-space:nowrap;line-height:1.1}
+.sh-logo{margin-left:auto;flex:0 0 auto;width:45mm;height:auto}
+.sh-preamble{
+  padding:1.1mm 4mm 1.2mm 3mm;font-size:7.9pt;font-weight:700;
+  border-bottom:0.6pt solid #000;
+}
+table.ct{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.2pt}
+table.ct td{border:0.6pt solid #000;padding:.8mm 1.8mm;vertical-align:middle;word-break:break-all;overflow-wrap:anywhere}
+table.ct td.lbl{text-align:center;font-weight:700;background:#fff;letter-spacing:-.01em;line-height:1.24}
+table.ct td.val{font-weight:700}
+table.ct tr.party td.val{font-weight:600}
+table.ct tr.party td.name{text-align:center;font-weight:700}
+.tbl-2{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.2pt}
+.tbl-2 td{border:0.6pt solid #000;padding:.85mm 1.8mm;vertical-align:top}
+.tbl-2 td.lbl{text-align:left;font-weight:700;padding-left:1.8mm;line-height:1.3}
+.tbl-2 td.body{padding:.9mm 1.9mm 1mm}
+.tbl-2 td.body.tight{padding-top:.6mm;padding-bottom:.6mm}
+.small-note{font-size:7.3pt;font-weight:500;line-height:1.36;letter-spacing:-.01em}
+.clause-line{line-height:1.38}
+.ol{margin:0;padding:0;list-style:none}
+.ol li{display:flex;gap:1.1mm;font-size:7.5pt;font-weight:500;line-height:1.42;padding:.12mm 0;letter-spacing:-.012em}
+.ol li .n{flex:0 0 auto;font-weight:600}
+.ol.tight li{line-height:1.38}
+.pay-line{display:flex;align-items:flex-end;gap:2mm;line-height:1.55}
+.pay-line .left{white-space:nowrap;font-weight:700}
+.pay-line .left b{font-size:10pt;font-weight:800;letter-spacing:.01em;padding:0 .6mm}
+.pay-line .right{margin-left:auto;white-space:nowrap;font-weight:700;display:flex;align-items:flex-end;gap:1mm}
+.sig-slot{display:inline-block;position:relative}
+.sig-slot img{display:block;object-fit:contain}
+.sig-slot.sm{width:19mm;height:6mm}
+.sig-slot.sm img{width:19mm;height:6mm;margin-bottom:-1mm}
+.sig-slot.ceo{width:17mm;height:7.4mm;margin:0 .6mm .3mm}
+.sig-slot.ceo img{width:17mm;height:7.4mm}
+.sig-slot.ceo:not(.has-ink){display:none}
+.sig-hint{color:#000;font-weight:700}
+.sh-date{
+  border-top:0.6pt solid #000;text-align:center;font-weight:700;font-size:9.4pt;letter-spacing:.04em;
+  padding:1.8mm 0 1.6mm;
+}
+.sh-sign{display:flex;align-items:center;gap:4mm;border-top:0.6pt solid #000;padding:1.5mm 6mm 1.7mm;position:relative}
+.sign-main{flex:1;min-width:0}
+.sign-stamp{flex:0 0 30mm;display:flex;flex-direction:column;align-items:center;gap:1mm}
+.sign-stamp .receipt-wrap{width:100%}
+.seal-box{width:16mm;height:16mm}
+.seal-box svg{width:16mm;height:16mm;transform:rotate(-7deg);opacity:.93}
+.sign-line{display:flex;align-items:flex-end;gap:1.2mm;line-height:1.72;white-space:nowrap}
+.sign-line.first{margin-bottom:1.2mm}
+.sign-line .cap{font-weight:700;font-size:9.2pt;letter-spacing:.02em}
+.sign-name{display:inline-block;position:relative;min-width:19mm;text-align:center;font-weight:800;font-size:9.8pt;letter-spacing:.34em;padding-left:.34em}
+.sign-name .nm-type{display:block;width:100%;text-align:center}
+.sign-name .nm-ink{position:absolute;left:-1mm;right:-1mm;top:50%;transform:translateY(-50%);width:calc(100% + 2mm);height:7.8mm;object-fit:contain}
+.sign-name.blank{color:#fff}
+.sign-led{flex:0 1 auto;border-bottom:0.6pt solid #000;min-width:8mm;height:1px;margin:0 1mm 1.9mm}
+.sig-slot.md{width:23mm;height:8.4mm;margin-bottom:.4mm}
+.sig-slot.md img{width:23mm;height:8.4mm}
+.receipt{
+  color:#b9bdbc;font-weight:700;font-size:8.2pt;letter-spacing:.06em;
+  position:relative;height:8.4mm;min-width:28mm;width:100%;display:flex;align-items:flex-end;justify-content:center;white-space:nowrap;
+}
+.receipt .rc-guide{display:block}
+.receipt .rc-ink{position:absolute;left:0;right:0;top:0;height:5.6mm}
+.receipt .rc-ink img{width:100%;height:5.6mm;object-fit:contain}
+.receipt .rc-text{
+  position:absolute;left:0;right:0;top:0;height:5.6mm;display:flex;align-items:center;justify-content:center;
+  color:#12203a;font-family:var(--serif);font-weight:700;font-size:8.6pt;letter-spacing:.12em;
+  transform:rotate(-.9deg);
+}
+.receipt.text .rc-guide{opacity:0}
+.seal{position:absolute;right:9mm;top:-3.5mm;width:20mm;height:20mm;transform:rotate(-7deg);opacity:.93;pointer-events:none}
+.sh-foot{
+  border-top:0.6pt solid #000;text-align:center;font-weight:700;font-size:7.9pt;letter-spacing:-.01em;
+  padding:1.3mm 4mm 1.4mm;margin-top:auto;
+}
+.fill{display:inline-block;min-width:12mm;border-bottom:0.6pt solid #000;text-align:center;font-weight:700;padding:0 1mm}
+.fill.wide{min-width:34mm}
+.fill.blank{color:transparent;border-bottom-color:#000}
+
+/* ============ 보관함 ============ */
+.vault-tools{display:flex;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+.vault-tools input{
+  flex:1 1 190px;height:48px;padding:0 14px;border-radius:14px;
+  border:1px solid rgba(255,255,255,.09);background:rgba(7,13,24,.62);outline:none;
+  font-weight:600;transition:border-color .18s,box-shadow .18s;
+}
+.vault-tools input::placeholder{color:rgba(159,176,201,.45)}
+.vault-tools input:focus{border-color:rgba(212,175,106,.55);box-shadow:0 0 0 3.5px rgba(212,175,106,.12)}
+.vault-tools .btn{height:48px;font-size:12.5px;padding:0 14px;border-radius:13px;flex:0 0 auto}
+.v-list{display:grid;gap:10px}
+.v-item{
+  background:linear-gradient(180deg,rgba(23,37,60,.9),rgba(14,24,41,.9));
+  border:1px solid var(--line);border-radius:16px;
+  padding:15px 15px;display:flex;gap:12px;align-items:center;
+  box-shadow:0 12px 30px rgba(0,0,0,.28);
+  transition:border-color .18s,transform .18s;
+}
+.v-item:hover{border-color:rgba(212,175,106,.3)}
+.v-main{min-width:0;flex:1}
+.v-name{font-size:15px;font-weight:800;letter-spacing:.01em;display:flex;align-items:center;gap:8px;color:#fff}
+.v-name .pill{
+  font-size:10.5px;font-weight:800;color:var(--gold-2);
+  background:rgba(212,175,106,.12);border:1px solid rgba(212,175,106,.28);
+  border-radius:999px;padding:2px 8px;letter-spacing:.02em;
+}
+.v-meta{font-size:11.5px;color:var(--muted);font-weight:600;margin-top:5px;display:flex;gap:7px;flex-wrap:wrap}
+.v-meta .sep{opacity:.4}
+.v-act{display:flex;gap:7px;flex:0 0 auto}
+.icon-btn{
+  width:40px;height:40px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);
+  display:flex;align-items:center;justify-content:center;color:var(--text-2);transition:.18s;
+}
+.icon-btn:hover{background:rgba(212,175,106,.12);border-color:rgba(212,175,106,.34);color:var(--gold-2)}
+.icon-btn.del{color:#ff9aa8;border-color:rgba(224,87,106,.28)}
+.icon-btn.del:hover{background:rgba(224,87,106,.14);border-color:rgba(224,87,106,.45)}
+.icon-btn svg{width:18px;height:18px}
+.empty{
+  text-align:center;padding:40px 20px;color:var(--muted);
+  border:1px dashed rgba(212,175,106,.22);border-radius:18px;
+  background:rgba(12,21,36,.5);
+}
+.empty .big{font-size:26px;margin-bottom:10px;opacity:.65}
+.empty b{display:block;color:var(--text-2);font-size:14px;margin-bottom:6px}
+.empty span{font-size:12px;line-height:1.6}
+.empty span b{display:inline;color:var(--gold-2)}
+
+/* 회사 설정 */
+.switch{display:flex;align-items:center;gap:13px;padding:14px;border:1px solid rgba(255,255,255,.09);border-radius:14px;background:rgba(7,13,24,.55)}
+.switch .txt{flex:1;min-width:0}
+.switch .txt b{display:block;font-size:13px;font-weight:800;color:var(--text)}
+.switch .txt span{display:block;font-size:11px;color:var(--muted);font-weight:600;margin-top:3px;line-height:1.5}
+.tgl{position:relative;width:52px;height:31px;border-radius:999px;background:rgba(255,255,255,.12);flex:0 0 auto;transition:background .2s;border:1px solid rgba(255,255,255,.1)}
+.tgl::after{content:'';position:absolute;top:3px;left:3px;width:23px;height:23px;border-radius:50%;background:#e9eef7;box-shadow:0 2px 6px rgba(0,0,0,.4);transition:transform .2s}
+.tgl[aria-checked="true"]{background:linear-gradient(160deg,#f0d399,#d4af6a);border-color:transparent}
+.tgl[aria-checked="true"]::after{transform:translateX(21px);background:#16223a}
+.seal-preview{
+  display:flex;align-items:center;gap:15px;padding:15px;margin-top:4px;
+  border:1px dashed rgba(212,175,106,.28);border-radius:14px;background:rgba(9,17,30,.5);
+}
+.seal-preview .sp-txt{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.6}
+.seal-preview svg{width:66px;height:66px;flex:0 0 auto;filter:drop-shadow(0 4px 10px rgba(200,32,46,.25))}
+.fine{
+  margin:16px 4px 0;font-size:11px;color:rgba(159,176,201,.7);font-weight:600;line-height:1.7;
+}
+.fine b{color:var(--text-2)}
+
+/* ============ 하단 탭바 ============ */
+.nav-bottom{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  padding:8px 10px calc(8px + env(safe-area-inset-bottom));
+  background:linear-gradient(180deg, rgba(10,18,32,.86) 0%, rgba(8,15,27,.98) 55%);
+  backdrop-filter:saturate(160%) blur(16px);
+  -webkit-backdrop-filter:saturate(160%) blur(16px);
+  border-top:1px solid rgba(212,175,106,.20);
+}
+.nav-in{max-width:600px;margin:0 auto;display:flex;gap:4px;align-items:stretch}
+.tab{
+  position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  padding:8px 4px 7px;border-radius:13px;
+  font-size:10.5px;font-weight:700;color:rgba(159,176,201,.72);
+  letter-spacing:.02em;transition:color .18s,background .18s;white-space:nowrap;
+}
+.tab svg{width:21px;height:21px;stroke-width:1.8}
+.tab[aria-selected="true"]{color:var(--gold-2);background:linear-gradient(180deg,rgba(212,175,106,.14),rgba(212,175,106,.03))}
+.tab[aria-selected="true"]::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:22px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,transparent,var(--gold-2),transparent);
+  box-shadow:0 0 10px rgba(240,211,153,.6);
+}
+.tab .dot{
+  position:absolute;top:5px;right:calc(50% - 20px);
+  min-width:15px;height:15px;border-radius:999px;background:var(--gold);color:#1b1305;
+  font-size:9px;font-weight:900;display:none;align-items:center;justify-content:center;padding:0 4px;
+}
+.tab .dot.on{display:inline-flex}
+
+/* 도크 */
+.dock{
+  position:fixed;left:0;right:0;bottom:0;z-index:55;
+  padding:10px 12px calc(88px + env(safe-area-inset-bottom));
+  background:linear-gradient(to top, rgba(10,18,32,.98) 30%, rgba(10,18,32,.9) 62%, rgba(10,18,32,0) 100%);
+  display:none;
+}
+.dock.on{display:block}
+.dock-in{
+  max-width:600px;margin:0 auto;display:flex;gap:9px;
+  padding:9px;border-radius:18px;
+  background:linear-gradient(180deg,rgba(24,38,62,.98),rgba(14,24,41,.98));
+  border:1px solid rgba(212,175,106,.22);
+  box-shadow:0 -8px 34px rgba(0,0,0,.5);
+}
+.dock-in .btn{flex:1;height:50px;font-size:14px}
+.dock-in .btn.save{flex:0 0 38%}
+
+/* 푸터 */
+.app-footer{
+  margin:26px auto 8px;max-width:1000px;padding:0 14px;
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  text-align:center;
+}
+.app-footer .fline{
+  width:min(220px,60%);height:1px;
+  background:linear-gradient(90deg,transparent,rgba(212,175,106,.35),transparent);
+}
+.app-footer .ftxt{
+  font-size:11px;font-weight:700;letter-spacing:.16em;color:rgba(159,176,201,.62);
+  text-transform:uppercase;
+}
+.app-footer .fmake{
+  font-size:12px;font-weight:800;letter-spacing:.12em;color:rgba(212,175,106,.85);
+}
+.app-footer .fmake b{color:var(--gold-2);font-weight:800;letter-spacing:.08em}
+
+/* 토스트 */
+#toast{
+  position:fixed;left:50%;bottom:calc(150px + env(safe-area-inset-bottom));
+  transform:translate(-50%,14px);z-index:90;
+  background:linear-gradient(180deg,#1b2a44,#111d31);color:#f3f6fb;
+  font-size:12.5px;font-weight:700;letter-spacing:.01em;
+  padding:12px 18px;border-radius:13px;
+  border:1px solid rgba(212,175,106,.3);
+  box-shadow:0 14px 38px rgba(0,0,0,.5);
+  opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;max-width:88vw;text-align:center;
+}
+#toast.on{opacity:1;transform:translate(-50%,0)}
+.warnbar{
+  display:none;gap:9px;align-items:flex-start;
+  background:rgba(224,166,60,.10);border:1px solid rgba(224,166,60,.32);color:#ffd091;
+  border-radius:13px;padding:11px 13px;font-size:11.5px;font-weight:600;margin-bottom:13px;line-height:1.55;
+}
+.warnbar.on{display:flex}
+
+/* ============ 출력 양식 선택 ============ */
+.theme-pick{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:13px}
+@media(min-width:660px){.theme-pick{grid-template-columns:1fr 1fr}}
+.tp{
+  display:flex;gap:12px;align-items:center;padding:12px 13px;text-align:left;
+  border:1px solid rgba(255,255,255,.1);border-radius:15px;
+  background:linear-gradient(180deg,rgba(23,37,60,.82),rgba(14,24,41,.82));
+  transition:border-color .18s,background .18s,box-shadow .18s,transform .12s;
+}
+.tp:active{transform:scale(.99)}
+.tp[aria-checked="true"]{
+  border-color:rgba(212,175,106,.55);
+  background:linear-gradient(180deg,rgba(212,175,106,.15),rgba(212,175,106,.04));
+  box-shadow:0 10px 26px rgba(0,0,0,.3), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.tp .sw{position:relative;width:36px;height:46px;border-radius:5px;flex:0 0 auto;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,.35)}
+.tp .sw::after{content:'';position:absolute;inset:0;background:repeating-linear-gradient(180deg,transparent 0 4px,rgba(20,32,47,.35) 4px 4.8px);opacity:.5}
+.tp .sw.o{background:#fff;border:1px solid #c9d2de}
+.tp .sw.o::before{content:'';position:absolute;left:4px;right:4px;top:4px;height:7px;background:#111;opacity:.85}
+.tp .sw.p{background:linear-gradient(#0e1b2f 0 42%,#ffffff 42% 100%)}
+.tp .sw.p::before{content:'';position:absolute;left:0;right:0;top:0;height:42%;background:linear-gradient(115deg,#0b1728,#16294a);border-bottom:1.5px solid #d4af6a}
+.tp .tt{min-width:0;flex:1}
+.tp .tt b{display:block;font-size:12.5px;font-weight:800;color:var(--text);letter-spacing:.01em}
+.tp .tt i{display:block;font-style:normal;font-size:10.5px;font-weight:600;color:var(--muted);margin-top:3px;line-height:1.4}
+.tp[aria-checked="true"] .tt b{color:var(--gold-2)}
+.tp .tick{
+  width:18px;height:18px;border-radius:50%;flex:0 0 auto;display:flex;align-items:center;justify-content:center;
+  border:1px solid rgba(255,255,255,.18);color:transparent;font-size:10px;font-weight:900;
+}
+.tp[aria-checked="true"] .tick{background:linear-gradient(160deg,#f0d399,#d4af6a);border-color:transparent;color:#1b1305}
+
+/* ============ 프리미엄 A4 양식 ============ */
+.sheet.premium{background:#fff;font-size:7.4pt;color:#14202f}
+.pm{display:flex;flex-direction:column;min-height:277mm;background:#fff}
+.pm-band{
+  position:relative;color:#fff;
+  background:linear-gradient(115deg,#0b1728 0%,#16294a 62%,#0d1a2e 100%);
+  padding:4.8mm 8mm 4.4mm;
+}
+.pm-band::after{
+  content:'';position:absolute;left:0;right:0;bottom:0;height:1.1mm;
+  background:linear-gradient(90deg,#8a6d34 0%,#e6cd9a 34%,#a4864e 68%,#8a6d34 100%);
+}
+.pm-band-top{display:flex;align-items:center;gap:4mm}
+.pm-brand{display:flex;align-items:center;gap:3mm;font-weight:800;letter-spacing:.06em;color:#e8d3a8;font-size:9pt}
+.pm-brand svg{width:8mm;height:auto;display:block}
+.pm-doc{margin-left:auto;font-size:6.2pt;letter-spacing:.18em;color:rgba(230,205,154,.7);text-align:right;line-height:1.5}
+.pm-doc b{display:block;color:#f2e0bb;font-size:7pt;letter-spacing:.1em;font-weight:700}
+.pm-rule{height:.6pt;background:linear-gradient(90deg,rgba(230,205,154,.95),rgba(230,205,154,.12));margin:2.4mm 0 2.6mm}
+.pm-band-bot{display:flex;align-items:flex-end;gap:4mm}
+.pm-band h1.sub{font-size:17.5pt;font-weight:800;letter-spacing:.15em;color:#fff;line-height:1.1;margin:0}
+.pm-en{font-size:5.8pt;letter-spacing:.24em;color:rgba(200,214,236,.6);margin-top:1.4mm}
+.pm-tag{
+  margin-left:auto;font-size:6.4pt;font-weight:800;letter-spacing:.14em;color:#f2e0bb;
+  border:.6pt solid rgba(230,205,154,.5);border-radius:10mm;padding:1.1mm 2.8mm;white-space:nowrap;
+}
+.pm-body{padding:3.4mm 8mm 2.8mm;display:flex;flex-direction:column;justify-content:space-between;flex:1}
+.pm-parties{display:grid;grid-template-columns:1fr 1.15fr;gap:3mm}
+.pm-card{border:.6pt solid #cfd8e6;border-radius:1.6mm;overflow:hidden;background:#fff}
+.pm-card-label{
+  background:#f4f1e9;color:#7a6134;font-size:6.5pt;font-weight:800;letter-spacing:.16em;
+  padding:1.15mm 2.6mm;border-bottom:.6pt solid #e3d9c5;
+}
+.pm-card-label span{color:#a4864e;margin-left:1mm}
+.pm-kv{display:flex;gap:2.2mm;padding:.9mm 2.5mm;border-bottom:.4pt solid #edf1f6;font-size:6.9pt}
+.pm-kv:last-child{border-bottom:0}
+.pm-kv .k{width:15mm;flex:0 0 auto;color:#6b7c94;font-weight:700;letter-spacing:.01em}
+.pm-kv .v{flex:1;font-weight:600;color:#14202f;word-break:break-all}
+.pm-kv .v.strong{font-weight:800}
+.pm-sec-title{
+  display:flex;align-items:center;gap:2.4mm;margin:3mm 0 1.1mm;
+  font-size:6.4pt;font-weight:800;letter-spacing:.18em;color:#7a6134;
+}
+.pm-sec-title::after{content:'';flex:1;height:.4pt;background:#e0d9c9}
+table.pm-t{width:100%;border-collapse:collapse;table-layout:fixed}
+table.pm-t td{padding:1mm 0;border-bottom:.4pt solid #e6ebf2;vertical-align:top}
+table.pm-t tr:first-child td{border-top:.6pt solid #cfd8e6}
+table.pm-t td.n{width:7.5mm;font-size:6.4pt;font-weight:800;color:#a4864e;padding-top:.8mm}
+table.pm-t td.h{width:24mm;font-size:6.9pt;font-weight:800;color:#22324b;padding-right:2mm}
+table.pm-t td.b{font-size:6.95pt;line-height:1.4;font-weight:500;color:#22324b}
+.pm-items{margin:0;padding:0;list-style:none}
+.pm-items .pi{display:flex;gap:1.3mm;padding:.05mm 0;line-height:1.37}
+.pm-items .pi i{flex:0 0 auto;font-style:normal;font-weight:700;color:#8d7443}
+.pm-pay{display:flex;align-items:flex-end;gap:2mm}
+.pm-pay .amount{font-size:11pt;font-weight:800;color:#0e1b2f;letter-spacing:.01em}
+.pm-pay .amount u{text-decoration:none;border-bottom:.8pt solid #d4af6a;padding-bottom:.4mm}
+.pm-pay .agree{margin-left:auto;display:flex;align-items:flex-end;gap:1.4mm;font-weight:700;font-size:7.2pt}
+.pm-sign{margin-top:auto;border-top:1.1pt solid #0e1b2f;padding-top:2mm;position:relative}
+.pm-sign-head{display:flex;align-items:center;gap:2.4mm;font-size:6.2pt;font-weight:800;letter-spacing:.2em;color:#7a6134}
+.pm-sign-head::after{content:'';flex:1;height:.4pt;background:#e0d9c9}
+.pm-sign-body{display:flex;align-items:center;gap:5mm}
+.pm-sign-main{flex:1;min-width:0}
+.pm-sign-side{flex:0 0 30mm;display:flex;flex-direction:column;align-items:center;gap:.6mm}
+.pm-sign-side .pm-receipt-wrap{width:100%}
+.pm-seal-box{width:16mm;height:16mm}
+.pm-seal-box svg{width:16mm;height:16mm;transform:rotate(-7deg);opacity:.92}
+.pm-date{text-align:center;font-size:8.6pt;font-weight:800;letter-spacing:.08em;margin:1.6mm 0 2mm;color:#0e1b2f}
+.pm-sign-row{display:flex;align-items:flex-end;gap:1.6mm;font-size:8.2pt;font-weight:700;margin-top:1.7mm;white-space:nowrap;color:#14202f}
+.pm-sign-row .cap{font-weight:800}
+.pm-sign-row .nm{min-width:17mm;text-align:center;letter-spacing:.3em;padding-left:.3em;font-weight:800}
+.pm-underline{flex:1;border-bottom:.6pt solid #9aa8bd;height:0;margin:0 2mm 2.4mm}
+.pm-receipt{position:relative;width:100%;height:8.6mm;display:flex;align-items:flex-end;justify-content:center;color:#b6bec9;font-weight:700;font-size:7.6pt;letter-spacing:.06em;white-space:nowrap}
+.pm-receipt .pm-rc-guide{display:block}
+.pm-receipt img{position:absolute;left:0;right:0;top:0;width:100%;height:5.8mm;object-fit:contain}
+.pm-receipt .pm-rc-text{
+  position:absolute;left:0;right:0;top:0;height:5.8mm;display:flex;align-items:center;justify-content:center;
+  color:#12203a;font-family:var(--serif);font-weight:700;font-size:8pt;letter-spacing:.1em;transform:rotate(-.9deg);
+}
+.pm-receipt.text .pm-rc-guide{opacity:0}
+.pm-sign-row .pm-nm-wrap{position:relative;min-width:17mm;text-align:center}
+.pm-sign-row .pm-nm-type{display:block;letter-spacing:.3em;padding-left:.3em;font-weight:800}
+.pm-sign-row .pm-nm-ink{position:absolute;left:-1mm;right:-1mm;top:50%;transform:translateY(-50%);width:calc(100% + 2mm);height:7mm;object-fit:contain}
+.pm-foot{
+  text-align:center;font-size:6.4pt;font-weight:600;color:#6b7c94;letter-spacing:.01em;
+  padding:1.8mm 8mm 1.6mm;border-top:.4pt solid #e6ebf2;margin:0 8mm;
+}
+
+/* ============ 무서버 서명 주고받기 (v1.1) ============ */
+.xbar{
+  display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 12px;border-radius:999px;
+  border:1px solid rgba(212,175,106,.34);background:rgba(212,175,106,.10);
+  color:var(--gold-2);font-size:11.5px;font-weight:800;letter-spacing:.02em;white-space:nowrap;
+  transition:background .18s,border-color .18s;
+}
+.xbar:hover{background:rgba(212,175,106,.18);border-color:rgba(212,175,106,.5)}
+.xbar .ic{font-size:13px;line-height:1}
+@media(max-width:470px){ .xbar{padding:0 10px} .xbar .lb{display:none} }
+
+.cta-card{
+  background:linear-gradient(158deg, rgba(212,175,106,.14) 0%, rgba(18,30,50,.94) 58%, rgba(14,24,41,.94) 100%);
+  border-color:rgba(212,175,106,.34);
+}
+.cta-card .card-head .num{font-size:13px;background:linear-gradient(160deg,#f7e6c4,#d4af6a)}
+.cta-desc{font-size:12px;color:var(--muted);font-weight:600;line-height:1.65;margin:-5px 0 14px}
+.cta-row{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:640px){.cta-row{grid-template-columns:1fr 1fr}}
+.cta-row .btn{width:100%;height:48px;font-size:13.5px}
+.cta-note{margin-top:12px;font-size:11px;color:rgba(159,176,201,.78);font-weight:600;line-height:1.65}
+.cta-note b{color:var(--gold-2)}
+
+/* 근로자 서명 모드 배너 */
+.worker-banner{
+  display:none;gap:11px;align-items:flex-start;margin-bottom:14px;padding:14px 15px;border-radius:16px;
+  background:linear-gradient(160deg,rgba(62,207,142,.16),rgba(16,27,46,.92));
+  border:1px solid rgba(62,207,142,.34);box-shadow:0 12px 30px rgba(0,0,0,.28);
+}
+.worker-banner.on{display:flex}
+.worker-banner .wb-ic{font-size:19px;line-height:1.1}
+.worker-banner .wb-t{font-size:13px;font-weight:800;color:#bdffe0;letter-spacing:.01em}
+.worker-banner .wb-s{font-size:11.5px;color:#9fd7bd;font-weight:600;line-height:1.65;margin-top:4px}
+.worker-banner .wb-s b{color:#eafff6}
+.wb-x{margin-left:auto;flex:0 0 auto;width:30px;height:30px;border-radius:9px;border:1px solid rgba(62,207,142,.3);color:#bdffe0;background:rgba(62,207,142,.1);font-size:12px}
+
+/* 업주가 보낸 조건 잠금 */
+.ro-note{
+  display:flex;gap:8px;align-items:flex-start;margin:0 0 13px;padding:10px 12px;border-radius:12px;
+  font-size:11.5px;font-weight:700;line-height:1.6;
+  background:rgba(212,175,106,.09);border:1px solid rgba(212,175,106,.28);color:var(--gold-2);
+}
+.ro-note.fill{background:rgba(62,207,142,.09);border-color:rgba(62,207,142,.28);color:#a8f0cc}
+.locked input,.locked select{opacity:.72;cursor:not-allowed}
+.locked .seg label{pointer-events:none;opacity:.68}
+.locked .seg label:has(input:checked){opacity:1}
+.locked .field>label::after{content:' 🔒';font-size:10px;opacity:.8}
+
+/* 모달 */
+.modal{position:fixed;inset:0;z-index:120;display:none;align-items:flex-end;justify-content:center}
+.modal.on{display:flex}
+.modal-back{position:absolute;inset:0;background:rgba(4,9,17,.74);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.m-card{
+  position:relative;width:100%;max-width:560px;max-height:92vh;display:flex;flex-direction:column;
+  background:linear-gradient(180deg,#16243c 0%,#0e1a2d 100%);
+  border:1px solid rgba(212,175,106,.3);border-bottom:0;
+  border-radius:22px 22px 0 0;box-shadow:0 -20px 60px rgba(0,0,0,.62);
+  animation:mUp .28s cubic-bezier(.2,.75,.2,1) both;
+}
+@media(min-width:640px){.m-card{border-radius:22px;border-bottom:1px solid rgba(212,175,106,.3);margin:auto;max-height:86vh}}
+.m-card::before{content:'';position:absolute;left:18px;right:18px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(212,175,106,.45),transparent)}
+@keyframes mUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:none}}
+.m-head{display:flex;align-items:center;gap:10px;padding:18px 18px 12px;flex:0 0 auto}
+.m-head h2{font-size:15.5px;font-weight:800;letter-spacing:.01em}
+.m-x{margin-left:auto;width:34px;height:34px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--text-2);font-size:13px;flex:0 0 auto}
+.m-body{padding:0 18px 8px;overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1 1 auto}
+.m-foot{display:flex;gap:9px;padding:12px 18px calc(14px + env(safe-area-inset-bottom));border-top:1px solid var(--line-2);background:rgba(9,16,28,.92);flex:0 0 auto}
+.m-foot .btn{flex:1;height:49px;font-size:13.5px;border-radius:13px}
+.m-sec{margin:13px 0 0}
+.m-lbl{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:rgba(212,175,106,.86);text-transform:uppercase;margin-bottom:7px}
+.m-kv{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px dashed var(--line-2);font-size:12.5px}
+.m-kv:last-child{border-bottom:0}
+.m-kv .k{color:var(--muted);font-weight:700;flex:0 0 auto}
+.m-kv .v{color:var(--text);font-weight:700;text-align:right;min-width:0;word-break:break-all}
+.m-note{font-size:11.5px;color:var(--muted);font-weight:600;line-height:1.7;margin-top:11px;background:rgba(255,255,255,.03);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+.m-note b{color:var(--gold-2)}
+.m-act-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:2px}
+.m-act-row .btn{flex:1 1 140px;height:45px;font-size:12.5px;border-radius:12px}
+.m-code{
+  width:100%;min-height:88px;max-height:150px;resize:vertical;border-radius:12px;
+  border:1px solid rgba(255,255,255,.12);background:rgba(5,10,20,.88);color:#cfe3ff;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11px;line-height:1.55;
+  padding:11px 12px;outline:none;word-break:break-all;
+}
+.m-code:focus{border-color:rgba(212,175,106,.5);box-shadow:0 0 0 3px rgba(212,175,106,.1)}
+.m-count{font-size:10.5px;color:var(--muted);font-weight:700;margin-top:6px;text-align:right}
+.m-count.warn{color:#ffcf9b}
+.drop{
+  display:flex;flex-direction:column;align-items:center;gap:5px;padding:22px 16px;border-radius:14px;cursor:pointer;
+  border:1.5px dashed rgba(212,175,106,.36);background:rgba(212,175,106,.06);text-align:center;transition:.18s;
+}
+.drop:hover,.drop.over{background:rgba(212,175,106,.15);border-color:rgba(212,175,106,.66)}
+.drop .big{font-size:22px;line-height:1.1}
+.drop b{font-size:13px;color:var(--gold-2);font-weight:800}
+.drop span{font-size:11.5px;color:var(--muted);font-weight:600}
+.m-step{display:flex;gap:9px;font-size:11.5px;font-weight:600;color:var(--muted);line-height:1.65;margin-top:9px}
+.m-step i{flex:0 0 auto;width:19px;height:19px;border-radius:6px;background:rgba(212,175,106,.16);color:var(--gold-2);font-style:normal;font-weight:800;font-size:10.5px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.m-step b{color:var(--text-2)}
+
+/* 보관함 배지 · 미리보기 완료 칩 */
+.pill.ok{color:#8ff0bf;background:rgba(62,207,142,.14);border-color:rgba(62,207,142,.34)}
+.pill.gray{color:var(--muted);background:rgba(255,255,255,.05);border-color:rgba(255,255,255,.12)}
+.pv-chip{
+  display:none;font-size:10.5px;font-weight:800;letter-spacing:.04em;padding:6px 11px;border-radius:999px;
+  background:rgba(62,207,142,.12);border:1px solid rgba(62,207,142,.36);color:#8ff0bf;white-space:nowrap;
+}
+.pv-chip.on{display:inline-flex;align-items:center;gap:5px}
+
+/* ============ v2.0 서버 연동 · 단순화 ============ */
+.steps3{display:grid;grid-template-columns:1fr;gap:8px;margin:0 0 14px}
+@media(min-width:560px){.steps3{grid-template-columns:repeat(3,1fr)}}
+.steps3 .st{display:flex;gap:8px;align-items:flex-start;padding:9px 11px;border-radius:12px;background:rgba(7,13,24,.5);border:1px solid var(--line-2)}
+.steps3 .st i{flex:0 0 auto;width:18px;height:18px;border-radius:6px;background:rgba(212,175,106,.18);color:var(--gold-2);font-style:normal;font-size:10.5px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.steps3 .st b{display:block;font-size:11.5px;font-weight:800;color:var(--text-2)}
+.steps3 .st span{display:block;font-size:10.5px;font-weight:600;color:var(--muted);margin-top:2px;line-height:1.45}
+
+.link-box{
+  display:flex;align-items:center;gap:10px;padding:13px 14px;border-radius:14px;
+  background:rgba(7,13,24,.72);border:1px solid rgba(212,175,106,.34);
+}
+.link-box .lk{flex:1;min-width:0;font-size:12.5px;font-weight:700;color:var(--gold-2);word-break:break-all;line-height:1.5;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.link-box .lk b{display:block;font-family:var(--font);font-size:10.5px;font-weight:800;letter-spacing:.08em;color:rgba(159,176,201,.8);margin-bottom:3px}
+
+.key-card{background:linear-gradient(180deg,rgba(24,38,62,.94),rgba(15,25,42,.94))}
+.key-box{display:flex;gap:9px;align-items:center;flex-wrap:wrap}
+.key-val{
+  flex:1 1 190px;min-width:0;height:46px;display:flex;align-items:center;padding:0 13px;border-radius:12px;
+  background:rgba(5,10,20,.8);border:1px solid rgba(255,255,255,.12);
+  font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;font-weight:700;color:var(--gold-2);
+  letter-spacing:.06em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.key-box .btn{height:46px;font-size:12.5px;padding:0 14px;border-radius:12px;flex:0 0 auto}
+.key-in{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.key-in input{flex:1 1 180px;height:44px;padding:0 12px;border-radius:11px;border:1px solid rgba(255,255,255,.1);background:rgba(7,13,24,.7);outline:none;font-weight:600;font-size:13px}
+.key-in input:focus{border-color:rgba(212,175,106,.55)}
+.key-in .btn{height:44px;font-size:12.5px;border-radius:11px;padding:0 14px}
+
+.vault-sum{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.vault-sum .sm{font-size:11.5px;font-weight:800;padding:6px 11px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:rgba(255,255,255,.03)}
+.vault-sum .sm.wait{color:var(--gold-2);border-color:rgba(212,175,106,.3);background:rgba(212,175,106,.08)}
+.vault-sum .sm.done{color:#8ff0bf;border-color:rgba(62,207,142,.32);background:rgba(62,207,142,.09)}
+.vault-sum .sm.link{margin-left:auto;color:#cfe3ff;border-color:rgba(120,170,230,.3);background:rgba(120,170,230,.08);cursor:pointer}
+
+.done-hero{text-align:center;padding:34px 18px 26px;border-radius:20px;margin-bottom:14px;
+  background:linear-gradient(160deg,rgba(62,207,142,.16),rgba(16,27,46,.94));border:1px solid rgba(62,207,142,.34);box-shadow:var(--shadow)}
+.done-hero .dh-ic{font-size:40px;line-height:1;margin-bottom:12px}
+.done-hero h2{font-size:21px;font-weight:800;color:#d9ffec;letter-spacing:.01em}
+.done-hero p{font-size:12.5px;color:#9fd7bd;font-weight:600;line-height:1.75;margin-top:9px}
+.done-hero p b{color:#eafff6}
+.done-meta{display:inline-flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:14px}
+.done-meta .dm{font-size:11px;font-weight:800;padding:5px 10px;border-radius:999px;background:rgba(62,207,142,.14);border:1px solid rgba(62,207,142,.3);color:#bdffe0}
+
+body.worker-mode .nav-bottom .tab[data-tab="vault"],
+body.worker-mode .nav-bottom .tab[data-tab="company"]{display:none}
+body.worker-mode .nav-bottom{display:none}
+body.worker-mode{padding-bottom:calc(34px + env(safe-area-inset-bottom))}
+body.worker-mode.has-dock{padding-bottom:calc(190px + env(safe-area-inset-bottom))}
+body.worker-mode .cta-card{display:none}
+body.worker-mode .topbar .year-chip{display:none}
+body.worker-mode .mine-strip{display:flex}
+.mine-strip{display:none;align-items:center;gap:8px;font-size:11px;font-weight:700;color:var(--muted);margin:-4px 2px 10px;line-height:1.5}
+.mine-strip b{color:var(--gold-2)}
+
+.sb-line{display:flex;align-items:center;gap:7px;font-size:10.5px;font-weight:700;color:rgba(159,176,201,.62);margin:2px 4px 0}
+.sb-line .dotb{width:6px;height:6px;border-radius:50%;background:var(--eme);box-shadow:0 0 8px rgba(62,207,142,.7)}
+.sb-line.bad .dotb{background:var(--red);box-shadow:0 0 8px rgba(224,87,106,.7)}
+
+/* ============ 인쇄 ============ */
+@page{ size:A4 portrait; margin:8mm; }
+@media print{
+  html,body{background:#fff!important;padding:0!important;margin:0!important;min-height:0}
+  body::before{display:none!important}
+  body{color:#000;font-size:0}
+  .splash,.topbar,.nav-bottom,.dock,#dockWorker,#toast,.warnbar,.pv-bar,.sig-card,.note-strip,.theme-pick,
+  #modalWrap,.worker-banner,.cta-card,.app-footer,.panel:not(#panel-preview){display:none!important}
+  main{max-width:none;margin:0;padding:0}
+  #panel-preview{display:block!important;animation:none!important}
+  .sheet-wrap{
+    background:#fff!important;padding:0!important;border-radius:0!important;border:0!important;
+    box-shadow:none!important;overflow:visible!important;height:auto!important;
+  }
+  .sheet{
+    width:194mm!important;transform:none!important;box-shadow:none!important;margin:0!important;
+    break-inside:avoid;page-break-inside:avoid;
+  }
+  .sheet-inner{min-height:0!important}
+  .sheet,.seal,.sig-slot img,.receipt img,.pm-seal{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .sheet.premium,.pm,.pm-band,.pm-card,.pm-card-label,.pm-tag,.pm-body{background-color:#fff}
+  .sheet.premium,.pm-band,.pm-card,.pm-card-label,.pm-tag,.pm-seal,.pm-body,
+  .pm-sign,.pm-sec-title,.pm-kv,table.pm-t,table.pm-t td{
+    -webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;
+  }
+  tr,td,.ol li,.pi{page-break-inside:avoid}
+}
+@media(max-width:520px){
+  .sh-title{letter-spacing:.1em}
+  .pad canvas{height:100px}
+  .pad-hint{font-size:10px}
+}
+@media(prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;animation-delay:0s!important;transition-duration:.001s!important}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= 로딩(스플래시) ================= -->
+<div class="splash" id="splash" role="status" aria-label="불러오는 중">
+  <div class="sp-inner">
+    <div class="sp-mark">
+      <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M13 6.5h24L50.5 20v33.5a3.5 3.5 0 0 1-3.5 3.5H13a3.5 3.5 0 0 1-3.5-3.5V10a3.5 3.5 0 0 1 3.5-3.5Z" fill="none" stroke="#f0d399" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M37 6.5V20h13.5" fill="none" stroke="#f0d399" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M18 29h17M18 36h17M18 43h10" stroke="#f0d399" stroke-width="2.6" stroke-linecap="round" opacity=".62"/>
+        <circle cx="46.5" cy="47" r="9.6" fill="none" stroke="#f0d399" stroke-width="2.6"/>
+        <circle cx="46.5" cy="47" r="4" fill="#f0d399" opacity=".55"/>
+      </svg>
+    </div>
+    <div class="sp-eyebrow">Four Seasons · Document Suite</div>
+    <h1 class="sp-title">전자 근로계약서</h1>
+    <div class="sp-rule"><span></span></div>
+    <div class="sp-sub">현장직 모바일 계약 · 전자서명 · PDF</div>
+    <div class="sp-bar"><i></i></div>
+    <div class="sp-load">LOADING</div>
+  </div>
+  <div class="sp-foot">제작: <b>포시즌jo</b></div>
+</div>
+
+<!-- ================= 헤더 ================= -->
+<header class="topbar">
+  <div class="topbar-in">
+    <span class="monogram" id="brandMark"></span>
+    <div>
+      <div class="brand-title">전자 근로계약서</div>
+      <div class="brand-sub">현장직 계약 · v2.1</div>
+    </div>
+    <span class="topbar-spacer"></span>
+    <span class="year-chip" id="yearChip">2026</span>
+  </div>
+</header>
+
+<main>
+  <div class="worker-banner" id="workerBanner" role="status"></div>
+
+  <div class="warnbar" id="warnbar">
+    <span>⚠️</span>
+    <span id="warnbarTxt">이 브라우저에서는 자동 저장이 제한됩니다. 계약서를 보관하려면 <b>설정 → 백업 내보내기</b>를 사용하세요.</span>
+  </div>
+
+  <!-- ================= 새 계약 ================= -->
+  <section class="panel active" id="panel-form" role="tabpanel">
+    <div class="card cta-card" id="ctaSign">
+      <div class="card-head">
+        <span class="num">📤</span><h2>서명 링크 하나로 끝</h2>
+        <span class="hint">자동 전달</span>
+      </div>
+      <p class="cta-desc">계약 조건만 적고 <b>서명 링크 만들기</b>를 누르세요. 근로자에게 보낼 링크가 만들어지고, 근로자가 서명하면 <b>보관함에 자동으로</b> 서명 완료로 표시됩니다. 파일이나 코드를 주고받지 않습니다.</p>
+      <div class="steps3">
+        <div class="st"><i>1</i><div><b>계약 조건 작성</b><span>아래 항목만 채우면 됩니다</span></div></div>
+        <div class="st"><i>2</i><div><b>링크 복사 · 카톡 전송</b><span>한 번 누르면 링크가 복사됩니다</span></div></div>
+        <div class="st"><i>3</i><div><b>서명 자동 수령</b><span>보관함에서 바로 확인 · PDF</span></div></div>
+      </div>
+      <button class="btn btn-primary" id="btnMakeLink" style="width:100%">📤 서명 링크 만들기</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="num">01</span><h2>근로자 (을)</h2>
+        <span class="hint">필수 2항목</span>
+      </div>
+      <div class="ro-note fill" id="workerFillNote" hidden>✍️ 업주가 보낸 요청입니다. <b>빈 항목(성명·주민번호·주소·연락처·계좌)</b>을 채워 주세요.</div>
+      <div class="grid two">
+        <div class="field">
+          <label for="wName">성명 <span class="req">*</span></label>
+          <input id="wName" type="text" autocomplete="name" placeholder="예) 홍길동" data-k="name">
+        </div>
+        <div class="field">
+          <label for="wRrn">주민등록번호</label>
+          <input id="wRrn" type="text" inputmode="numeric" placeholder="000000-0000000" data-k="rrn" data-mask="rrn">
+        </div>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div class="field">
+          <label for="wAddr">소재지</label>
+          <input id="wAddr" type="text" autocomplete="street-address" placeholder="예) 서울특별시 마포구 월드컵북로 21, 302호" data-k="addr">
+        </div>
+      </div>
+      <div class="grid two" style="margin-top:12px">
+        <div class="field">
+          <label for="wPhone">휴대폰번호</label>
+          <input id="wPhone" type="tel" inputmode="tel" placeholder="010-0000-0000" data-k="phone" data-mask="phone">
+        </div>
+        <div class="field">
+          <label for="wEmail">이메일주소</label>
+          <input id="wEmail" type="email" inputmode="email" autocomplete="email" placeholder="name@example.com" data-k="email">
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="cardTerms">
+      <div class="card-head">
+        <span class="num">02</span><h2>계약 조건 · 1~9항</h2>
+        <span class="hint">일당 필수</span>
+      </div>
+      <div class="ro-note" id="termLockNote" hidden>🔒 업주가 보낸 계약 조건입니다. 수정할 수 없으며, 변경이 필요하면 업주에게 요청하세요.</div>
+
+      <div class="grid two">
+        <div class="field">
+          <label for="cStart">계약 시작일</label>
+          <input id="cStart" type="date" data-k="start">
+        </div>
+        <div class="field">
+          <label for="cEnd">계약 종료일</label>
+          <input id="cEnd" type="date" data-k="end">
+        </div>
+      </div>
+      <div class="row-inline" style="margin-top:11px">
+        <label class="check" id="openEndLabel">
+          <input type="checkbox" id="cOpen" data-k="openEnded">
+          <span>기간 제한 없음</span>
+        </label>
+        <span id="periodHint" style="font-size:11.5px;color:var(--muted);font-weight:600">기간을 비우면 계약일만 표기됩니다.</span>
+      </div>
+
+      <div class="grid" style="margin-top:13px">
+        <div class="field">
+          <label for="cPlace">근무장소</label>
+          <input id="cPlace" type="text" placeholder="예) 서울특별시 마포구 월드컵북로 21" data-k="workplace">
+        </div>
+        <div class="field">
+          <label for="cDuty">담당직무 <span class="req">*</span></label>
+          <input id="cDuty" type="text" placeholder="예) 생산·조립 (현장직)" data-k="duty" list="dutyList">
+        </div>
+      </div>
+
+      <div class="field" style="margin-top:13px">
+        <label>근무형태</label>
+        <div class="seg" id="segType">
+          <label><input type="radio" name="wtype" value="전일제" data-k="workType" checked><span>전일제</span></label>
+          <label><input type="radio" name="wtype" value="2교대" data-k="workType"><span>2교대</span></label>
+          <label><input type="radio" name="wtype" value="기타" data-k="workType"><span>기타</span></label>
+        </div>
+      </div>
+
+      <div class="grid two" style="margin-top:13px">
+        <div class="field">
+          <label for="cWage">일당 (원) <span class="req">*</span></label>
+          <input id="cWage" type="text" inputmode="numeric" placeholder="예) 115,000" data-k="wage" data-mask="won">
+          <div class="wage-badge" id="wageBadge"></div>
+        </div>
+        <div class="field">
+          <label for="cDate">작성일</label>
+          <input id="cDate" type="date" data-k="date">
+          <span class="sub">오늘 날짜로 자동 입력됩니다.</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <span class="num">03</span><h2>급여 계좌</h2>
+      </div>
+      <div class="grid two">
+        <div class="field">
+          <label for="cBank">은행</label>
+          <input id="cBank" type="text" placeholder="예) 국민은행" data-k="bank" list="bankList">
+          <datalist id="bankList">
+            <option value="국민은행"></option><option value="신한은행"></option><option value="우리은행"></option>
+            <option value="하나은행"></option><option value="농협은행"></option><option value="기업은행"></option>
+            <option value="부산은행"></option><option value="경남은행"></option><option value="카카오뱅크"></option>
+            <option value="토스뱅크"></option><option value="케이뱅크"></option><option value="새마을금고"></option>
+          </datalist>
+        </div>
+        <div class="field">
+          <label for="cAcct">계좌번호</label>
+          <input id="cAcct" type="text" inputmode="numeric" placeholder="000-000-000000" data-k="account">
+        </div>
+      </div>
+      <div class="grid" style="margin-top:12px">
+        <div class="field">
+          <label for="cHolder">예금주</label>
+          <input id="cHolder" type="text" placeholder="근로자와 동일하면 비워두세요" data-k="holder">
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" id="btnNewDraft">🆕 새로 쓰기</button>
+      <button class="btn btn-ghost" id="btnSample">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg>
+        샘플 채우기
+      </button>
+      <button class="btn btn-primary" id="btnPreview">
+        <span id="btnPreviewLb">미리보기 · A4 확인</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <!-- ================= 미리보기 ================= -->
+  <section class="panel" id="panel-preview" role="tabpanel">
+    <div class="pv-bar">
+      <button class="btn btn-ghost" id="btnBack">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>
+        입력
+      </button>
+      <button class="btn btn-ghost" id="btnZoom">실제 크기</button>
+      <button class="btn btn-ghost" id="btnClearSigs">서명 지우기</button>
+      <button class="btn btn-soft" id="btnRecLink" hidden>🔗 내 링크 다시 보기</button>
+      <span class="spacer"></span>
+      <span class="pv-chip" id="pvSigned"></span>
+      <span class="pv-state" id="pvState">미서명</span>
+    </div>
+    <div class="note-strip">
+      <span>💡</span>
+      <span><b>PDF 저장 / 인쇄</b> → 인쇄 대화상자에서 대상 <b>“PDF로 저장”</b>을 고르면 A4 한 장으로 저장됩니다.</span>
+    </div>
+
+    <div class="theme-pick" role="radiogroup" aria-label="출력 양식">
+      <button class="tp" role="radio" aria-checked="true" data-theme="official">
+        <span class="sw o"></span>
+        <span class="tt">
+          <b>공식 표준 양식</b>
+          <i>흰 종이 · 검정 표 · 원본 그대로</i>
+        </span>
+        <span class="tick">✓</span>
+      </button>
+      <button class="tp" role="radio" aria-checked="false" data-theme="premium">
+        <span class="sw p"></span>
+        <span class="tt">
+          <b>고급 디자인 양식</b>
+          <i>네이비 · 골드 프리미엄 서식</i>
+        </span>
+        <span class="tick">✓</span>
+      </button>
+    </div>
+
+    <div class="sig-card" id="sigCard">
+      <div class="sig-card-head">
+        <h2>작성 · 이름과 서명</h2>
+        <span class="hint" id="sigCount">0/4</span>
+      </div>
+
+      <div class="name-step" id="nameStep">
+        <div class="ns-head"><span class="n">1</span><span class="t">성명 입력</span><span class="ns-ok" id="nsOk">표 인쇄</span></div>
+        <input id="pvName" type="text" autocomplete="name" placeholder="예) 홍길동">
+        <div class="ns-note">계약서 <b>상단 근로자 성명</b>에 이 이름이 인쇄됩니다. 하단 <b>(을) 근로자</b>에는 아래에서 <b>손글씨</b>로 직접 써 주세요.</div>
+      </div>
+
+      <div class="pads">
+        <div class="pad" data-pad="name">
+          <div class="pad-head"><span class="n">②</span><span class="t">자필 성명</span><span class="ok">✓</span><button class="pad-clear" data-clear="name">지우기</button></div>
+          <div class="pad-paper"><span class="tick-b"></span><canvas id="padName"></canvas><span class="pad-baseline"></span></div>
+          <div class="pad-hint">계약서 하단 <b>(을) 근로자 :</b> 자리에 손글씨 이름</div>
+        </div>
+        <div class="pad" data-pad="worker">
+          <div class="pad-head"><span class="n">③</span><span class="t">근로자 서명 (인/서명)</span><span class="ok">✓</span><button class="pad-clear" data-clear="worker">지우기</button></div>
+          <div class="pad-paper"><span class="tick-b"></span><canvas id="padWorker"></canvas><span class="pad-baseline"></span></div>
+          <div class="pad-hint">계약서 하단 <b>(인/서명)</b> 자리에 서명</div>
+        </div>
+        <div class="pad" data-pad="agree">
+          <div class="pad-head"><span class="n">①</span><span class="t">7항 임금 동의확인</span><span class="ok">✓</span><button class="pad-clear" data-clear="agree">지우기</button></div>
+          <div class="pad-paper"><span class="tick-b"></span><canvas id="padAgree"></canvas><span class="pad-baseline"></span></div>
+          <div class="pad-hint">7항 <b>동의확인 (인/서명)</b> 자리 · 일당 금액 확인 후</div>
+        </div>
+
+        <div class="pad receipt-pad" data-pad="receipt" id="receiptPad">
+          <div class="pad-head"><span class="n">④</span><span class="t">"사본 수령함" 기입</span><span class="ok">✓</span><button class="pad-clear" data-clear="receipt">지우기</button></div>
+          <div class="rc-tabs" role="tablist" aria-label="사본 수령함 입력 방식">
+            <button class="rc-tab on" data-rcmode="text" role="tab" aria-selected="true">✒️ 글자로 기입</button>
+            <button class="rc-tab" data-rcmode="ink" role="tab" aria-selected="false">✍️ 손글씨로 쓰기</button>
+          </div>
+          <div class="rc-text-wrap" id="rcTextWrap">
+            <input id="rcText" type="text" placeholder="직접 입력" aria-label="사본 수령함 기입 문구">
+            <button class="rc-stamp" id="rcStamp">사본 수령함</button>
+          </div>
+          <div class="pad-paper" id="rcPadPaper" hidden><span class="tick-b"></span><canvas id="padReceipt"></canvas><span class="pad-baseline"></span></div>
+          <div class="pad-hint">글자로 기입하거나 손글씨로 직접 쓰세요 · 계약서 하단 <b>"사본 수령함"</b> 칸에 찍힙니다.</div>
+        </div>
+      </div>
+
+      <button class="opt-toggle" id="ceoToggle">＋ (갑) 대표이사 서명 직접 쓰기 (선택)</button>
+      <div class="pad opt-pad" data-pad="ceo" id="ceoPadWrap" hidden>
+        <div class="pad-head"><span class="n">+</span><span class="t">(갑) 대표이사 서명</span><span class="ok">✓</span><button class="pad-clear" data-clear="ceo">지우기</button></div>
+        <div class="pad-paper"><span class="tick-b"></span><canvas id="padCeo"></canvas><span class="pad-baseline"></span></div>
+        <div class="pad-hint">직인과 함께 <b>대표이사 (인/서명)</b> 자리에 찍힙니다.</div>
+      </div>
+    </div>
+
+    <div class="sheet-wrap" id="sheetWrap">
+      <div class="sheet" id="sheet"></div>
+    </div>
+  </section>
+
+  <!-- ================= 제출 완료 (근로자) ================= -->
+  <section class="panel" id="panel-done" role="tabpanel">
+    <div class="done-hero">
+      <div class="dh-ic">✅</div>
+      <h2>제출 완료!</h2>
+      <p id="doneDesc">사장님께 자동 전달되었습니다.<br>따로 파일을 보내거나 확인을 기다릴 필요가 없습니다.</p>
+      <div class="done-meta" id="doneMeta"></div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-primary" id="btnDonePdf" style="flex:1 1 100%">🖨 내 사본 PDF 저장 / 인쇄</button>
+      <button class="btn btn-ghost" id="btnDoneSheet" style="flex:1 1 100%">📄 계약서 다시 보기</button>
+    </div>
+    <p class="fine" id="doneFine">서명한 계약서 사본은 언제든 다시 열어 저장할 수 있습니다. 화면을 닫아도 서명 내용은 사업주 보관함에 전달되어 있습니다.</p>
+  </section>
+
+  <!-- ================= 보관함 ================= -->
+  <section class="panel" id="panel-vault" role="tabpanel">
+    <div class="vault-tools">
+      <input type="search" id="vSearch" placeholder="근로자 이름 · 직무로 찾기">
+      <button class="btn btn-ghost" id="btnVaultReload">🔄 새로고침</button>
+    </div>
+    <div class="vault-sum" id="vaultSum"></div>
+    <div class="v-list" id="vList"></div>
+    <p class="fine">기기를 바꿀 때 쓰는 <b>사업주 코드</b>는 <b>설정</b> 탭에서 확인할 수 있습니다. 근로자가 서명하면 이 목록이 자동으로 갱신됩니다.</p>
+  </section>
+
+  <!-- ================= 회사 설정 ================= -->
+  <section class="panel" id="panel-company" role="tabpanel">
+    <div class="card">
+      <div class="card-head"><span class="num">A</span><h2>회사 정보</h2><span class="hint">자동 저장</span></div>
+      <div class="grid">
+        <div class="field">
+          <label for="coName">회사명</label>
+          <input id="coName" type="text" data-ck="name" placeholder="예: (주)OOO">
+          <span class="sub">한 번만 입력하면 이 기기에 자동 저장되어 다음 계약서에 그대로 쓰입니다.</span>
+        </div>
+        <div class="grid two">
+          <div class="field">
+            <label for="coCeo">대표자</label>
+            <input id="coCeo" type="text" data-ck="ceo" placeholder="예: 홍길동">
+          </div>
+          <div class="field">
+            <label for="coBizNo">사업자 등록 번호</label>
+            <input id="coBizNo" type="text" data-ck="bizNo" data-mask="bizno" placeholder="000-00-00000">
+          </div>
+        </div>
+        <div class="field">
+          <label for="coAddr">소재지</label>
+          <input id="coAddr" type="text" data-ck="addr" placeholder="예: 서울특별시 마포구 월드컵북로 21">
+        </div>
+        <div class="grid two">
+          <div class="field">
+            <label for="coBizType">사업의 종류</label>
+            <input id="coBizType" type="text" data-ck="bizType" placeholder="예: 제조업">
+          </div>
+          <div class="field">
+            <label for="coPhone">연락처</label>
+            <input id="coPhone" type="tel" inputmode="tel" data-ck="phone" placeholder="예: 02-000-0000">
+          </div>
+        </div>
+        <div class="field">
+          <label for="coSeal">직인 문구</label>
+          <input id="coSeal" type="text" data-ck="sealText" placeholder="예: (주)OOO 인">
+          <span class="sub">마지막 “인”은 직인 가운데 글자로 들어갑니다. 비워두면 회사명으로 찍힙니다.</span>
+        </div>
+      </div>
+      <div class="seal-preview">
+        <span id="sealPrev"></span>
+        <span class="sp-txt">계약서 (갑) 대표이사 서명란에<br>붉은 법인 직인으로 찍힙니다.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="num">B</span><h2>조항 문구</h2></div>
+      <div class="switch">
+        <div class="txt">
+          <b>표준(근로기준법 친화) 조항</b>
+          <span>연장근로 가산수당 · 퇴직금 지급기한 · 해고 절차 · 손해배상 한도를 법령에 맞게 다듬습니다.</span>
+        </div>
+        <button class="tgl" id="tglMode" role="switch" aria-checked="false" aria-label="표준 조항 사용"></button>
+      </div>
+      <div class="grid" style="margin-top:13px">
+        <div class="field">
+          <label>현재 모드</label>
+          <div id="modeText" style="font-size:12.5px;font-weight:700;color:var(--gold-2)">원문 조항 (기본 양식)</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card key-card">
+      <div class="card-head"><span class="num">C</span><h2>내 사업주 코드</h2><span class="hint">기기 백업용</span></div>
+      <p class="cta-desc" style="margin:0 0 12px">이 코드가 내 보관함 열쇠입니다. 휴대폰을 바꿔도 이 코드를 입력하면 보관함이 그대로 복구됩니다. <b>다른 사람과 공유하지 마세요.</b></p>
+      <div class="key-box">
+        <span class="key-val" id="ownerKeyVal">—</span>
+        <button class="btn btn-ghost" id="btnKeyCopy">📋 복사</button>
+      </div>
+      <div class="key-in">
+        <input id="ownerKeyIn" type="text" placeholder="다른 기기의 사업주 코드 붙여넣기" autocomplete="off" spellcheck="false">
+        <button class="btn btn-ghost" id="btnKeyApply">이 코드로 복구</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><span class="num">D</span><h2>백업 파일</h2><span class="hint">선택</span></div>
+      <p class="cta-desc" style="margin:0 0 4px">서버 보관과 별개로 내 기기에 계약서 목록을 파일로 저장할 수 있습니다.</p>
+      <div class="cta-row">
+        <button class="btn btn-ghost" id="btnExport">⬇️ 백업 내보내기</button>
+        <button class="btn btn-ghost" id="btnImport">⬆️ 백업 가져오기</button>
+      </div>
+      <input type="file" id="fileImport" accept="application/json,.json" hidden>
+    </div>
+
+    <div class="actions">
+      <button class="btn btn-ghost" id="btnCoReset">기본값으로</button>
+      <button class="btn btn-primary" id="btnCoSave">회사 설정 저장</button>
+    </div>
+    <p class="fine">
+      계약서는 서버에 안전하게 보관되며, 링크를 받은 근로자만 그 계약서 한 건을 열어볼 수 있습니다.
+      입력한 <b>주머니 정보 · 계좌 · 사업주 코드</b>는 이 기기 브라우저 저장소에도 함께 남습니다.
+      계약서는 <b>A4 한 장</b>으로 인쇄·저장되며, 흰 종이·검정 표·붉은 법인 직인 그대로 출력됩니다.
+    </p>
+  </section>
+
+  <footer class="app-footer">
+    <div class="fline"></div>
+    <div class="ftxt">전자 근로계약서 · V2.1</div>
+    <div class="fmake">제작: <b>포시즌jo</b></div>
+    <div class="ftxt" style="letter-spacing:.06em;text-transform:none;font-weight:600">서명 링크 · 자동 전달 · 서버 보관</div>
+  </footer>
+</main>
+
+<!-- ================= 하단 탭바 ================= -->
+<nav class="nav-bottom" role="tablist" aria-label="메뉴">
+  <div class="nav-in">
+    <button class="tab" role="tab" data-tab="form" aria-selected="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+      <span class="tlb">새 계약</span>
+    </button>
+    <button class="tab" role="tab" data-tab="preview" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/><path d="M8 13h8M8 17h5"/></svg>
+      <span class="tlb">미리보기</span>
+    </button>
+    <button class="tab" role="tab" data-tab="vault" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2-2h4l2 2h6a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2Z"/></svg>
+      <span class="tlb">보관함</span> <span class="dot" id="vaultDot">0</span>
+    </button>
+    <button class="tab" role="tab" data-tab="company" aria-selected="false">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1A1.6 1.6 0 0 0 7.5 19l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 3 13.6H3a2 2 0 1 1 0-4h.1A1.6 1.6 0 0 0 4.6 7.5l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.6 1.6 0 0 0 1.8.3H9.3A1.6 1.6 0 0 0 10 3.6V3a2 2 0 1 1 4 0v.1A1.6 1.6 0 0 0 15.5 4.6l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-.3 1.8v.1a1.6 1.6 0 0 0 1.5 1h.5a2 2 0 1 1 0 4H21a1.6 1.6 0 0 0-1.5 1Z"/></svg>
+      <span class="tlb">설정</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ================= 도크 ================= -->
+<div class="dock" id="dock">
+  <div class="dock-in">
+    <button class="btn btn-ghost save" id="btnPrint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+      PDF · 인쇄
+    </button>
+    <button class="btn btn-primary" id="btnMakeLink2">📤 서 명 링 크 만들 기</button>
+  </div>
+</div>
+
+<!-- ================= 근로자 모드 도크 ================= -->
+<div class="dock" id="dockWorker">
+  <div class="dock-in">
+    <button class="btn btn-ghost save" id="btnWorkerPrint">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+      내 사본
+    </button>
+    <button class="btn btn-primary" id="btnWorkerSubmit">✅ 서명 완료 및 제출</button>
+  </div>
+</div>
+
+<!-- ================= 모달 ================= -->
+<div class="modal" id="modalWrap" aria-hidden="true">
+  <div class="modal-back" id="modalBack"></div>
+  <div class="m-card" role="dialog" aria-modal="true" aria-labelledby="mTitle">
+    <div class="m-head">
+      <h2 id="mTitle">서명 요청</h2>
+      <button class="m-x" id="mClose" aria-label="닫기">✕</button>
+    </div>
+    <div class="m-body" id="mBody"></div>
+    <div class="m-foot" id="mFoot"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<datalist id="dutyList">
+  <option value="생산·조립 (현장직)"></option>
+  <option value="설비·보수"></option>
+  <option value="도장·표면처리"></option>
+  <option value="자재·물류 관리"></option>
+  <option value="품질검사"></option>
+</datalist>
+
+<script>
+'use strict';
+/* =====================================================================
+   전자 근로계약서 v2.1 — 범용 단일 파일 오프라인 앱
+   제작: 포시즌jo
+   ===================================================================== */
+const KEY_COMPANY = 'ksc.company.v2';
+const KEY_LIST    = 'ksc.contracts.v2';
+const MIN_WAGE    = 10320;      // 2026년 적용 최저임금 (고용노동부 고시 제2025-47호)
+const GONGSU_H    = 9.5;        // 1공수 = 기본 8h + 연장 1h
+const MIN_DAY     = Math.round(MIN_WAGE * GONGSU_H);   // 98,040원
+
+const DEFAULT_COMPANY = {
+  name:'',                 // 회사명(갑) — 사업주가 직접 입력, 이 기기에 자동 저장
+  bizType:'',
+  addr:'',
+  ceo:'',
+  bizNo:'',
+  phone:'',
+  sealText:'',
+  mode:'original'          // original | standard
+};
+
+/* ---------- 저장소 (file:// 환경에서도 안전) ---------- */
+const Store = (function(){
+  let usable = true, mem = {};
+  try { localStorage.setItem('__ksc_t','1'); localStorage.removeItem('__ksc_t'); }
+  catch(e){ usable = false; }
+  return {
+    get(k, d){
+      if(!usable){ return (k in mem) ? JSON.parse(mem[k]) : d; }
+      try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; }catch(e){ return d; }
+    },
+    set(k, v){
+      const s = JSON.stringify(v);
+      if(!usable){ mem[k] = s; return false; }
+      try{ localStorage.setItem(k, s); return true; }
+      catch(e){ usable = false; mem[k] = s; return false; }
+    },
+    ok(){ return usable; }
+  };
+})();
+
+/* ---------- 유틸 ---------- */
+const $  = (s, root=document) => root.querySelector(s);
+const $$ = (s, root=document) => Array.from(root.querySelectorAll(s));
+const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const won = (n) => (n===''||n==null||isNaN(n)) ? '' : Number(n).toLocaleString('ko-KR');
+const num = (v) => { const n = Number(String(v).replace(/[^\d.-]/g,'')); return isFinite(n) ? n : 0; };
+const pad2 = (n) => String(n).padStart(2,'0');
+const todayISO = () => { const d = new Date(); return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; };
+function parseISO(iso){ if(!iso) return null; const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso); if(!m) return null;
+  return {y:+m[1], m:+m[2], d:+m[3]}; }
+function daysBetween(a,b){ const p=parseISO(a), q=parseISO(b); if(!p||!q) return 0;
+  return Math.round((Date.UTC(q.y,q.m-1,q.d) - Date.UTC(p.y,p.m-1,p.d)) / 86400000); }
+function monthCount(a,b){ const d = daysBetween(a,b); if(!d || d < 0) return ''; return Math.max(1, Math.round(d/30.4375)); }
+function shortDate(iso){ const p = parseISO(iso); return p ? `${p.y}.${pad2(p.m)}.${pad2(p.d)}` : ''; }
+
+function toast(msg, ms=2100){
+  const t = $('#toast'); t.textContent = msg; t.classList.add('on');
+  clearTimeout(toast._t); toast._t = setTimeout(()=>t.classList.remove('on'), ms);
+}
+
+/* ---------- 상태 ---------- */
+let company = Object.assign({}, DEFAULT_COMPANY, Store.get(KEY_COMPANY, {}));
+let draft = blankDraft();
+let saved = Store.get(KEY_LIST, []);
+const sigs = { agree:null, name:null, worker:null, ceo:null, receipt:null };
+let receiptMode = 'text';      // text | ink
+let receiptText = '';          // 사본 수령함 글자 기입
+
+function blankDraft(){
+  return {
+    name:'', rrn:'', addr:'', phone:'', email:'',
+    start:'', end:'', openEnded:false,
+    workplace:'', duty:'', workType:'전일제',
+    wage:'', bank:'', account:'', holder:'',
+    date: todayISO()
+  };
+}
+
+/* ---------- 엠블럼 / 로고 / 직인 SVG ---------- */
+const CO_LABEL = () => (company && String(company.name || '').trim()) || '회사(갑)';
+
+/* 범용 계약서 엠블럼(문서 + 직인) — 어느 회사든 그대로 쓰는 기본 마크 */
+function emblemSVG(color){
+  const c = color || '#f0d399';
+  return `<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M13 6.5h24L50.5 20v33.5a3.5 3.5 0 0 1-3.5 3.5H13a3.5 3.5 0 0 1-3.5-3.5V10a3.5 3.5 0 0 1 3.5-3.5Z" fill="none" stroke="${c}" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M37 6.5V20h13.5" fill="none" stroke="${c}" stroke-width="3" stroke-linejoin="round"/>
+        <path d="M18 29h17M18 36h17M18 43h10" stroke="${c}" stroke-width="2.6" stroke-linecap="round" opacity=".62"/>
+        <circle cx="46.5" cy="47" r="9.6" fill="none" stroke="${c}" stroke-width="2.6"/>
+        <circle cx="46.5" cy="47" r="4" fill="${c}" opacity=".55"/>
+      </svg>`;
+}
+
+/* A4 공식 양식 머리 — 회사명을 그대로 인쇄(회사마다 자동 반영) */
+function logoSVG(){
+  const label = CO_LABEL();
+  const fs = Math.max(11, Math.min(32, Math.floor(222 / Math.max(1, label.length))));
+  const ruleW = Math.max(30, Math.min(232, Math.round(fs * label.length * 0.92)));
+  return `<svg class="sh-logo" viewBox="0 0 300 58" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(label)}">
+    <g stroke="#111" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M10 5.5h22l9.5 9.5v35a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V8.5a3 3 0 0 1 3-3Z" stroke-width="2.6"/>
+      <path d="M32 5.5V15h9.5" stroke-width="2.6"/>
+      <path d="M15 26h14M15 32h14M15 38h8" stroke-width="2.2" opacity=".6"/>
+      <circle cx="38.5" cy="41" r="7.2" stroke-width="2.2"/>
+      <circle cx="38.5" cy="41" r="2.8" fill="#111" opacity=".5" stroke="none"/>
+    </g>
+    <text x="56" y="35" font-family="'Noto Sans KR','Malgun Gothic',sans-serif" font-size="${fs}"
+          font-weight="800" letter-spacing="-0.8" fill="#111">${esc(label)}</text>
+    <path d="M57 44h${ruleW}" stroke="#111" stroke-width="1.5" opacity=".45" stroke-linecap="round"/>
+  </svg>`;
+}
+
+let sealSeq = 0;
+function sealSVG(size, cls){
+  const uid = 'sk' + (++sealSeq);
+  const raw = String((company && company.sealText) || '').trim();
+  const name = raw.replace(/\s*인$/, '').trim() || String((company && company.name) || '').trim() || '대표자';
+  const font = "'Noto Serif KR','Noto Serif CJK KR','Nanum Myeongjo',serif";
+  const fs = Math.max(7, Math.min(13, Math.floor(98 / Math.max(1, name.length))));
+  return `<svg class="${cls||''}" viewBox="0 0 120 120" width="${size?size+'px':'100%'}" height="${size?size+'px':'100%'}" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="${esc(raw)}">
+    <defs>
+      <path id="sealArc-${uid}" d="M 60,60 m -33,0 a 33,33 0 1,1 66,0" fill="none"/>
+      <filter id="rough-${uid}">
+        <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n"/>
+        <feDisplacementMap in="SourceGraphic" in2="n" scale="0.8" xChannelSelector="R" yChannelSelector="G"/>
+      </filter>
+    </defs>
+    <g filter="url(#rough-${uid})" stroke="#c8202e" fill="#c8202e">
+      <circle cx="60" cy="60" r="55" fill="none" stroke-width="5.4"/>
+      <circle cx="60" cy="60" r="48.5" fill="none" stroke-width="1.5"/>
+      <text font-family="${font}" font-size="${fs}" font-weight="700" letter-spacing="0.1" text-anchor="middle" stroke="none">
+        <textPath href="#sealArc-${uid}" startOffset="50%">${esc(name)}</textPath>
+      </text>
+      <text x="60" y="74" font-family="${font}" font-size="30" font-weight="700" text-anchor="middle" stroke="none">인</text>
+      <text x="60" y="96" font-family="${font}" font-size="7.6" font-weight="600" letter-spacing="1.4" text-anchor="middle" stroke="none">대표이사</text>
+    </g>
+  </svg>`;
+}
+
+/* ---------- 조항 문구 ---------- */
+const CLAUSE_ORIGINAL = {
+  note7: '※본 계약의 일급은 매일 단위 근무(일용직)으로서 기본 일 8시간 외 1시간 추가연장을 기본 1공수로 산정하여 지급하며, 기본급 및 기타 법정 제수당을 모두 포함하여 상호 합의하에 책정하였음에 동의한다.',
+  pay2: '※임금 지급일이 휴일인 경우에는 전일 지급하며, 퇴직 시 급여는 익월 급여일에 지급함에 동의한다.',
+  fireLead: '"을"이 다음 각 호 및 취업규칙 제 67조에 해당하는 경우 "갑"은 "을"을 해고할 수 있다.',
+  fire: [
+    '정기 또는 수시 검진 결과 취업 부적격자로 판단되었을 때.',
+    '상사의 정당한 지시를 불이행하거나 도박, 폭행, 선동, 작업거부, 작업장 무단이탈 및 업무상 비밀을 누설하여 회사에 손해를 끼쳤을 때.',
+    '"을"의 고의 또는 중대한 과실로 회사의 경영이나 작업에 막대한 지장을 초래하거나 재산상의 손해를 입혔을 때.',
+    '근로계약기간 만료 시 또는 현장의 작업량 감소로 회사 운영상 부득이 감원이 필요할 때.',
+    '정당한 사유 없이 월간 7일 이상 또는 연속 4일 이상 무단 결근을 하였을 시.',
+    '취업규칙 제67조(해고) 해당자 및 기타 사회 통념상 근로를 계속할 수가 없다고 인정이 되는 경우.',
+    '입사 시 학력, 경력, 건강진단(대리)을 속이거나 숨기고 입사한 자.'
+  ],
+  damage: '"을"의 고의 또는 중대한 과실로 "갑"에 손해가 발생하였을 때 "을"은 이를 배상하여야 한다.',
+  etc: [
+    '퇴사 시 피복/안전화 등의 최종 수령일이 6개월 미만 시 급여에서 공제한다.',
+    '지급받은 개인 공구 및 회사 비품을 분실 시에는 전액 배상을 원칙으로 한다.',
+    '근무 중 사용하였던 모든 회사 자산을 퇴사 시에는 일괄 반납하여야 하며, 손망실 물품에 대해서는 확인 후 급여에서 공제함을 원칙으로 한다.',
+    '"갑"이 "을"의 명의로 가입한 상해 보험에 대한 일체의 권한은 "갑"에게 있으며, "을"은 이 보험과 관련하여 민·형사상 및 노동법상의 어떠한 이의나 소송을 제기하지 아니한다.',
+    '"갑"과 "을"의 형편과 사정이 계약 시와 현저한 차이가 발생되면, 당사 간 합의에 의해 근로기준법에 위배되지 않는 범위 내에서 근로계약을 조정할 수 있다.',
+    '이 계약에 명시되지 않은 사항은 노동관계법령과 "갑"의 취업규칙 및 회사의 제규정이 정하는 바에 따른다.'
+  ]
+};
+
+const CLAUSE_STANDARD = {
+  note7: '※본 계약의 일급은 1일 소정근로 8시간과 평일 연장근로 1시간(1공수 9.5시간)을 기준으로 산정하며, 연장근로에 대하여는 근로기준법 제56조에 따른 가산수당을 포함하여 지급한다. 기본급 및 기타 법정 제수당을 포함한 금액임에 동의한다.',
+  pay2: '※임금 지급일이 휴일인 경우에는 그 전일에 지급하며, 퇴직 시 급여는 퇴직일로부터 14일 이내에 지급한다.(근로기준법 제36조)',
+  fireLead: '"을"이 다음 각 호에 해당하는 경우 "갑"은 근로기준법 제26조·제27조에 따른 해고의 정당한 이유와 절차를 갖추어 해고할 수 있다.',
+  fire: [
+    '정기 또는 수시 검진 결과 취업 부적격자로 판단되었을 때.',
+    '상사의 정당한 지시를 불이행하거나 업무상 비밀을 누설하여 회사에 손해를 끼쳤을 때.',
+    '"을"의 고의 또는 중대한 과실로 회사의 경영이나 작업에 막대한 지장을 초래하거나 재산상의 손해를 입혔을 때.',
+    '근로계약기간 만료 시 또는 현장의 작업량 감소로 회사 운영상 부득이 감원이 필요할 때.',
+    '정당한 사유 없이 계속하여 4일 이상 무단 결근하였을 때.',
+    '취업규칙상 해고 사유에 해당하고 사회 통념상 근로관계를 계속하기 어렵다고 인정되는 경우.',
+    '입사 시 학력, 경력, 건강진단을 속이거나 숨기고 입사한 자.'
+  ],
+  damage: '"을"의 고의 또는 중대한 과실로 "갑"에 손해가 발생한 경우 "을"은 그 손해를 배상한다. 다만 근로기준법 제20조에 따라 손해배상액을 미리 정한 경우에는 그 금액을 초과하지 않는다.',
+  etc: [
+    '퇴사 시 피복/안전화 등은 반납을 원칙으로 하며, 급여에서 일방적으로 공제하지 않는다.',
+    '지급받은 개인 공구 및 회사 비품을 분실 시에는 전액 배상을 원칙으로 한다.',
+    '근무 중 사용하였던 모든 회사 자산을 퇴사 시에는 일괄 반납하여야 하며, 손망실 물품에 대해서는 확인 후 급여에서 공제함을 원칙으로 한다.',
+    '"갑"이 "을"의 명의로 가입한 상해 보험의 보험금은 근로기준법 제43조에 따라 전액 "을"에게 지급한다.',
+    '"갑"과 "을"의 형편과 사정이 계약 시와 현저한 차이가 발생되면, 당사 간 합의에 의해 근로기준법에 위배되지 않는 범위 내에서 근로계약을 조정할 수 있다.',
+    '이 계약에 명시되지 않은 사항은 노동관계법령과 "갑"의 취업규칙 및 회사의 제규정이 정하는 바에 따른다.'
+  ]
+};
+const clauseSet = () => (company.mode === 'standard' ? CLAUSE_STANDARD : CLAUSE_ORIGINAL);
+
+/* ---------- 계약서 렌더 ---------- */
+function sigImg(key, cls){
+  const src = sigs[key];
+  return `<span class="sig-slot ${cls||''}" data-sig="${key}"><img alt="" src="${src || BLANK_IMG}"${src?'':' style="opacity:0"'}></span>`;
+}
+const BLANK_IMG = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+
+/* 사본 수령함: 글자 기입 또는 손글씨 */
+function receiptModel(){
+  if(receiptMode === 'ink' && sigs.receipt) return {kind:'ink', img:sigs.receipt, text:''};
+  const t = String(receiptText||'').trim();
+  if(t) return {kind:'text', img:null, text:t};
+  if(sigs.receipt) return {kind:'ink', img:sigs.receipt, text:''};
+  return {kind:'none', img:null, text:''};
+}
+function receiptBlock(){
+  const r = receiptModel();
+  return `<div class="receipt ${r.kind}">
+    <span class="rc-guide">사본 수령함</span>
+    ${r.kind === 'ink' ? `<span class="rc-ink"><img alt="" src="${r.img}"></span>` : ''}
+    ${r.kind === 'text' ? `<span class="rc-text">${esc(r.text)}</span>` : ''}
+  </div>`;
+}
+function pmReceiptBlock(){
+  const r = receiptModel();
+  return `<div class="pm-receipt ${r.kind}">
+    <span class="pm-rc-guide">사본 수령함</span>
+    ${r.kind === 'ink' ? `<img alt="" src="${r.img}">` : ''}
+    ${r.kind === 'text' ? `<span class="pm-rc-text">${esc(r.text)}</span>` : ''}
+  </div>`;
+}
+
+let theme = Store.get('ksc.theme.v1','official');
+if(theme !== 'premium') theme = 'official';
+
+function buildModel(){
+  const c = draft, co = company, C = clauseSet();
+  const wageN = num(c.wage);
+  const p = parseISO(c.start), e = parseISO(c.end);
+  const months = (!c.openEnded && p && e) ? monthCount(c.start, c.end) : '';
+
+  const periodStart = p ? `${p.y}년 ${p.m}월 ${p.d}일` : '년&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;일';
+  let periodEnd;
+  if(c.openEnded){
+    periodEnd = `<span style="font-weight:700">기간의 정함 없음</span>`;
+  }else if(e){
+    periodEnd = `${e.y}년 ${e.m}월 ${e.d}일`;
+  }else{
+    periodEnd = '년&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;일';
+  }
+  const monthsCell = months !== '' ? `${months}` : '&nbsp;&nbsp;&nbsp;&nbsp;';
+
+  const wp = (c.workplace||'').trim();
+  const placeCell = `취업장소는 "갑" 소속 사업장${wp ? ` (${esc(wp)})` : ''}으로 하되 사용자의 명에 의해 조정할 수 있다.`;
+
+  const type = c.workType || '전일제';
+  const mark = (v) => type === v ? '■' : '□';
+
+  const duty = (c.duty||'').trim();
+  const name = (c.name||'').trim();
+  const rrn = (c.rrn||'').trim();
+  const addr = (c.addr||'').trim();
+  const phone = (c.phone||'').trim();
+  const email = (c.email||'').trim();
+  const bank = (c.bank||'').trim();
+  const acct = (c.account||'').trim();
+  const holder = (c.holder||'').trim() || name;
+  const dp = parseISO(c.date);
+
+  const contractDate = dp ? `${dp.y}년&nbsp;&nbsp;${dp.m}월&nbsp;&nbsp;${dp.d}일` : '년&nbsp;&nbsp;&nbsp;&nbsp;월&nbsp;&nbsp;&nbsp;&nbsp;일';
+
+  return { co, C, wageN, periodStart, periodEnd, monthsCell, placeCell, type, mark,
+           duty, name, rrn, addr, phone, email, bank, acct, holder, contractDate,
+           contractDateKo: dp ? `${dp.y}년 ${dp.m}월 ${dp.d}일` : '' };
+}
+
+function renderSheet(){
+  const m = buildModel();
+  const el = $('#sheet');
+  el.className = 'sheet ' + theme;
+  el.innerHTML = (theme === 'premium') ? sheetPremium(m) : sheetOfficial(m);
+  fitSheet();
+  paintSignatures();
+}
+
+/* ---------- ① 공식 표준 양식 ---------- */
+function sheetOfficial(m){
+  const {co, C, wageN, periodStart, periodEnd, monthsCell, placeCell, type, mark,
+         duty, name, rrn, addr, phone, email, bank, acct, holder, contractDate} = m;
+  const blank = (w='') => `<span class="fill blank${w}">&nbsp;</span>`;
+
+  return `
+  <div class="sheet-inner"><div class="sheet-frame">
+
+    <div class="sh-head">
+      <h1 class="sh-title">현 장 직 근 로 계 약 서</h1>
+      ${logoSVG()}
+    </div>
+
+    <div class="sh-preamble">아래와 같이 당사자간의 자유의사로 근로계약을 체결하고 이를 성실히 준수하여 이행하기로 서약한다.</div>
+
+    <table class="ct">
+      <colgroup><col style="width:8.5%"><col style="width:15%"><col style="width:30%"><col style="width:17%"><col style="width:29.5%"></colgroup>
+      <tr class="party">
+        <td class="lbl" rowspan="3">사용자<br>(갑)</td>
+        <td class="lbl">업체명</td>
+        <td class="name">${esc(co.name)}</td>
+        <td class="lbl">사업의 종류</td>
+        <td class="val" style="text-align:center">${esc(co.bizType)}</td>
+      </tr>
+      <tr class="party">
+        <td class="lbl">소재지</td>
+        <td class="val" colspan="3">${esc(co.addr)}</td>
+      </tr>
+      <tr class="party">
+        <td class="lbl">대표자</td>
+        <td class="name">${esc(co.ceo)}</td>
+        <td class="lbl">사업자 등록 번호</td>
+        <td class="val" style="text-align:center">${esc(co.bizNo)}</td>
+      </tr>
+      <tr class="party">
+        <td class="lbl" rowspan="3">근로자<br>(을)</td>
+        <td class="lbl">성명</td>
+        <td class="name">${name ? esc(name) : '&nbsp;'}</td>
+        <td class="lbl">주민등록번호</td>
+        <td class="val" style="text-align:center;font-weight:600">${rrn ? esc(rrn) : '&nbsp;'}</td>
+      </tr>
+      <tr class="party">
+        <td class="lbl">소재지</td>
+        <td class="val" colspan="3" style="font-weight:600">${addr ? esc(addr) : '&nbsp;'}</td>
+      </tr>
+      <tr class="party">
+        <td class="lbl">휴대폰번호</td>
+        <td class="val" style="text-align:center;font-weight:600">${phone ? esc(phone) : '&nbsp;'}</td>
+        <td class="lbl">이메일주소</td>
+        <td class="val" style="text-align:center;font-weight:600">${email ? esc(email) : '&nbsp;'}</td>
+      </tr>
+    </table>
+
+    <table class="tbl-2" style="margin-top:-0.6pt">
+      <colgroup><col style="width:19.5%"><col style="width:80.5%"></colgroup>
+
+      <tr>
+        <td class="lbl">1. 근로계약기간</td>
+        <td class="body tight">
+          <div style="line-height:1.65">${periodStart} 부터&nbsp;&nbsp;<span style="font-weight:700">${periodEnd}</span> 까지&nbsp;&nbsp;(&nbsp;${monthsCell}&nbsp;)개월&nbsp;&nbsp;<span style="font-size:7.2pt;font-weight:500">-기간 제한 없을 시 계약일만 기재</span></div>
+        </td>
+      </tr>
+
+      <tr><td class="lbl">2. 근무장소</td><td class="body tight clause-line">${placeCell}</td></tr>
+
+      <tr><td class="lbl">3. 담당직무</td><td class="body tight" style="font-weight:700">${duty ? esc(duty) : '&nbsp;'}</td></tr>
+
+      <tr>
+        <td class="lbl">4. 근무형태 및 근무시간</td>
+        <td class="body tight">
+          <div class="clause-line">1) 근무형태:&nbsp;&nbsp;&nbsp;${mark('전일제')} 전일제,&nbsp;&nbsp;&nbsp;${mark('2교대')} 2교대,&nbsp;&nbsp;&nbsp;${mark('기타')} 기타</div>
+          <div class="clause-line">2) 근무시간: 1일 기본 8시간(08:00~17:00)과 평일 연장근로 1시간을 1일 기본 근로시간으로 하고 "갑"과 "을" 쌍방 합의하에 체결한다.</div>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="lbl">5. 식사 및 휴게시간</td>
+        <td class="body tight">
+          <div class="clause-line">1) 식사시간: △중식 12:00~13:00 △석식 18:00~19:00 △야식 24:00~01:00</div>
+          <div class="clause-line">2) 휴게시간: △주간: 10:00~10:10, 15:00~15:10 △야간: 22:00~22:10, 03:00~03:10 (2교대 시 03:30~04:30)</div>
+        </td>
+      </tr>
+
+      <tr><td class="lbl">6. 휴일 및 휴가</td><td class="body tight clause-line">1) 휴일 및 휴가는 당사 취업규칙에 정한 바에 따른다.</td></tr>
+
+      <tr>
+        <td class="lbl">7. 임금</td>
+        <td class="body">
+          <div class="pay-line">
+            <span class="left">급여형태: 일당 ( <b>${wageN ? won(wageN) : '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'}</b> 원)</span>
+            <span class="right">동의확인: ${sigImg('agree','sm')}(인/서명)</span>
+          </div>
+          <div class="small-note" style="margin-top:.5mm">${C.note7}</div>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="lbl">8. 임금 산정기간 및 지급일</td>
+        <td class="body tight">
+          <div class="clause-line">매월 1일부터 말일까지의 임금을 익월 15일에 지급한다.</div>
+          <div class="small-note">${C.pay2}</div>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="lbl">9. 임금지급 방법</td>
+        <td class="body tight">
+          <div class="clause-line">"을"의 명의로 된 예금통장에 입금</div>
+          <div class="clause-line" style="display:flex;gap:2mm;flex-wrap:nowrap">
+            <span>은행:&nbsp;${bank ? `<b>${esc(bank)}</b>` : blank('')}</span>
+            <span style="margin-left:2mm">계좌번호:&nbsp;${acct ? `<b>${esc(acct)}</b>` : blank('wide')}</span>
+            <span style="margin-left:auto">예금주:&nbsp;${holder ? `<b>${esc(holder)}</b>` : blank('')}</span>
+          </div>
+        </td>
+      </tr>
+
+      <tr>
+        <td class="lbl">10. 안전관리</td>
+        <td class="body tight clause-line">"을"은 현장 안전수칙과 안전관리자 및 안전 담당자의 지시 사항을 필히 준수해야 하며, 제반 안전수칙을 이행하지 않음으로써 발생하는 재해는 "을"의 귀책 사유로 본다.</td>
+      </tr>
+
+      <tr><td class="lbl">11. 해고사유</td><td class="body tight clause-line">${C.fireLead}</td></tr>
+      <tr>
+        <td colspan="2" style="padding:.9mm 1.9mm 1.1mm">
+          <ol class="ol">${C.fire.map((t,i)=>`<li><span class="n">${'①②③④⑤⑥⑦'[i]}</span><span>${esc(t)}</span></li>`).join('')}</ol>
+        </td>
+      </tr>
+
+      <tr><td class="lbl">12. 손해배상</td><td class="body tight clause-line">${C.damage}</td></tr>
+
+      <tr>
+        <td class="lbl">13. 기타</td>
+        <td class="body tight">
+          <ol class="ol tight">${C.etc.map((t,i)=>`<li><span class="n">${'①②③④⑤⑥'[i]}</span><span>${esc(t)}</span></li>`).join('')}</ol>
+        </td>
+      </tr>
+    </table>
+
+    <div class="sh-date">${contractDate}</div>
+
+    <div class="sh-sign">
+      <div class="sign-main">
+        <div class="sign-line first">
+          <span class="cap">(갑) ${esc(co.name || '회사(갑)')}</span>
+          <span class="sign-led" style="min-width:6mm"></span>
+          <span class="cap">대표이사 : ${ceoSpaced(co.ceo)}</span>
+          ${sigImg('ceo','ceo')}
+          <span class="sig-hint">(인/서명)</span>
+        </div>
+        <div class="sign-line">
+          <span class="cap">(을) 근&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;로&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;자 :</span>
+          <span class="sign-name${name?'':' blank'}" data-sig="name">
+            <span class="nm-type"${sigs.name?' style="display:none"':''}>${name ? esc(name) : '&nbsp;&nbsp;&nbsp;&nbsp;'}</span>
+            <img alt="" class="nm-ink" src="${sigs.name || BLANK_IMG}"${sigs.name?'':' style="opacity:0"'}>
+          </span>
+          ${sigImg('worker','md')}
+          <span class="sig-hint">(인/서명)</span>
+        </div>
+      </div>
+      <div class="sign-stamp">
+        <div class="seal-box">${sealSVG('')}</div>
+        <div class="receipt-wrap">${receiptBlock()}</div>
+      </div>
+    </div>
+
+    <div class="sh-foot">상기 사항을 인지하였으며, 1부를 교부 받았으므로 "사본 수령함"을 위에 기입함.</div>
+
+  </div></div>`;
+}
+
+/* ---------- ② 고급 디자인 양식 ---------- */
+function sheetPremium(m){
+  const {co, C, wageN, periodStart, periodEnd, monthsCell, placeCell, type, mark,
+         duty, name, rrn, addr, phone, email, bank, acct, holder, contractDateKo} = m;
+  const d = (v, ph='—') => v ? esc(v) : `<span style="color:#a8b3c2;font-weight:600">${ph}</span>`;
+  const items = (arr) => `<div class="pm-items">${arr.map((t,i)=>`<div class="pi"><i>${'①②③④⑤⑥⑦'[i]}</i><span>${esc(t)}</span></div>`).join('')}</div>`;
+
+  return `
+  <div class="pm">
+    <div class="pm-band">
+      <div class="pm-band-top">
+        <div class="pm-brand">${logoGold()}<span>${esc(CO_LABEL())}</span></div>
+        <div class="pm-doc">DOCUMENT<b>E-CONTRACT · ${new Date().getFullYear()}</b></div>
+      </div>
+      <div class="pm-rule"></div>
+      <div class="pm-band-bot">
+        <div>
+          <h1 class="sub">현장직 근로계약서</h1>
+          <div class="pm-en">STANDARD EMPLOYMENT CONTRACT · FIELD WORK</div>
+        </div>
+        <span class="pm-tag">${esc(co.name)}</span>
+      </div>
+    </div>
+
+    <div class="pm-body">
+      <div class="pm-parties">
+        <div class="pm-card">
+          <div class="pm-card-label">사용자 <span>(갑)</span></div>
+          <div class="pm-kv"><span class="k">업체명</span><span class="v strong">${esc(co.name)}</span></div>
+          <div class="pm-kv"><span class="k">대표자</span><span class="v strong">${esc(co.ceo)}</span></div>
+          <div class="pm-kv"><span class="k">사업자번호</span><span class="v">${esc(co.bizNo)}</span></div>
+          <div class="pm-kv"><span class="k">업종</span><span class="v">${esc(co.bizType)}</span></div>
+          <div class="pm-kv"><span class="k">소재지</span><span class="v">${esc(co.addr)}</span></div>
+          <div class="pm-kv"><span class="k">연락처</span><span class="v">${esc(co.phone || '')}</span></div>
+        </div>
+        <div class="pm-card">
+          <div class="pm-card-label">근로자 <span>(을)</span></div>
+          <div class="pm-kv"><span class="k">성명</span><span class="v strong" style="font-size:8.2pt;letter-spacing:.06em">${d(name)}</span></div>
+          <div class="pm-kv"><span class="k">주민번호</span><span class="v">${d(rrn)}</span></div>
+          <div class="pm-kv"><span class="k">소재지</span><span class="v">${d(addr)}</span></div>
+          <div class="pm-kv"><span class="k">연락처</span><span class="v">${d(phone)}</span></div>
+          <div class="pm-kv"><span class="k">이메일</span><span class="v">${d(email)}</span></div>
+        </div>
+      </div>
+
+      <div class="pm-sec-title">계약 조건 · TERMS</div>
+      <table class="pm-t">
+        <colgroup><col style="width:7.5mm"><col style="width:25mm"><col></colgroup>
+        <tr>
+          <td class="n">01</td><td class="h">근로계약기간</td>
+          <td class="b">${periodStart} ~ ${periodEnd} &nbsp;<span style="color:#6b7c94">( ${monthsCell.trim() ? monthsCell+'개월' : '기간 제한 없음' } )</span></td>
+        </tr>
+        <tr><td class="n">02</td><td class="h">근무장소</td><td class="b">${placeCell}</td></tr>
+        <tr><td class="n">03</td><td class="h">담당직무</td><td class="b">${d(duty)}</td></tr>
+        <tr>
+          <td class="n">04</td><td class="h">근무형태·시간</td>
+          <td class="b">${mark('전일제')} 전일제 &nbsp; ${mark('2교대')} 2교대 &nbsp; ${mark('기타')} 기타 &nbsp;·&nbsp; 1일 기본 8시간(08:00~17:00) + 평일 연장 1시간</td>
+        </tr>
+        <tr>
+          <td class="n">05</td><td class="h">식사·휴게시간</td>
+          <td class="b">중식 12:00~13:00 · 석식 18:00~19:00 · 야식 24:00~01:00<br>주간 10:00~10:10, 15:00~15:10 · 야간 22:00~22:10, 03:00~03:10</td>
+        </tr>
+        <tr><td class="n">06</td><td class="h">휴일 및 휴가</td><td class="b">휴일 및 휴가는 당사 취업규칙에 정한 바에 따른다.</td></tr>
+        <tr>
+          <td class="n">07</td><td class="h">임금</td>
+          <td class="b">
+            <div class="pm-pay">
+              <span>급여형태 <b>일당</b> &nbsp;<span class="amount"><u>${wageN ? won(wageN) : '　　　　　'} 원</u></span></span>
+              <span class="agree">동의확인 ${sigImg('agree','sm')}(인/서명)</span>
+            </div>
+            <div style="font-size:6.6pt;color:#5b6b82;line-height:1.45;margin-top:.6mm">${C.note7}</div>
+          </td>
+        </tr>
+        <tr>
+          <td class="n">08</td><td class="h">산정기간·지급일</td>
+          <td class="b">매월 1일부터 말일까지의 임금을 익월 15일에 지급한다.<br><span style="font-size:6.6pt;color:#5b6b82">${C.pay2}</span></td>
+        </tr>
+        <tr>
+          <td class="n">09</td><td class="h">임금지급 방법</td>
+          <td class="b">"을"의 명의로 된 예금통장에 입금 &nbsp;·&nbsp; 은행 <b>${d(bank)}</b> &nbsp;·&nbsp; 계좌 <b>${d(acct)}</b> &nbsp;·&nbsp; 예금주 <b>${d(holder)}</b></td>
+        </tr>
+        <tr><td class="n">10</td><td class="h">안전관리</td><td class="b">"을"은 현장 안전수칙과 안전관리자 및 안전 담당자의 지시 사항을 필히 준수해야 하며, 제반 안전수칙을 이행하지 않음으로써 발생하는 재해는 "을"의 귀책 사유로 본다.</td></tr>
+        <tr><td class="n">11</td><td class="h">해고사유</td><td class="b">${C.fireLead}${items(C.fire)}</td></tr>
+        <tr><td class="n">12</td><td class="h">손해배상</td><td class="b">${C.damage}</td></tr>
+        <tr><td class="n">13</td><td class="h">기타</td><td class="b">${items(C.etc)}</td></tr>
+      </table>
+
+      <div class="pm-sign">
+        <div class="pm-sign-head">서명 및 날인 · SIGNATURE</div>
+        <div class="pm-sign-body">
+          <div class="pm-sign-main">
+            <div class="pm-date">${contractDateKo || '년　월　일'}</div>
+            <div class="pm-sign-row">
+              <span class="cap">(갑) ${esc(co.name || '회사(갑)')}</span>
+              <span class="pm-underline" style="max-width:16mm"></span>
+              <span class="cap">대표이사 ${ceoSpaced(co.ceo)}</span>
+              ${sigImg('ceo','ceo')}
+              <span>(인/서명)</span>
+            </div>
+            <div class="pm-sign-row">
+              <span class="cap">(을) 근로자</span>
+              <span class="pm-nm-wrap" data-sig="name">
+                <span class="pm-nm-type"${sigs.name?' style="display:none"':''}>${name ? esc(name) : '　'}</span>
+                <img alt="" class="pm-nm-ink" src="${sigs.name || BLANK_IMG}"${sigs.name?'':' style="opacity:0"'}>
+              </span>
+              ${sigImg('worker','md')}
+              <span>(인/서명)</span>
+            </div>
+          </div>
+          <div class="pm-sign-side">
+            <div class="pm-seal-box">${sealSVG('')}</div>
+            <div class="pm-receipt-wrap">${pmReceiptBlock()}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pm-foot">상기 사항을 인지하였으며, 1부를 교부 받았으므로 "사본 수령함"을 위에 기입함.</div>
+  </div>`;
+}
+
+function logoGold(){
+  return emblemSVG('#f2e0bb');
+}
+
+function ceoSpaced(n){
+  const s = String(n||'').trim();
+  if(!s) return '&nbsp;&nbsp;&nbsp;';
+  if(s.length <= 3) return s.split('').join('&nbsp;&nbsp;');
+  return s.split('').join(' ');
+}
+
+/* ---------- 시트 크기 맞춤 ---------- */
+let zoomed = false;
+function fitSheet(){
+  const wrap = $('#sheetWrap'), sheet = $('#sheet');
+  if(!wrap || !sheet) return;
+  const avail = wrap.clientWidth - 24;
+  const w = sheet.offsetWidth, h = sheet.offsetHeight;
+  if(!avail || !w || !h){
+    if((fitSheet._t = (fitSheet._t || 0) + 1) < 6){ requestAnimationFrame(fitSheet); }
+    return;
+  }
+  fitSheet._t = 0;
+  if(zoomed){ wrap.style.height = 'auto'; sheet.style.marginLeft = '0'; return; }
+  const s = Math.min(1, avail / w);
+  sheet.style.transform = `scale(${s})`;
+  sheet.style.transformOrigin = 'top left';
+  sheet.style.marginLeft = Math.max(0, (avail - w * s) / 2) + 'px';
+  wrap.style.height = (h * s + 24) + 'px';
+}
+
+/* ---------- 서명 패드 ---------- */
+const pads = {};
+function setupPad(canvas, key){
+  const ctx = canvas.getContext('2d');
+  let drawing = false, last = null, lastT = 0, lastW = 1.9;
+  const dpr = () => Math.min(window.devicePixelRatio || 1, 2);
+
+  function resize(){
+    const r = canvas.getBoundingClientRect();
+    const d = dpr();
+    const w = Math.max(1, Math.round(r.width * d));
+    const h = Math.max(1, Math.round(r.height * d));
+    if(canvas.width === w && canvas.height === h) return;
+    canvas.width = w; canvas.height = h;
+    ctx.setTransform(d, 0, 0, d, 0, 0);
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#12203a';
+  }
+  resize();
+  if(window.ResizeObserver){ new ResizeObserver(()=>resize()).observe(canvas); }
+
+  const pos = (ev) => {
+    const r = canvas.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top, t: performance.now() };
+  };
+
+  function start(ev){
+    ev.preventDefault();
+    canvas.setPointerCapture && canvas.setPointerCapture(ev.pointerId);
+    drawing = true; last = pos(ev); lastT = performance.now();
+    ctx.beginPath();
+    ctx.arc(last.x, last.y, 1.1, 0, Math.PI*2);
+    ctx.fillStyle = '#12203a'; ctx.fill();
+  }
+  function move(ev){
+    if(!drawing) return;
+    ev.preventDefault();
+    const pts = ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev];
+    for(const e of pts){
+      const p = pos(e);
+      const dt = Math.max(1, p.t - lastT);
+      const dist = Math.hypot(p.x-last.x, p.y-last.y);
+      const speed = dist/dt;
+      const target = Math.max(0.9, Math.min(3.0, 2.7 - speed*1.15));
+      lastW = lastW*0.62 + target*0.38;
+      ctx.lineWidth = lastW; ctx.strokeStyle = '#12203a';
+      const mx = (last.x + p.x)/2, my = (last.y + p.y)/2;
+      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.quadraticCurveTo(last.x, last.y, mx, my); ctx.stroke();
+      last = p; lastT = p.t;
+    }
+  }
+  function end(ev){
+    if(!drawing) return;
+    drawing = false;
+    try{ canvas.releasePointerCapture(ev.pointerId); }catch(_){}
+    sigs[key] = canvas.toDataURL('image/png');
+    paintSignatures();
+    const pad = $(`.pad[data-pad="${key}"]`);
+    if(pad) pad.classList.add('signed');
+  }
+
+  canvas.addEventListener('pointerdown', start);
+  canvas.addEventListener('pointermove', move);
+  canvas.addEventListener('pointerup', end);
+  canvas.addEventListener('pointercancel', end);
+  canvas.addEventListener('pointerleave', (e)=>{ if(drawing) end(e); });
+  canvas.addEventListener('touchstart', e=>e.preventDefault(), {passive:false});
+
+  pads[key] = {
+    clear(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      sigs[key] = null;
+      const pad = $(`.pad[data-pad="${key}"]`);
+      if(pad) pad.classList.remove('signed');
+      paintSignatures();
+    },
+    canvas
+  };
+}
+
+function paintSignatures(){
+  $$('[data-sig]').forEach(el=>{
+    const key = el.dataset.sig;
+    const src = sigs[key] || null;
+    const img = el.tagName === 'IMG' ? el : el.querySelector('img');
+    if(img){ img.src = src || BLANK_IMG; img.style.opacity = src ? '1' : '0'; }
+    const typed = el.querySelector('.nm-type, .pm-nm-type');
+    if(typed) typed.style.display = src ? 'none' : '';
+    el.classList.toggle('has-ink', !!src);
+  });
+  paintReceipt();
+  updateSigCount();
+  updatePvState();
+}
+
+function paintReceipt(){
+  const r = receiptModel();
+  const rc = $('.receipt');
+  if(rc){
+    rc.className = 'receipt ' + r.kind;
+    rc.innerHTML = `<span class="rc-guide">사본 수령함</span>`
+      + (r.kind === 'ink' ? `<span class="rc-ink"><img alt="" src="${r.img}"></span>` : '')
+      + (r.kind === 'text' ? `<span class="rc-text">${esc(r.text)}</span>` : '');
+  }
+  const prc = $('.pm-receipt');
+  if(prc){
+    prc.className = 'pm-receipt ' + r.kind;
+    prc.innerHTML = `<span class="pm-rc-guide">사본 수령함</span>`
+      + (r.kind === 'ink' ? `<span class="pm-rc-ink"><img alt="" src="${r.img}"></span>` : '')
+      + (r.kind === 'text' ? `<span class="pm-rc-text">${esc(r.text)}</span>` : '');
+  }
+}
+
+function fillCount(){
+  let n = ['agree','name','worker'].filter(k=>!!sigs[k]).length;
+  if(receiptModel().kind !== 'none') n++;
+  return n;
+}
+function updateSigCount(){
+  const el = $('#sigCount');
+  if(!el) return;
+  const n = fillCount();
+  el.textContent = `${n}/4`;
+  el.style.color = n === 4 ? '#8ff0bf' : '';
+}
+
+function syncReceiptUI(){
+  const ta = $('#rcText');
+  if(ta) ta.value = receiptText;
+  $$('.rc-tab').forEach(b=>{
+    const on = b.dataset.rcmode === receiptMode;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-selected', String(on));
+  });
+  const wrap = $('#rcTextWrap'); if(wrap) wrap.hidden = receiptMode !== 'text';
+  const paper = $('#rcPadPaper'); if(paper) paper.hidden = receiptMode !== 'ink';
+  const pad = $('#receiptPad');
+  if(pad) pad.classList.toggle('signed', receiptMode === 'ink' ? !!sigs.receipt : !!String(receiptText||'').trim());
+}
+
+function updatePvState(){
+  const n = fillCount();
+  const chip = $('#pvSigned');
+  if(chip){
+    if(signedInfo && signedInfo.at){ chip.textContent = `✅ 서명 완료본 · ${fmtDT(signedInfo.at)}`; chip.classList.add('on'); }
+    else { chip.textContent = ''; chip.classList.remove('on'); }
+  }
+  const el = $('#pvState');
+  if(!el) return;
+  if(n === 0){ el.textContent = '미작성'; el.style.background='rgba(224,87,106,.12)'; el.style.borderColor='rgba(224,87,106,.34)'; el.style.color='#ffb1bc'; }
+  else if(n < 4){ el.textContent = `작성 ${n}/4`; el.style.background='rgba(212,175,106,.12)'; el.style.borderColor='rgba(212,175,106,.35)'; el.style.color='#f0d399'; }
+  else { el.textContent = '이름 · 서명 완료'; el.style.background='rgba(62,207,142,.12)'; el.style.borderColor='rgba(62,207,142,.35)'; el.style.color='#8ff0bf'; }
+}
+
+/* ---------- 폼 바인딩 ---------- */
+function bindForm(){
+  $$('[data-k]').forEach(el=>{
+    const k = el.dataset.k;
+    if(el.type === 'radio'){
+      el.addEventListener('change', ()=>{ if(el.checked){ draft[k] = el.value; renderSheet(); } });
+    }else if(el.type === 'checkbox'){
+      el.addEventListener('change', ()=>{ draft[k] = el.checked; syncPeriodUI(); renderSheet(); });
+    }else{
+      el.addEventListener('input', ()=>{
+        let v = el.value;
+        if(el.dataset.mask === 'won'){
+          const digits = v.replace(/[^\d]/g,'');
+          v = digits ? Number(digits).toLocaleString('ko-KR') : '';
+          if(v !== el.value) el.value = v;
+        }
+        if(el.dataset.mask === 'rrn'){
+          const d = v.replace(/[^\d]/g,'').slice(0,13);
+          v = d.length > 6 ? d.slice(0,6) + '-' + d.slice(6) : d;
+          if(v !== el.value) el.value = v;
+        }
+        if(el.dataset.mask === 'phone'){
+          const d = v.replace(/[^\d]/g,'').slice(0,11);
+          v = d.length > 7 ? `${d.slice(0,3)}-${d.slice(3,d.length-4)}-${d.slice(-4)}`
+            : d.length > 3 ? `${d.slice(0,3)}-${d.slice(3)}` : d;
+          if(v !== el.value) el.value = v;
+        }
+        if(el.dataset.mask === 'bizno'){
+          const d = v.replace(/[^\d]/g,'').slice(0,10);
+          v = d.length > 5 ? `${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}` : d;
+          if(v !== el.value) el.value = v;
+        }
+        draft[k] = v;
+        if(k === 'name'){
+          const pn = $('#pvName');
+          if(pn && pn.value !== v) pn.value = v;
+          const ok = $('#nsOk'); if(ok){ ok.textContent = v.trim() ? '표 인쇄 ✓' : '표 인쇄'; ok.classList.toggle('on', !!v.trim()); }
+        }
+        if(k === 'wage') updateWageBadge();
+        if(k === 'start' || k === 'end') updatePeriodHint();
+        renderSheet();
+      });
+    }
+  });
+}
+
+function syncPeriodUI(){
+  const open = $('#cOpen');
+  const endEl = $('#cEnd');
+  open.checked = !!draft.openEnded;
+  $('#openEndLabel').classList.toggle('on', !!draft.openEnded);
+  endEl.disabled = !!draft.openEnded || uiMode === 'worker';
+  endEl.style.opacity = draft.openEnded ? .4 : 1;
+  updatePeriodHint();
+}
+function updatePeriodHint(){
+  const h = $('#periodHint');
+  if(draft.openEnded){ h.textContent = '기간의 정함이 없는 계약으로 표기됩니다.'; h.style.color = 'var(--gold-2)'; return; }
+  if(draft.start && draft.end){
+    const m = monthCount(draft.start, draft.end);
+    h.textContent = m ? `총 ${m}개월 · ${shortDate(draft.start)} ~ ${shortDate(draft.end)}` : '종료일이 시작일보다 빠릅니다.';
+    h.style.color = m ? 'var(--gold-2)' : '#ffb1bc';
+  }else{
+    h.textContent = '기간을 비우면 계약일만 표기됩니다.';
+    h.style.color = 'var(--muted)';
+  }
+}
+function updateWageBadge(){
+  const el = $('#wageBadge');
+  const w = num(draft.wage);
+  const base = `2026년 최저임금 ${won(MIN_WAGE)}원/h × 1공수 ${GONGSU_H}h = <u>${won(MIN_DAY)}원</u>`;
+  if(!w){
+    el.className = 'wage-badge';
+    el.innerHTML = `<span class="ico">₩</span><span>최저임금 참고<small>${base}</small></span>`;
+    return;
+  }
+  if(w < MIN_DAY){
+    const gap = MIN_DAY - w;
+    el.className = 'wage-badge warn';
+    el.innerHTML = `<span class="ico">!</span><span>최저임금 미달 — ${won(gap)}원 부족<small>${base}</small></span>`;
+  }else{
+    const gap = w - MIN_DAY;
+    const pct = (gap / MIN_DAY * 100).toFixed(1);
+    el.className = 'wage-badge';
+    el.innerHTML = `<span class="ico">✓</span><span>최저임금 충족 · +${won(gap)}원 (+${pct}%)<small>${base} · 시급 환산 ${won(Math.round(w / GONGSU_H))}원</small></span>`;
+  }
+}
+
+function fillForm(){
+  const set = (sel, v) => { const el = $(sel); if(el) el.value = v; };
+  set('#wName', draft.name); set('#wRrn', draft.rrn); set('#wAddr', draft.addr);
+  set('#pvName', draft.name);
+  { const ok = $('#nsOk'); if(ok){ const has = !!(draft.name||'').trim(); ok.textContent = has ? '표 인쇄 ✓' : '표 인쇄'; ok.classList.toggle('on', has); } }
+  set('#wPhone', draft.phone); set('#wEmail', draft.email);
+  set('#cStart', draft.start); set('#cEnd', draft.end);
+  set('#cPlace', draft.workplace); set('#cDuty', draft.duty);
+  set('#cWage', draft.wage ? won(num(draft.wage)) : '');
+  set('#cBank', draft.bank); set('#cAcct', draft.account); set('#cHolder', draft.holder);
+  set('#cDate', draft.date);
+  const r = $(`input[name="wtype"][value="${draft.workType}"]`); if(r) r.checked = true;
+  syncPeriodUI(); updateWageBadge();
+}
+
+/* ---------- 샘플 ---------- */
+function sampleData(){
+  const t = todayISO();
+  const oneYear = (()=>{ const d = new Date(); d.setFullYear(d.getFullYear()+1); d.setDate(d.getDate()-1);
+    return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; })();
+  return {
+    name:'홍길동', rrn:'850315-1234567',
+    addr:'서울특별시 마포구 월드컵북로 21, 302호',
+    phone:'010-2345-6789', email:'hong.gildong@example.com',
+    start:t, end:oneYear, openEnded:false,
+    workplace: company.addr || '서울특별시 마포구 월드컵북로 21',
+    duty:'생산·조립 (현장직)',
+    workType:'전일제', wage:'115000',
+    bank:'국민은행', account:'123-45-6789012', holder:'홍길동',
+    date:t
+  };
+}
+
+/* =====================================================================
+   전자 근로계약서 v2.1 — 서명 링크 · 서버 자동 전달
+   ===================================================================== */
+/* Supabase 프로젝트 (공개 anon 키 — 쓰기/조회는 RPC 함수로만 허용) */
+const SB_URL  = 'https://hjjecidahdzubmguaqge.supabase.co';
+const SB_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhqamVjaWRhaGR6dWJtZ3VhcWdlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQ4NTU5NjAsImV4cCI6MjExMDQzMTk2MH0.fCVNOzYBKm90ZbSfcBhqaje70ofESLDyiG0knqPOQIk';
+const SITE_BASE = 'https://max5ex00700-hub.github.io/xtower/';
+const KEY_OWNER = 'ksc.owner.v2';
+
+let uiMode = 'employer';        // employer | worker
+let signedInfo = null;          // 열려 있는 완료본 { at, id }
+let currentId = null;           // 지금 화면의 계약 id
+let workerId = '';              // 근로자 모드 링크 id
+let workerSigned = false;
+let workerEmployer = null;      // 근로자 모드의 사업주 데이터
+let vaultLoading = false;
+
+/* ---------- 공통 유틸 ---------- */
+const clone = (o) => JSON.parse(JSON.stringify(o == null ? null : o));
+const ID_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789abcdefghijkmnopqrstuvwxyz';
+function randToken(n){
+  const a = new Uint8Array(n);
+  if(window.crypto && crypto.getRandomValues) crypto.getRandomValues(a);
+  else for(let i=0;i<n;i++) a[i] = Math.floor(Math.random()*256);
+  let s = '';
+  for(let i=0;i<n;i++) s += ID_ALPHABET[a[i] % ID_ALPHABET.length];
+  return s;
+}
+function getOwnerKey(){
+  let k = String(Store.get(KEY_OWNER, '') || '');
+  if(k.length < 12){ k = 'ok' + randToken(18); Store.set(KEY_OWNER, k); }
+  return k;
+}
+function fmtDT(iso){
+  if(!iso) return '';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return '';
+  return `${d.getFullYear()}.${pad2(d.getMonth()+1)}.${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+const linkFor = (id) => SITE_BASE + '?id=' + encodeURIComponent(id);
+
+async function copyText(t){
+  try{ await navigator.clipboard.writeText(t); return true; }catch(e){}
+  try{
+    const ta = document.createElement('textarea');
+    ta.value = t; ta.style.position = 'fixed'; ta.style.top = '-1000px'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    let ok = false; try{ ok = document.execCommand('copy'); }catch(_){}
+    ta.remove(); return ok;
+  }catch(e){ return false; }
+}
+
+/* 서명 이미지 경량화 */
+function compactSig(dataURL, maxW=300){
+  return new Promise(resolve => {
+    if(!dataURL){ resolve(null); return; }
+    const img = new Image();
+    img.onload = () => {
+      try{
+        const scale = Math.min(1, maxW / (img.width || maxW));
+        const c = document.createElement('canvas');
+        c.width = Math.max(1, Math.round(img.width * scale));
+        c.height = Math.max(1, Math.round(img.height * scale));
+        const ctx = c.getContext('2d');
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, c.width, c.height);
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        let out = '';
+        try{ out = c.toDataURL('image/webp', 0.7); }catch(e){}
+        if(!out || out.indexOf('data:image/webp') !== 0) out = c.toDataURL('image/png');
+        resolve(out.length < dataURL.length ? out : dataURL);
+      }catch(e){ resolve(dataURL); }
+    };
+    img.onerror = () => resolve(dataURL);
+    img.src = dataURL;
+  });
+}
+
+/* ---------- 서버 (Supabase RPC) ---------- */
+async function sbRpc(fn, args){
+  let res;
+  try{
+    res = await fetch(SB_URL + '/rest/v1/rpc/' + fn, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify(args || {})
+    });
+  }catch(e){
+    throw new Error('인터넷 연결을 확인해 주세요');
+  }
+  const txt = await res.text();
+  let data = null;
+  try{ data = txt ? JSON.parse(txt) : null; }catch(e){ data = null; }
+  if(!res.ok){
+    const msg = (data && (data.message || data.hint || data.details)) || ('서버 오류 ' + res.status);
+    throw new Error(msg);
+  }
+  return data;
+}
+
+/* ---------- 서버 기록 <-> 화면 ---------- */
+function recordFromServer(row){
+  const E = row.employer_data || {};
+  const W = row.worker_data || null;
+  const data = Object.assign({}, E.data || {}, (W && W.data) || {});
+  const rc = (W && W.receipt) || E.receipt || { mode: 'text', text: '' };
+  return {
+    id: row.id,
+    status: row.status === 'signed' ? 'signed' : 'pending',
+    worker: row.worker_name || data.name || '',
+    savedAt: row.created_at || '',
+    signedAt: row.signed_at || null,
+    companySnapshot: E.company || null,
+    theme: (W && W.theme) || E.theme || 'official',
+    receipt: { mode: rc.mode === 'ink' ? 'ink' : 'text', text: String(rc.text == null ? '' : rc.text) },
+    data: data,
+    sigs: (W && W.sigs) || {},
+    wage: num(data.wage), duty: data.duty || '',
+    start: data.start || '', end: data.end || '', openEnded: !!data.openEnded
+  };
+}
+
+/* ---------- 보관함 ---------- */
+function showOfflineBar(){
+  const el = $('#warnbar');
+  el.classList.add('on');
+  $('#warnbarTxt').innerHTML = '서버에 연결하지 못했습니다. <b>인터넷 연결</b>을 확인한 뒤 보관함에서 <b>🔄 새로고침</b>을 눌러 주세요.';
+}
+function hideOfflineBar(){ $('#warnbar').classList.remove('on'); }
+
+async function refreshVault(silent){
+  if(uiMode === 'worker' || vaultLoading) return saved;
+  vaultLoading = true;
+  try{
+    const rows = await sbRpc('list_employer_contracts', { p_owner_key: getOwnerKey() });
+    saved = Array.isArray(rows) ? rows.map(recordFromServer) : [];
+    Store.set(KEY_LIST, saved);
+    hideOfflineBar();
+    renderVault();
+    if(!silent) toast(saved.length ? `보관함 ${saved.length}건을 불러왔습니다` : '보관함이 비어 있습니다');
+  }catch(e){
+    renderVault();
+    showOfflineBar();
+    if(!silent) toast('서버에 연결하지 못했습니다 · 저장된 목록을 보여드립니다', 3200);
+  }finally{
+    vaultLoading = false;
+  }
+  return saved;
+}
+
+function renderVault(){
+  const box = $('#vList'); if(!box) return;
+  const q = ($('#vSearch') ? $('#vSearch').value : '').trim().toLowerCase();
+  const list = saved.filter(r=>{
+    if(!q) return true;
+    const hay = `${r.worker} ${r.duty} ${shortDate(r.start)} ${fmtDT(r.savedAt)} ${r.status === 'signed' ? '서명완료' : '서명대기'}`.toLowerCase();
+    return hay.includes(q);
+  });
+  const nWait = saved.filter(r=>r.status !== 'signed').length;
+  const nDone = saved.filter(r=>r.status === 'signed').length;
+  const dot = $('#vaultDot');
+  if(dot){ dot.textContent = saved.length; dot.classList.toggle('on', saved.length > 0); }
+  const sum = $('#vaultSum');
+  if(sum){
+    sum.innerHTML = `<span class="sm wait">⏳ 서명 대기 ${nWait}</span>
+      <span class="sm done">✅ 서명 완료 ${nDone}</span>
+      <span class="sm">전체 ${saved.length}</span>`;
+  }
+
+  if(!list.length){
+    box.innerHTML = `<div class="empty">
+      <div class="big">🗂</div>
+      <b>${saved.length ? '검색 결과가 없습니다' : '아직 보낸 계약서가 없습니다'}</b>
+      <span>${saved.length ? '다른 이름이나 직무로 찾아보세요.' : '<b>새 계약</b>에서 조건을 적고 <b>📤 서명 링크 만들기</b>를 누르면 이곳에 표시됩니다. 근로자가 서명하면 자동으로 <b>✅ 서명 완료</b>로 바뀝니다.'}</span>
+    </div>`;
+    return;
+  }
+
+  box.innerHTML = list.map(r=>{
+    const done = r.status === 'signed';
+    return `<div class="v-item" data-id="${esc(r.id)}">
+      <div class="v-main">
+        <div class="v-name">${esc(r.worker || '이름 미기재')}
+          ${done ? '<span class="pill ok">✅ 서명 완료</span>' : '<span class="pill gray">⏳ 서명 대기</span>'}
+          ${r.wage ? `<span class="pill">${won(r.wage)}원</span>` : ''}</div>
+        <div class="v-meta">
+          <span>${r.openEnded ? '기간 제한 없음' : `${shortDate(r.start) || '—'} ~ ${shortDate(r.end) || '—'}`}</span>
+          <span class="sep">·</span>
+          <span>${esc(r.duty || '직무 미기재')}</span>
+          <span class="sep">·</span>
+          <span>${done ? `서명 ${fmtDT(r.signedAt)}` : `링크 ${fmtDT(r.savedAt)}`}</span>
+        </div>
+      </div>
+      <div class="v-act">
+        ${done ? '' : `<button class="icon-btn" data-link="${esc(r.id)}" title="링크 복사" aria-label="링크 복사">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+        </button>`}
+        <button class="icon-btn" data-open="${esc(r.id)}" title="열기" aria-label="열기">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6"/></svg>
+        </button>
+        <button class="icon-btn del" data-del="${esc(r.id)}" title="삭제" aria-label="삭제">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15"/></svg>
+        </button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---------- 서명 패드 다시 그리기 ---------- */
+function drawSigIntoPad(key, dataURL){
+  const c = pads[key] && pads[key].canvas;
+  if(!c) return;
+  const img = new Image();
+  img.onload = ()=>{
+    const ctx = c.getContext('2d');
+    const d = Math.min(window.devicePixelRatio || 1, 2);
+    ctx.save(); ctx.setTransform(1,0,0,1,0,0);
+    ctx.clearRect(0,0,c.width,c.height);
+    const scale = Math.min((c.width/d)/img.width, (c.height/d)/img.height);
+    const w = img.width*scale, h = img.height*scale;
+    ctx.drawImage(img, ((c.width/d)-w)/2, ((c.height/d)-h)/2, w, h);
+    ctx.restore();
+  };
+  img.src = dataURL;
+}
+
+function clearPads(){
+  Object.keys(pads).forEach(k=>{ if(pads[k]) pads[k].clear(); });
+  Object.keys(sigs).forEach(k=>{ sigs[k] = null; });
+  $$('.pad').forEach(p=>p.classList.remove('signed'));
+  receiptMode = 'text'; receiptText = '';
+  syncReceiptUI();
+}
+
+/* ---------- 기록 열기 ---------- */
+function applyRecord(rec){
+  currentId = rec.id;
+  draft = Object.assign(blankDraft(), rec.data || {});
+  company = Object.assign({}, DEFAULT_COMPANY, rec.companySnapshot || {});
+  theme = rec.theme === 'premium' ? 'premium' : 'official';
+  Store.set('ksc.theme.v1', theme);
+  $$('.tp').forEach(b=>b.setAttribute('aria-checked', String(b.dataset.theme === theme)));
+  clearPads();
+  receiptMode = rec.receipt.mode === 'ink' ? 'ink' : 'text';
+  receiptText = rec.receipt.text || '';
+  Object.keys(sigs).forEach(k=>{ sigs[k] = (rec.sigs && rec.sigs[k]) || null; });
+  Object.keys(pads).forEach(k=>{
+    if(!sigs[k]) return;
+    const pad = $(`.pad[data-pad="${k}"]`);
+    if(pad) pad.classList.add('signed');
+    drawSigIntoPad(k, sigs[k]);
+  });
+  signedInfo = rec.status === 'signed' ? { at: rec.signedAt || rec.savedAt, id: rec.id } : null;
+  syncReceiptUI(); fillForm(); syncCompanyFields(); renderSheet(); paintSignatures();
+  const rl = $('#btnRecLink');
+  if(rl) rl.hidden = rec.status === 'signed';
+}
+
+function openRecord(id){
+  const rec = saved.find(r=>r.id === id);
+  if(!rec){ toast('계약서를 찾지 못했습니다 · 새로고침해 주세요'); return; }
+  setWorkerMode(false);
+  applyRecord(rec);
+  goTab('preview');
+  toast(rec.status === 'signed' ? '서명 완료본 · PDF 저장/인쇄로 보관하세요' : '서명 대기 중인 계약서입니다 · 링크를 다시 보낼 수 있습니다', 2800);
+}
+
+/* ---------- 설정 ---------- */
+function syncCompanyFields(){
+  $$('[data-ck]').forEach(el=>{ el.value = company[el.dataset.ck] == null ? '' : company[el.dataset.ck]; });
+  const sp = $('#sealPrev'); if(sp) sp.innerHTML = sealSVG(66);
+  const std = company.mode === 'standard';
+  if($('#tglMode')) $('#tglMode').setAttribute('aria-checked', String(std));
+  if($('#modeText')) $('#modeText').textContent = std ? '표준(근로기준법 친화) 조항' : '원문 조항 (기본 양식)';
+}
+function refreshKeyUI(){
+  const k = getOwnerKey();
+  const el = $('#ownerKeyVal'); if(el) el.textContent = k;
+}
+
+/* ---------- 탭 ---------- */
+const LOCK_SEL = '#cStart,#cEnd,#cOpen,#cPlace,#cDuty,#cWage,#cDate';
+function syncDock(){
+  const b = $('#btnMakeLink2'); if(!b) return;
+  const rec = saved.find(r=>r.id === currentId);
+  const pending = !!(rec && rec.status === 'pending');
+  b.dataset.mode = pending ? 'copy' : 'new';
+  b.textContent = pending ? '🔗 링크 복사' : '📤 서명 링크 만들기';
+}
+function goTab(name){
+  $$('.tab').forEach(t=>t.setAttribute('aria-selected', String(t.dataset.tab === name)));
+  $$('.panel').forEach(p=>p.classList.toggle('active', p.id === 'panel-' + name));
+  const inPv = name === 'preview';
+  const employer = uiMode !== 'worker';
+  $('#dock').classList.toggle('on', inPv && employer);
+  const showWorkerDock = inPv && !employer && !workerSigned;
+  $('#dockWorker').classList.toggle('on', showWorkerDock);
+  document.body.classList.toggle('has-dock', inPv && (employer || !workerSigned));
+  const sc = $('#sigCard'); if(sc) sc.hidden = employer;
+  const ps = $('#pvState'); if(ps) ps.style.display = employer ? 'none' : '';
+  if(name === 'preview'){ syncDock(); requestAnimationFrame(()=>{ renderSheet(); fitSheet(); }); }
+  if(name === 'vault'){ renderVault(); refreshVault(true); }
+  if(name === 'company') refreshKeyUI();
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+
+/* ---------- 스플래시 ---------- */
+function runSplash(){
+  const sp = $('#splash'); if(!sp) return;
+  const hold = /splash=(hold|1)/.test(location.search) || /splash=hold/.test(location.hash);
+  const done = () => { sp.classList.add('hide'); setTimeout(()=>{ sp.style.display='none'; }, 650); };
+  if(hold) return;
+  setTimeout(done, 1150);
+  window.addEventListener('load', ()=>{ setTimeout(done, 350); }, {once:true});
+  window.__kscSplash = { done, el: sp };
+}
+
+/* ---------- 모달 ---------- */
+function openModal(title, bodyHTML, footHTML){
+  $('#mTitle').textContent = title;
+  $('#mBody').innerHTML = bodyHTML;
+  $('#mFoot').innerHTML = footHTML || '';
+  $('#modalWrap').classList.add('on');
+  $('#modalWrap').setAttribute('aria-hidden','false');
+  document.body.style.overflow = 'hidden';
+  if($('#mClose2')) $('#mClose2').addEventListener('click', closeModal);
+}
+function closeModal(){
+  $('#modalWrap').classList.remove('on');
+  $('#modalWrap').setAttribute('aria-hidden','true');
+  document.body.style.overflow = '';
+}
+
+/* =====================================================================
+   사업주 — 서명 링크 만들기
+   ===================================================================== */
+function validateForLink(){
+  if(!(draft.name || '').trim()){ toast('근로자 성명을 먼저 입력해 주세요'); goTab('form'); $('#wName').focus(); return false; }
+  if(!num(draft.wage)){ toast('일당을 먼저 입력해 주세요'); goTab('form'); $('#cWage').focus(); return false; }
+  if(!(draft.duty || '').trim()){ toast('담당직무를 먼저 입력해 주세요'); goTab('form'); $('#cDuty').focus(); return false; }
+  return true;
+}
+
+async function makeLink(){
+  if(!validateForLink()) return;
+  const btns = [$('#btnMakeLink'), $('#btnMakeLink2')].filter(Boolean);
+  btns.forEach(b=>{ b.dataset.t = b.dataset.t || b.textContent.trim(); b.disabled = true; b.textContent = '⏳ 만드는 중…'; });
+  try{
+    const id = randToken(16);
+    const employerData = {
+      company: clone(company),
+      theme: theme,
+      data: clone(draft),
+      receipt: { mode: receiptMode, text: receiptText },
+      sigs: { ceo: sigs.ceo || null },
+      createdAt: new Date().toISOString()
+    };
+    const res = await sbRpc('create_contract', {
+      p_id: id,
+      p_owner_key: getOwnerKey(),
+      p_worker_name: (draft.name || '').trim() || null,
+      p_employer_data: employerData
+    });
+    if(!res || !res.ok) throw new Error('링크를 저장하지 못했습니다');
+    currentId = id;
+    signedInfo = null;
+    const rl = $('#btnRecLink'); if(rl) rl.hidden = false;
+    showLinkModal(id);
+    refreshVault(true);
+  }catch(e){
+    toast('링크를 만들지 못했습니다 · ' + ((e && e.message) || e), 4000);
+  }finally{
+    btns.forEach(b=>{ b.disabled = false; b.textContent = b.dataset.t || '📤 서명 링크 만들기'; });
+  }
+}
+
+function showLinkModal(id){
+  const url = linkFor(id);
+  const name = (draft.name || '').trim() || '근로자';
+  openModal('📤 서명 링크가 만들어졌습니다',
+    `<div class="m-sec">
+       <div class="m-lbl">근로자에게 보낼 링크</div>
+       <div class="link-box"><span class="lk">${esc(url)}</span></div>
+       <div class="m-act-row" style="margin-top:10px">
+         <button class="btn btn-primary" id="mCopyLink">📋 링크 복사</button>
+         <button class="btn btn-ghost" id="mShareLink">💬 카톡·공유</button>
+         <button class="btn btn-ghost" id="mOpenLink">↗ 열어 보기</button>
+       </div>
+     </div>
+     <div class="m-sec">
+       <div class="m-kv"><span class="k">근로자</span><span class="v">${esc(name)}</span></div>
+       <div class="m-kv"><span class="k">계약</span><span class="v">${esc(CO_LABEL())} · ${esc(draft.duty || '')}</span></div>
+       <div class="m-kv"><span class="k">일당</span><span class="v">${won(num(draft.wage))}원</span></div>
+       <div class="m-kv"><span class="k">기간</span><span class="v">${draft.openEnded ? '기간 제한 없음' : `${shortDate(draft.start) || '—'} ~ ${shortDate(draft.end) || '—'}`}</span></div>
+     </div>
+     <div class="m-sec">
+       <div class="m-note">링크를 받은 <b>${esc(name)}</b> 님이 이름과 서명을 넣어 <b>서명 완료 및 제출</b>을 누르면, 이 계약서가 <b>보관함에 자동으로 ✅ 서명 완료</b>로 표시됩니다.<br>파일이나 코드를 다시 받을 필요가 없습니다.</div>
+     </div>`,
+    `<button class="btn btn-ghost" id="mClose2">닫기</button>
+     <button class="btn btn-primary" id="mGoVault">보관함에서 보기</button>`);
+
+  $('#mCopyLink').addEventListener('click', async ()=>{
+    const ok = await copyText(url);
+    toast(ok ? '링크를 복사했습니다 · 카톡에 붙여넣으세요' : '복사하지 못했습니다 · 링크를 길게 눌러 복사하세요', 2600);
+  });
+  $('#mShareLink').addEventListener('click', async ()=>{
+    const text = `[${CO_LABEL()}] 근로계약 서명 요청\n${name} 님, 아래 링크를 열어 서명해 주세요.\n${url}`;
+    if(navigator.share){
+      try{ await navigator.share({ title:'근로계약 서명 요청', text }); return; }
+      catch(e){ if(e && e.name === 'AbortError') return; }
+    }
+    const ok = await copyText(text);
+    toast(ok ? '링크를 복사했습니다 · 카톡에 붙여넣으세요' : '공유를 지원하지 않는 브라우저입니다', 2800);
+  });
+  $('#mOpenLink').addEventListener('click', ()=>window.open(url, '_blank'));
+  $('#mGoVault').addEventListener('click', ()=>{ closeModal(); goTab('vault'); });
+}
+
+async function copyRecordLink(id){
+  const url = linkFor(id);
+  const ok = await copyText(url);
+  if(ok) toast('서명 링크를 복사했습니다 · 근로자에게 보내세요', 2600);
+  else toast('복사하지 못했습니다', 2200);
+}
+
+/* =====================================================================
+   근로자 — 링크로 열기 · 서명 · 제출
+   ===================================================================== */
+function readTargetId(){
+  let id = '';
+  try{
+    const qs = new URLSearchParams(location.search);
+    id = qs.get('id') || qs.get('contract') || '';
+  }catch(e){}
+  if(!id){
+    const h = String(location.hash || '').replace(/^#/, '');
+    if(h && !/^req=/.test(h)){
+      try{
+        const p = new URLSearchParams(h);
+        id = p.get('id') || p.get('contract') || (/^id=/.test(h) ? h.slice(3) : '');
+      }catch(e){ if(/^id=/.test(h)) id = h.slice(3); }
+    }
+  }
+  id = decodeURIComponent(String(id || '')).trim();
+  return /^[A-Za-z0-9_-]{8,40}$/.test(id) ? id : '';
+}
+const legacyRequest = () => /#req=([^&]+)/.test(location.hash || '');
+
+function setWorkerMode(on){
+  uiMode = on ? 'worker' : 'employer';
+  document.body.classList.toggle('worker-mode', !!on);
+  $$(LOCK_SEL).forEach(el=>{ el.disabled = !!on; });
+  $$('input[name="wtype"]').forEach(el=>{ el.disabled = !!on; });
+  $('#cardTerms').classList.toggle('locked', !!on);
+  $('#termLockNote').hidden = !on;
+  $('#workerFillNote').hidden = !on;
+  $('#ctaSign').hidden = !!on;
+  if($('#btnSample')) $('#btnSample').hidden = !!on;
+  if($('#btnMakeLink')) $('#btnMakeLink').hidden = !!on;
+  if($('#btnNewDraft')) $('#btnNewDraft').hidden = !!on;
+  if($('#btnPrint') && !on){ /* employer dock 유지 */ }
+  $$('.tp').forEach(b=>{ b.disabled = !!on; b.style.opacity = on ? '.5' : '1'; });
+  if($('#btnPreviewLb')) $('#btnPreviewLb').textContent = on ? '계속 · 서명하기' : '미리보기 · A4 확인';
+  const tl = (k,v)=>{ const el = $(`.tab[data-tab="${k}"] .tlb`); if(el) el.textContent = v; };
+  tl('form', on ? '내 정보' : '새 계약');
+  tl('preview', on ? '서명' : '미리보기');
+  tl('vault', '보관함');
+  tl('company', '설정');
+  if(!on){ const b = $('#workerBanner'); b.classList.remove('on'); b.innerHTML = ''; }
+}
+
+function showWorkerBanner(E, signed){
+  const b = $('#workerBanner');
+  const co = (E && E.company) || {};
+  const who = esc(co.name || '사업주');
+  b.innerHTML = `
+    <div class="wb-ic">${signed ? '✅' : '🖊'}</div>
+    <div style="min-width:0">
+      <div class="wb-t">${who} 근로계약 ${signed ? '서명 완료본' : '서명 요청'}</div>
+      <div class="wb-s">${signed
+        ? '이미 서명이 완료된 계약서입니다. 내 사본을 저장하거나 인쇄할 수 있습니다.'
+        : '<b>1) 성명 확인 → 2) 자필 성명 · 서명 2곳 · 동의확인 → 3) 사본 수령함</b>을 작성하고 <b>✅ 서명 완료 및 제출</b>을 누르세요. 계약 조건은 사업주가 정한 그대로이며 수정할 수 없습니다.'}</div>
+    </div>`;
+  b.classList.add('on');
+}
+
+function openWorkerContract(row){
+  const E = row.employer_data || {};
+  const W = row.worker_data || null;
+  workerSigned = row.status === 'signed';
+  workerEmployer = E;
+  company = Object.assign({}, DEFAULT_COMPANY, E.company || {});
+  theme = ((W && W.theme) || E.theme) === 'premium' ? 'premium' : 'official';
+  draft = Object.assign(blankDraft(), E.data || {}, (W && W.data) || {});
+  if(!draft.date) draft.date = todayISO();
+  clearPads();
+  if(W && W.sigs){
+    Object.keys(sigs).forEach(k=>{ sigs[k] = W.sigs[k] || null; });
+    Object.keys(sigs).forEach(k=>{
+      if(!sigs[k]) return;
+      const pad = $(`.pad[data-pad="${k}"]`);
+      if(pad) pad.classList.add('signed');
+      drawSigIntoPad(k, sigs[k]);
+    });
+  }
+  const rcm = (W && W.receipt) || E.receipt || { mode:'text', text:'' };
+  receiptMode = (rcm.mode === 'ink' && sigs.receipt) ? 'ink' : 'text';
+  receiptText = String(rcm.text == null ? '' : rcm.text).trim() || '사본 수령함';
+  signedInfo = workerSigned ? { at: row.signed_at, id: row.id } : null;
+  setWorkerMode(true);
+  fillForm(); syncCompanyFields(); syncReceiptUI(); renderSheet(); paintSignatures();
+  showWorkerBanner(E, workerSigned);
+
+  if(workerSigned){
+    showDone({ signedAt: row.signed_at, already: true });
+  }else{
+    goTab('form');
+    toast('서명 요청을 열었습니다 · 이름 확인 후 서명해 주세요', 3200);
+  }
+}
+
+async function bootWorker(){
+  const id = readTargetId();
+  const legacy = legacyRequest();
+  document.body.classList.add('worker-mode');
+  setWorkerMode(true);
+  if(!id){
+    if(legacy){
+      showWorkerError('옛 방식 링크입니다', '이 링크는 이전 버전(파일·코드 전송)용입니다.<br>사업주에게 <b>새 서명 링크</b>를 다시 보내 달라고 해주세요.');
+    }else{
+      showWorkerError('서명 링크가 아닙니다', '사업주에게 받은 <b>서명 링크</b>를 그대로 열어 주세요.<br>주소가 <b>?id=…</b> 형태여야 합니다.');
+    }
+    return;
+  }
+  workerId = id;
+  document.body.classList.remove('no-nav');
+  try{
+    const row = await sbRpc('get_contract_for_worker', { p_id: id });
+    if(!row){
+      showWorkerError('계약서를 찾을 수 없습니다', '링크가 만료되었거나 주소가 잘못되었습니다.<br>사업주에게 <b>새 링크</b>를 요청해 주세요.');
+      return;
+    }
+    openWorkerContract(row);
+  }catch(e){
+    showWorkerError('계약서를 불러오지 못했습니다', '인터넷 연결을 확인한 뒤 새로고침해 주세요.<br><span style="opacity:.65">' + esc((e && e.message) || e) + '</span>');
+  }
+}
+
+function showWorkerError(title, msg){
+  document.body.classList.add('worker-mode', 'no-nav');
+  uiMode = 'worker';
+  const hero = $('.done-hero');
+  if(hero) hero.querySelector('.dh-ic').textContent = '⚠️';
+  const h2 = hero && hero.querySelector('h2'); if(h2) h2.textContent = title;
+  $('#doneDesc').innerHTML = msg;
+  $('#doneMeta').innerHTML = '';
+  $('#btnDonePdf').hidden = true;
+  $('#btnDoneSheet').hidden = true;
+  $('#doneFine').innerHTML = '전자 근로계약서 · 서명 링크';
+  $$('.tab').forEach(t=>t.setAttribute('aria-selected','false'));
+  $$('.panel').forEach(p=>p.classList.toggle('active', p.id === 'panel-done'));
+  $('#dock').classList.remove('on');
+  $('#dockWorker').classList.remove('on');
+  document.body.classList.remove('has-dock');
+  window.scrollTo({top:0});
+}
+
+function showDone(info){
+  const when = fmtDT((info && info.signedAt) || new Date().toISOString());
+  const already = !!(info && info.already);
+  const hero = $('.done-hero');
+  if(hero) hero.querySelector('.dh-ic').textContent = '✅';
+  const h2 = hero && hero.querySelector('h2'); if(h2) h2.textContent = already ? '서명 완료된 계약서' : '제출 완료!';
+  $('#doneDesc').innerHTML = already
+    ? '이미 서명이 완료된 계약서입니다.<br>아래에서 내 사본을 저장하거나 인쇄할 수 있습니다.'
+    : '사장님께 자동 전달되었습니다.<br>따로 파일을 보내거나 확인을 기다릴 필요가 없습니다.';
+  $('#doneMeta').innerHTML = `<span class="dm">✅ 서명 완료</span>` +
+    (company.name ? `<span class="dm">${esc(company.name)}</span>` : '') +
+    (when ? `<span class="dm">${when}</span>` : '');
+  $('#btnDonePdf').hidden = false;
+  $('#btnDoneSheet').hidden = false;
+  $('#doneFine').innerHTML = '서명한 계약서 사본은 언제든 다시 열어 저장할 수 있습니다. 사업주 보관함에도 같은 내용이 전달되어 있습니다.';
+  if(uiMode === 'worker') showWorkerBanner(workerEmployer, true);
+  document.body.classList.remove('no-nav');
+  goTab('done');
+  window.scrollTo({top:0});
+}
+
+async function submitWorker(){
+  if(!(draft.name || '').trim()){ toast('성명을 먼저 입력해 주세요'); goTab('form'); $('#wName').focus(); return; }
+  const n = fillCount();
+  if(n < 4){
+    const miss = [];
+    if(!sigs.agree) miss.push('7항 동의확인');
+    if(!sigs.name) miss.push('자필 성명');
+    if(!sigs.worker) miss.push('근로자 서명');
+    if(receiptModel().kind === 'none') miss.push('사본 수령함');
+    toast(`빠진 항목: ${miss.join(' · ')}`, 3200);
+    goTab('preview');
+    setTimeout(()=>{ const sc = $('#sigCard'); if(sc) sc.scrollIntoView({behavior:'smooth', block:'center'}); }, 220);
+    return;
+  }
+  if(!workerId){ toast('서명 링크 정보가 없습니다 · 링크를 다시 열어 주세요', 3000); return; }
+  const btn = $('#btnWorkerSubmit');
+  const t0 = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳ 제출 중…';
+  try{
+    const sigsOut = {};
+    for(const k of ['agree','name','worker','ceo','receipt']) sigsOut[k] = await compactSig(sigs[k]);
+    const payload = {
+      data: clone(draft),
+      sigs: sigsOut,
+      receipt: { mode: receiptMode, text: receiptText },
+      theme: theme,
+      signedAt: new Date().toISOString()
+    };
+    const res = await sbRpc('submit_worker_signature', {
+      p_id: workerId,
+      p_worker_name: (draft.name || '').trim(),
+      p_worker_data: payload
+    });
+    if(!res || !res.ok){
+      if(res && res.reason === 'missing_or_already_signed'){
+        workerSigned = true;
+        toast('이미 서명이 완료된 계약서입니다', 3000);
+        try{
+          const row = await sbRpc('get_contract_for_worker', { p_id: workerId });
+          if(row){ openWorkerContract(row); return; }
+        }catch(e){}
+        showDone({ signedAt: null, already: true });
+        return;
+      }
+      throw new Error('제출하지 못했습니다');
+    }
+    Object.keys(sigs).forEach(k=>{ if(sigsOut[k]) sigs[k] = sigsOut[k]; });
+    workerSigned = true;
+    signedInfo = { at: res.signed_at || new Date().toISOString(), id: workerId };
+    renderSheet(); paintSignatures();
+    showDone({ signedAt: signedInfo.at });
+    toast('제출 완료 · 사장님께 전달되었습니다', 3200);
+  }catch(e){
+    toast('제출하지 못했습니다 · ' + ((e && e.message) || e) + ' — 잠시 뒤 다시 눌러 주세요', 4200);
+  }finally{
+    btn.disabled = false; btn.textContent = t0;
+  }
+}
+
+/* ---------- 새 계약 비우기 ---------- */
+function newDraft(){
+  currentId = null; signedInfo = null;
+  draft = blankDraft();
+  clearPads();
+  fillForm(); renderSheet(); paintSignatures();
+  const rl = $('#btnRecLink'); if(rl) rl.hidden = true;
+  setWorkerMode(false);
+  goTab('form');
+  toast('새 계약서를 시작합니다');
+}
+
+/* ---------- 백업 ---------- */
+function exportBackup(){
+  if(!saved.length){ toast('내보낼 계약서가 없습니다'); return; }
+  const blob = new Blob([JSON.stringify({
+    app:'전자근로계약서', version:3, exportedAt:new Date().toISOString(),
+    ownerKey: getOwnerKey(), company, contracts: saved
+  }, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `전자근로계약서_백업_${todayISO()}.json`;
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1200);
+  toast('백업 파일을 내려받았습니다');
+}
+
+/* =====================================================================
+   초기화
+   ===================================================================== */
+function init(){
+  $('#brandMark').innerHTML = emblemSVG('#f0d399');
+  $('#yearChip').textContent = new Date().getFullYear();
+
+  $$('.tab').forEach(t=>t.addEventListener('click', ()=>goTab(t.dataset.tab)));
+
+  /* 출력 양식 */
+  $$('.tp').forEach(btn=>{
+    btn.setAttribute('aria-checked', String(btn.dataset.theme === theme));
+    btn.addEventListener('click', ()=>{
+      const next = btn.dataset.theme;
+      if(next === theme || uiMode === 'worker') return;
+      theme = next;
+      Store.set('ksc.theme.v1', theme);
+      $$('.tp').forEach(b=>b.setAttribute('aria-checked', String(b.dataset.theme === theme)));
+      renderSheet(); fitSheet();
+      toast(theme === 'premium' ? '고급 디자인 양식으로 전환했습니다' : '공식 표준 양식으로 전환했습니다');
+    });
+  });
+
+  $('#btnBack').addEventListener('click', ()=>goTab('form'));
+  $('#btnPreview').addEventListener('click', ()=>{
+    if(!(draft.name || '').trim()){ toast('근로자 성명을 먼저 입력해 주세요'); goTab('form'); $('#wName').focus(); return; }
+    if(!num(draft.wage)){ toast('일당을 먼저 입력해 주세요'); goTab('form'); $('#cWage').focus(); return; }
+    renderSheet(); goTab('preview');
+  });
+  $('#btnSample').addEventListener('click', ()=>{
+    if(uiMode === 'worker') return;
+    const demo = {
+      name:'(주)한빛건설', ceo:'김성한', bizNo:'123-45-67890',
+      addr:'서울특별시 마포구 월드컵북로 21, 3층', bizType:'건설업',
+      phone:'02-1234-5678', sealText:'(주)한빛건설 인'
+    };
+    Object.keys(demo).forEach(k=>{ if(!String(company[k] || '').trim()) company[k] = demo[k]; });
+    Store.set(KEY_COMPANY, company);
+    syncCompanyFields();
+    draft = sampleData();
+    clearPads();
+    fillForm(); renderSheet(); paintSignatures();
+    toast('샘플 데이터를 채웠습니다');
+  });
+  if($('#btnNewDraft')) $('#btnNewDraft').addEventListener('click', ()=>{
+    if(uiMode === 'worker') return;
+    if((draft.name || '').trim() && !confirm('지금 작성 중인 내용을 지우고 새 계약서를 시작할까요?')) return;
+    newDraft();
+  });
+  $('#btnPrint').addEventListener('click', ()=>{ renderSheet(); setTimeout(()=>window.print(), 60); });
+  $('#btnClearSigs').addEventListener('click', ()=>{
+    clearPads(); renderSheet(); paintSignatures();
+    toast('서명과 사본 수령함을 지웠습니다', 2200);
+  });
+  $('#btnZoom').addEventListener('click', (e)=>{
+    zoomed = !zoomed;
+    $('#sheetWrap').classList.toggle('zoom', zoomed);
+    e.currentTarget.textContent = zoomed ? '화면에 맞춤' : '실제 크기';
+    fitSheet();
+  });
+  $$('.pad-clear').forEach(b=>b.addEventListener('click', ()=>{
+    if(uiMode === 'worker' && workerSigned) return;
+    if(pads[b.dataset.clear]) pads[b.dataset.clear].clear();
+  }));
+
+  bindForm();
+  draft.date = todayISO();
+  $('#cDate').value = draft.date;
+  updateWageBadge(); syncPeriodUI();
+
+  /* 서명 링크 만들기 */
+  $('#btnMakeLink').addEventListener('click', makeLink);
+  const mk2 = $('#btnMakeLink2'); if(mk2) mk2.addEventListener('click', ()=>{
+    if(mk2.dataset.mode === 'copy' && currentId) copyRecordLink(currentId);
+    else makeLink();
+  });
+  const rl = $('#btnRecLink');
+  if(rl) rl.addEventListener('click', ()=>{ if(currentId) showLinkModal(currentId); });
+
+  /* 보관함 */
+  $('#vSearch').addEventListener('input', renderVault);
+  $('#vList').addEventListener('click', async (e)=>{
+    const openBtn = e.target.closest('[data-open]');
+    const linkBtn = e.target.closest('[data-link]');
+    const delBtn  = e.target.closest('[data-del]');
+    if(openBtn) openRecord(openBtn.dataset.open);
+    if(linkBtn) copyRecordLink(linkBtn.dataset.link);
+    if(delBtn){
+      const id = delBtn.dataset.del;
+      const rec = saved.find(r=>r.id === id);
+      if(!confirm(`"${rec ? rec.worker : '이'} 님" 계약서를 삭제할까요?\n삭제하면 링크도 더 이상 열 수 없습니다.`)) return;
+      try{
+        await sbRpc('delete_employer_contract', { p_id: id, p_owner_key: getOwnerKey() });
+        saved = saved.filter(r=>r.id !== id);
+        Store.set(KEY_LIST, saved);
+        renderVault();
+        toast('삭제했습니다');
+      }catch(err){ toast('삭제하지 못했습니다 · ' + ((err && err.message) || err), 3200); }
+    }
+  });
+  $('#btnVaultReload').addEventListener('click', ()=>refreshVault(false));
+
+  /* 설정: 사업주 코드 · 백업 */
+  $('#btnKeyCopy').addEventListener('click', async ()=>{
+    const ok = await copyText(getOwnerKey());
+    toast(ok ? '사업주 코드를 복사했습니다 · 안전한 곳에 보관하세요' : '복사하지 못했습니다', 2800);
+  });
+  $('#btnKeyApply').addEventListener('click', async ()=>{
+    const v = ($('#ownerKeyIn').value || '').trim();
+    if(v.length < 12){ toast('사업주 코드가 너무 짧습니다 · 전체 코드를 붙여넣어 주세요'); return; }
+    if(!/^[A-Za-z0-9_-]{12,80}$/.test(v)){ toast('사업주 코드 형식이 올바르지 않습니다'); return; }
+    if(!confirm('이 기기의 보관함을 입력한 코드의 보관함으로 바꿉니다.\n계속할까요?')) return;
+    Store.set(KEY_OWNER, v);
+    $('#ownerKeyIn').value = '';
+    refreshKeyUI();
+    await refreshVault(false);
+    toast('사업주 코드를 적용했습니다');
+  });
+
+  $$('[data-ck]').forEach(el=>{
+    el.addEventListener('input', ()=>{
+      let v = el.value;
+      if(el.dataset.mask === 'bizno'){
+        const d = v.replace(/[^\d]/g,'').slice(0,10);
+        v = d.length > 5 ? `${d.slice(0,3)}-${d.slice(3,5)}-${d.slice(5)}` : d;
+        if(v !== el.value) el.value = v;
+      }
+      company[el.dataset.ck] = v;
+      $('#sealPrev').innerHTML = sealSVG(66);
+      Store.set(KEY_COMPANY, company);   // 사업주 정보는 한 번만 입력하면 자동 저장
+    });
+  });
+  $('#tglMode').addEventListener('click', ()=>{
+    company.mode = company.mode === 'standard' ? 'original' : 'standard';
+    syncCompanyFields(); renderSheet();
+  });
+  $('#btnCoSave').addEventListener('click', ()=>{
+    Store.set(KEY_COMPANY, company);
+    renderSheet();
+    toast('회사 설정을 저장했습니다');
+  });
+  $('#btnCoReset').addEventListener('click', ()=>{
+    if(!confirm('회사 정보를 기본값(빈 칸)으로 되돌릴까요?')) return;
+    company = Object.assign({}, DEFAULT_COMPANY);
+    Store.set(KEY_COMPANY, company);
+    syncCompanyFields(); renderSheet();
+    toast('기본값으로 되돌렸습니다');
+  });
+  $('#btnExport').addEventListener('click', exportBackup);
+  $('#btnImport').addEventListener('click', ()=>$('#fileImport').click());
+  $('#fileImport').addEventListener('change', (e)=>{
+    const f = e.target.files && e.target.files[0];
+    if(!f) return;
+    const rd = new FileReader();
+    rd.onload = ()=>{
+      try{
+        const obj = JSON.parse(rd.result);
+        const incoming = Array.isArray(obj) ? obj : (obj.contracts || []);
+        if(!incoming.length){ toast('가져올 계약서가 없습니다'); return; }
+        const ids = new Set(saved.map(r=>r.id));
+        let added = 0;
+        incoming.forEach(r=>{ if(r && r.id && !ids.has(r.id)){ saved.push(r); added++; } });
+        saved.sort((a,b)=> String(b.savedAt || '').localeCompare(String(a.savedAt || '')));
+        Store.set(KEY_LIST, saved); renderVault();
+        toast(added ? `${added}건을 가져왔습니다` : '이미 모두 가져온 계약서입니다');
+      }catch(err){ toast('백업 파일을 읽을 수 없습니다'); }
+    };
+    rd.readAsText(f);
+    e.target.value = '';
+  });
+
+  setupPad($('#padAgree'), 'agree');
+  setupPad($('#padWorker'), 'worker');
+  setupPad($('#padName'), 'name');
+  setupPad($('#padReceipt'), 'receipt');
+  setupPad($('#padCeo'), 'ceo');
+
+  /* 이름 · 사본 수령함 */
+  $('#pvName').addEventListener('input', (e)=>{
+    if(uiMode === 'worker' && workerSigned) return;
+    const v = e.target.value;
+    draft.name = v;
+    const wn = $('#wName'); if(wn && wn.value !== v) wn.value = v;
+    const ok = $('#nsOk'); if(ok){ ok.textContent = v.trim() ? '표 인쇄 ✓' : '표 인쇄'; ok.classList.toggle('on', !!v.trim()); }
+    updatePvState(); renderSheet();
+  });
+  $$('.rc-tab').forEach(btn=>btn.addEventListener('click', ()=>{
+    if(uiMode === 'worker' && workerSigned) return;
+    receiptMode = btn.dataset.rcmode === 'ink' ? 'ink' : 'text';
+    syncReceiptUI(); renderSheet(); paintSignatures();
+  }));
+  $('#rcText').addEventListener('input', (e)=>{
+    if(uiMode === 'worker' && workerSigned) return;
+    receiptText = e.target.value;
+    syncReceiptUI(); renderSheet(); updatePvState();
+  });
+  $('#rcStamp').addEventListener('click', ()=>{
+    if(uiMode === 'worker' && workerSigned) return;
+    receiptText = '사본 수령함';
+    syncReceiptUI(); renderSheet(); paintSignatures();
+  });
+  $('#ceoToggle').addEventListener('click', ()=>{
+    const w = $('#ceoPadWrap');
+    const show = w.hidden;
+    w.hidden = !show;
+    $('#ceoToggle').textContent = show ? '－ (갑) 대표이사 서명 접기' : '＋ (갑) 대표이사 서명 직접 쓰기 (선택)';
+    if(show) setTimeout(()=>{ w.scrollIntoView({behavior:'smooth', block:'center'}); }, 80);
+  });
+  syncReceiptUI();
+
+  /* 모달 · 도크 */
+  $('#mClose').addEventListener('click', closeModal);
+  $('#modalBack').addEventListener('click', closeModal);
+  document.addEventListener('keydown', e=>{ if(e.key === 'Escape' && $('#modalWrap').classList.contains('on')) closeModal(); });
+  $('#btnWorkerPrint').addEventListener('click', ()=>{ renderSheet(); setTimeout(()=>window.print(), 60); });
+  const wsub = $('#btnWorkerSubmit'); if(wsub) wsub.addEventListener('click', submitWorker);
+  $('#btnDonePdf').addEventListener('click', ()=>{ renderSheet(); setTimeout(()=>window.print(), 80); });
+  $('#btnDoneSheet').addEventListener('click', ()=>goTab('preview'));
+
+  $('#sheet').addEventListener('click', (e)=>{
+    if(!e.target.closest('.sig-slot, .receipt')) return;
+    if(uiMode === 'worker' && !workerSigned){ goTab('preview'); const sc = $('#sigCard'); if(sc) sc.scrollIntoView({behavior:'smooth', block:'center'}); }
+  });
+
+  if(!Store.ok()){
+    $('#warnbar').classList.add('on');
+    $('#warnbarTxt').innerHTML = '이 브라우저에서는 자동 저장이 제한됩니다. 계약서 백업은 <b>설정 → 백업 내보내기</b>를 사용하세요.';
+  }
+
+  refreshKeyUI();
+  fillForm(); syncCompanyFields(); renderSheet(); renderVault(); paintSignatures();
+  refreshVault(true);
+
+  window.addEventListener('resize', fitSheet);
+  window.addEventListener('orientationchange', ()=>setTimeout(fitSheet, 250));
+  window.addEventListener('beforeprint', ()=>{ zoomed = false; $('#sheetWrap').classList.remove('zoom'); fitSheet(); });
+  window.addEventListener('afterprint', ()=>setTimeout(fitSheet, 100));
+  document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState === 'visible' && uiMode !== 'worker') refreshVault(true); });
+
+  runSplash();
+
+  window.ContractApp = {
+    get draft(){return draft;}, get company(){return company;}, get sigs(){return sigs;},
+    get saved(){return saved;}, get theme(){return theme;}, get uiMode(){return uiMode;},
+    get signedInfo(){return signedInfo;}, get currentId(){return currentId;}, get workerId(){return workerId;},
+    get ownerKey(){return getOwnerKey();},
+    renderSheet, fitSheet, goTab, pads, sampleData, makeLink, submitWorker, refreshVault, openRecord, setWorkerMode, closeModal,
+    sbRpc, recordFromServer, showLinkModal, newDraft,
+    splashDone: ()=>{ const s=$('#splash'); s.classList.add('hide'); setTimeout(()=>{ s.style.display='none'; }, 650); }
+  };
+
+  /* 서명 링크로 들어왔는가 */
+  if(readTargetId() || legacyRequest() || /[?&]id=/.test(location.search)) bootWorker();
+}
+
+if(document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+</script>
+</body>
+</html>
