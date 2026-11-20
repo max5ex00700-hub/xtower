@@ -68,7 +68,9 @@
     padding:7px 10px;border-radius:999px;
     background:rgba(94,234,212,.10);border:1px solid rgba(94,234,212,.24);
   }
-  .presence b{font-weight:800;color:#5eead4}
+  .presence b{font-weight:800;color:#5eead4;margin-left:1px}
+  .presence .pw{white-space:nowrap}
+  @media (max-width:370px){ .presence{font-size:10.5px;padding:6px 8px} .presence .pw{display:none} }
   .dot{width:6px;height:6px;border-radius:50%;background:#5eead4;box-shadow:0 0 0 0 rgba(94,234,212,.6);animation:pulse 2.2s infinite}
   @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(94,234,212,.55)}70%{box-shadow:0 0 0 7px rgba(94,234,212,0)}100%{box-shadow:0 0 0 0 rgba(94,234,212,0)}}
   .presence.offline{color:#ffd6a8;background:rgba(255,180,80,.10);border-color:rgba(255,180,80,.3)}
@@ -314,7 +316,7 @@
         <p class="sub">링크 하나로 같은 노래, 같은 순간</p>
       </div>
     </div>
-    <div class="presence" id="presence"><span class="dot"></span><b id="pc">1</b>명</div>
+    <div class="presence" id="presence"><span class="dot"></span><b id="pc">1</b>명<span class="pw"> 함께 듣는 중</span></div>
   </header>
 
   <section class="now">
