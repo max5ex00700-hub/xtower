@@ -195,6 +195,7 @@
   }
   .mini:hover{color:var(--cream); border-color:rgba(201,165,92,0.45)}
   #btnShowTest{ align-self:flex-start; display:none }
+  #btnShowTest:not(.hidden){ display:inline-flex }
   #btnShowTest.hidden{ display:none }
   .hint{
     font-size:10px; letter-spacing:.12em; color:rgba(139,147,163,0.75);
@@ -331,6 +332,7 @@ var S = {
   dock: true,
   sound: false,
   typing: 0,           // 0..100 depth gauge
+  shift: false,
   typed: '',
   msg: '',
   msgSub: '',
@@ -1675,7 +1677,7 @@ function endPointer(e) {
       var id = pending.id;
       pending = null;
       press(id, false);
-      fireKey(id);
+      fireKey(id, null, true);
     }
     drag = null;
     canvas.style.cursor = 'grab';
@@ -1744,6 +1746,10 @@ function stepDial(d) {
   if (S.sound) playClick(0.7);
 }
 
+var SHIFT_OF = { '1': '!', '2': '@', '3': '#', '4': '$', '5': '%', '6': '^', '7': '&', '8': '*',
+  '9': '(', '0': ')', '`': '~', '-': '_', '=': '+', '[': '{', ']': '}', '\\': '|', ';': ':',
+  "'": '"', ',': '<', '.': '>', '/': '?', ' ': ' ' };
+
 var CHAR_OF = {};
 function buildCharMap() {
   ROWS_L.concat(ROWS_R).forEach(function (row) {
@@ -1757,7 +1763,7 @@ function buildCharMap() {
 }
 buildCharMap();
 
-function fireKey(id) {
+function fireKey(id, typedChar, fromPointer) {
   var rec = keysById[id];
   if (!rec) return;
   if (rec.kind === 'mode') {
@@ -1789,9 +1795,22 @@ function fireKey(id) {
     S.typed += '\n';
   } else if (id === 'tab') {
     S.typed += '  ';
+  } else if (id === 'shiftL' || id === 'shiftR') {
+    if (fromPointer) {
+      S.shift = !S.shift;
+      keysById['shiftL'].down = S.shift;
+      keysById['shiftR'].down = S.shift;
+    }
   } else if (CHAR_OF[id]) {
-    var ch = CHAR_OF[id];
-    S.typed += S.lang === 'KO' && LET_KO[ch] ? LET_KO[ch] : ch;
+    var ch = typedChar || CHAR_OF[id];
+    if (!typedChar && S.shift) ch = SHIFT_OF[ch] || ch.toUpperCase();
+    if (S.lang === 'KO' && !S.shift && LET_KO[ch]) ch = LET_KO[ch];
+    S.typed += ch;
+    if (fromPointer && S.shift) {
+      S.shift = false;
+      keysById['shiftL'].down = false;
+      keysById['shiftR'].down = false;
+    }
   }
   if (S.typed.length > 200) S.typed = S.typed.slice(-200);
   updateTyped();
@@ -1834,12 +1853,14 @@ window.addEventListener('keydown', function (e) {
   if (HELD[id] && id !== 'bksp') return;
   HELD[id] = true;
   press(id, true);
-  fireKey(id);
+  S.shift = !!(e.shiftKey || HELD['shiftL'] || HELD['shiftR']);
+  fireKey(id, (e.key && e.key.length === 1) ? e.key : null);
 });
 window.addEventListener('keyup', function (e) {
   var id = idForEvent(e);
   if (!id) return;
   HELD[id] = false;
+  if (id === 'shiftL' || id === 'shiftR') S.shift = !!(HELD['shiftL'] || HELD['shiftR']);
   press(id, false);
 });
 window.addEventListener('blur', function () {
