@@ -1260,7 +1260,7 @@ function buildLED() {
   });
   var emblemMat = new T.MeshBasicMaterial({
     map: emblemTex, transparent: true, blending: T.AdditiveBlending,
-    depthWrite: false, toneMapped: false, color: new T.Color(MODE_INFO[S.mode].color), opacity: 1.0
+    depthWrite: false, toneMapped: false, color: new T.Color(MODE_INFO[S.mode].color), opacity: 0.82
   });
   ledMats.emblem = emblemMat;
   var emblem = new T.Mesh(new T.PlaneGeometry(1.28, 1.28), emblemMat);
@@ -2022,9 +2022,9 @@ function tick() {
   }
 
   /* LED pulse */
-  var pulse = 0.58 + Math.sin(now * 0.0026) * 0.18 + (S.typing / 100) * 0.45;
+  var pulse = 0.42 + Math.sin(now * 0.0026) * 0.14 + (S.typing / 100) * 0.4;
   ledMats.glass.emissiveIntensity = pulse;
-  ledMats.halo.opacity = 0.34 + Math.sin(now * 0.0026) * 0.12 + (S.typing / 100) * 0.2;
+  ledMats.halo.opacity = 0.26 + Math.sin(now * 0.0026) * 0.10 + (S.typing / 100) * 0.2;
   ledMats.light.intensity = 0.8 + Math.sin(now * 0.0026) * 0.35;
 
   if (now - lastOled > 45) {
