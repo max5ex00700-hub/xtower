@@ -287,16 +287,16 @@
   .floaters{position:fixed;inset:0;z-index:70;pointer-events:none;overflow:hidden}
   .float{
     position:absolute;transform:translate(-50%,-50%);
-    font-size:23px;line-height:1;
+    font-size:22px;line-height:1;
     filter:drop-shadow(0 6px 14px rgba(0,0,0,.55)) drop-shadow(0 0 10px rgba(170,190,255,.45));
     animation:floatUp 2.8s cubic-bezier(.22,.7,.35,1) forwards;
     will-change:transform,opacity;
   }
   @keyframes floatUp{
     0%{opacity:0;transform:translate(-50%,-50%) scale(.45) rotate(-6deg)}
-    14%{opacity:1;transform:translate(calc(-50% + var(--dx)*.18),calc(-50% - 14px)) scale(1.14) rotate(4deg)}
-    70%{opacity:.9}
-    100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% - 172px)) scale(var(--sc)) rotate(-8deg)}
+    14%{opacity:1;transform:translate(calc(-50% + var(--dx)*.18),calc(-50% - 12px)) scale(1.12) rotate(4deg)}
+    70%{opacity:.85}
+    100%{opacity:0;transform:translate(calc(-50% + var(--dx)),calc(-50% - 146px)) scale(var(--sc)) rotate(-8deg)}
   }
 
   /* ---------- actions ---------- */
