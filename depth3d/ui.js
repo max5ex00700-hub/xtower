@@ -156,10 +156,15 @@
   /* -------------------------------------------------------------- 토글 */
 
   function syncToggles() {
-    $('t-sway').classList.toggle('on', !!S.sway);
-    $('t-gyro').classList.toggle('on', !!S.gyro);
-    $('t-center').classList.toggle('on', !!S.center);
-    $('t-invert').classList.toggle('on', !!S.invert);
+    var live = (global.D3D && D3D.getState) ? D3D.getState() : S;
+    S.sway = !!live.sway;
+    S.gyro = !!live.gyro;
+    S.center = !!live.center;
+    S.invert = !!live.invert;
+    $('t-sway').classList.toggle('on', S.sway);
+    $('t-gyro').classList.toggle('on', S.gyro);
+    $('t-center').classList.toggle('on', S.center);
+    $('t-invert').classList.toggle('on', S.invert);
   }
 
   function wireToggles() {
