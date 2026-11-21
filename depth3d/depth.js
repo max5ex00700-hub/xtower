@@ -240,6 +240,8 @@
     build: build,
     refine: refine,
     sample: sampleBilinear,
+    blur: blur,
+    guided: guided,
     hasImage: function () { return !!cache; },
     size: function () { return cache ? { w: cache.w, h: cache.h } : null; }
   };

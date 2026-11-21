@@ -7,7 +7,7 @@
 <title>Depth3D</title>
 <link rel="stylesheet" href="app.css" />
 </head>
-<body>
+<body class="mode-fixed">
 <div id="app">
 
   <div class="backdrop" aria-hidden="true">
@@ -23,9 +23,9 @@
       <div class="brand-line">
         <span class="mark"></span>
         <h1>Depth3D</h1>
-        <span class="rev">2.5D</span>
+        <span class="rev">2.5D+</span>
       </div>
-      <div class="byline">제작: 포시즌jo</div>
+      <div class="byline">제작: 포시즌jo · v1.1.0</div>
     </div>
     <div class="top-right">
       <span class="offline">OFFLINE</span>
@@ -39,7 +39,7 @@
 
   <div class="hint" id="hint">
     <span class="hint-dot"></span>
-    끌어서 좌우·상하로 기울여 보세요
+    배경은 그대로, 피사체만 3D로 돌아갑니다
   </div>
 
   <section class="sheet" id="sheet">
@@ -49,10 +49,29 @@
       <canvas class="depth-thumb" id="depth-thumb" width="72" height="96"></canvas>
       <div class="caption">
         <span class="caption-name" id="photo-name">샘플 포트레이트</span>
-        <span class="caption-meta" id="photo-meta">기기 안에서 깊이를 계산합니다</span>
+        <span class="caption-meta" id="photo-meta">기기 안에서 피사체를 분리합니다</span>
       </div>
       <button class="ghost" id="btn-collapse">접기</button>
     </div>
+
+    <div class="modes" id="modes">
+      <button class="mode-btn" data-mode="full">
+        <b>전체 2.5D</b><span>사진 전체가 입체</span>
+      </button>
+      <button class="mode-btn on" data-mode="fixed">
+        <b>배경 고정</b><span>피사체만 3D</span>
+      </button>
+    </div>
+
+    <div class="engines" id="engines">
+      <button class="engine-btn" data-engine="fast">
+        <i></i><b>고속 분리</b><span>즉시 · 깊이 컷오프</span>
+      </button>
+      <button class="engine-btn on" data-engine="ai">
+        <i></i><b>AI 정밀 분리</b><span>u2netp · 4.4MB</span>
+      </button>
+    </div>
+    <div class="eng-status" id="eng-status">u2netp 모델을 기기 안에서만 돌립니다 · 인터넷 없음</div>
 
     <div class="sources" id="sources">
       <button class="btn primary" id="btn-open">
@@ -73,6 +92,18 @@
       <div class="slider">
         <div class="slabel"><span>입체 깊이</span><span class="sval" id="v-depth">62%</span></div>
         <input type="range" id="s-depth" min="0" max="100" value="62" step="1" />
+      </div>
+      <div class="slider fx">
+        <div class="slabel"><span>배경 고정 강도</span><span class="sval" id="v-lock">100%</span></div>
+        <input type="range" id="s-lock" min="0" max="100" value="100" step="1" />
+      </div>
+      <div class="slider fx">
+        <div class="slabel"><span>경계 부드러움 (페더링)</span><span class="sval" id="v-feather">42%</span></div>
+        <input type="range" id="s-feather" min="0" max="100" value="42" step="1" />
+      </div>
+      <div class="slider fx">
+        <div class="slabel"><span>전경 컷오프</span><span class="sval" id="v-cutoff">50%</span></div>
+        <input type="range" id="s-cutoff" min="10" max="90" value="50" step="1" />
       </div>
       <div class="slider">
         <div class="slabel"><span>표면 부드러움</span><span class="sval" id="v-smooth">48%</span></div>
@@ -116,6 +147,7 @@
 <script src="three.min.js"></script>
 <script src="samples.js"></script>
 <script src="depth.js"></script>
+<script src="segment.js"></script>
 <script src="viewer.js"></script>
 <script src="ui.js"></script>
 </body>

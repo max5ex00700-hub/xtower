@@ -1,14 +1,16 @@
-/* Depth3D — 화면 조작 (슬라이더·토글·사진 선택·몰입 모드) */
+/* Depth3D — 화면 조작 (모드·분리 엔진·슬라이더·토글·사진 선택·몰입 모드) */
 (function (global) {
   'use strict';
 
   var $ = function (id) { return document.getElementById(id); };
-  var STORE_KEY = 'depth3d.settings.v1';
+  var STORE_KEY = 'depth3d.settings.v2';
 
   var S = {
     depth: 0.62, smooth: 0.48, invert: false,
     lightAngle: -32, lightPower: 0.78,
-    sway: false, gyro: false, center: false
+    sway: false, gyro: false, center: false,
+    mode: 'fixed', engine: 'ai',
+    bgLock: 1.0, feather: 0.42, cutoff: 0.50
   };
 
   var immersive = false;
@@ -16,7 +18,9 @@
   var hintTimer = null;
   var toastTimer = null;
   var smoothTimer = null;
+  var cutoffTimer = null;
   var samples = global.DEPTH3D_SAMPLES || [];
+  var rebuildMs = 0;
 
   /* -------------------------------------------------------------- 상태 저장 */
 
@@ -33,10 +37,15 @@
       if (typeof o.smooth === 'number') S.smooth = o.smooth;
       if (typeof o.lightAngle === 'number') S.lightAngle = o.lightAngle;
       if (typeof o.lightPower === 'number') S.lightPower = o.lightPower;
+      if (typeof o.bgLock === 'number') S.bgLock = o.bgLock;
+      if (typeof o.feather === 'number') S.feather = o.feather;
+      if (typeof o.cutoff === 'number') S.cutoff = o.cutoff;
+      if (o.mode === 'full' || o.mode === 'fixed') S.mode = o.mode;
+      if (o.engine === 'fast' || o.engine === 'ai') S.engine = o.engine;
       S.invert = !!o.invert;
       S.sway = !!o.sway;
       S.center = !!o.center;
-      S.gyro = false; // 센서는 켜진 채로 시작하지 않는다
+      S.gyro = false;
     } catch (e) {}
   }
 
@@ -94,21 +103,30 @@
   /* -------------------------------------------------------------- 슬라이더 */
 
   function fill(el) {
+    if (!el) return;
     var min = parseFloat(el.min), max = parseFloat(el.max), v = parseFloat(el.value);
     var p = max > min ? (v - min) / (max - min) * 100 : 0;
     el.style.setProperty('--p', p.toFixed(1) + '%');
   }
+
+  var RANGES = ['s-depth', 's-smooth', 's-light', 's-power', 's-lock', 's-feather', 's-cutoff'];
 
   function syncSliders() {
     $('s-depth').value = Math.round(S.depth * 100);
     $('s-smooth').value = Math.round(S.smooth * 100);
     $('s-light').value = Math.round(S.lightAngle);
     $('s-power').value = Math.round(S.lightPower * 100);
+    $('s-lock').value = Math.round(S.bgLock * 100);
+    $('s-feather').value = Math.round(S.feather * 100);
+    $('s-cutoff').value = Math.round(S.cutoff * 100);
     $('v-depth').textContent = Math.round(S.depth * 100) + '%';
     $('v-smooth').textContent = Math.round(S.smooth * 100) + '%';
     $('v-light').textContent = Math.round(S.lightAngle) + '°';
     $('v-power').textContent = Math.round(S.lightPower * 100) + '%';
-    ['s-depth', 's-smooth', 's-light', 's-power'].forEach(function (id) { fill($(id)); });
+    $('v-lock').textContent = Math.round(S.bgLock * 100) + '%';
+    $('v-feather').textContent = Math.round(S.feather * 100) + '%';
+    $('v-cutoff').textContent = Math.round(S.cutoff * 100) + '%';
+    RANGES.forEach(function (id) { fill($(id)); });
   }
 
   function wireSliders() {
@@ -151,6 +169,112 @@
       D3D.setParam('lightPower', S.lightPower);
       save();
     });
+
+    $('s-lock').addEventListener('input', function () {
+      var v = +this.value;
+      S.bgLock = v / 100;
+      $('v-lock').textContent = v + '%';
+      fill(this);
+      D3D.setParam('bgLock', S.bgLock);
+      save();
+    });
+
+    $('s-feather').addEventListener('input', function () {
+      var v = +this.value;
+      S.feather = v / 100;
+      $('v-feather').textContent = v + '%';
+      fill(this);
+      clearTimeout(cutoffTimer);
+      cutoffTimer = setTimeout(function () {
+        D3D.setParam('feather', S.feather);
+        updateMeta();
+        save();
+      }, 110);
+    });
+
+    $('s-cutoff').addEventListener('input', function () {
+      var v = +this.value;
+      S.cutoff = v / 100;
+      $('v-cutoff').textContent = v + '%';
+      fill(this);
+      clearTimeout(cutoffTimer);
+      cutoffTimer = setTimeout(function () {
+        D3D.setParam('cutoff', S.cutoff);
+        updateMeta();
+        save();
+      }, 110);
+    });
+  }
+
+  /* -------------------------------------------------------------- 모드·엔진 */
+
+  function syncMode(mode) {
+    S.mode = mode;
+    document.body.classList.toggle('mode-fixed', mode === 'fixed');
+    document.body.classList.toggle('mode-full', mode === 'full');
+    var btns = document.querySelectorAll('.mode-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('on', btns[i].getAttribute('data-mode') === mode);
+    }
+    var hint = $('hint');
+    if (hint) {
+      hint.innerHTML = (mode === 'fixed')
+        ? '<span class="hint-dot"></span>배경은 그대로, 피사체만 3D로 돌아갑니다'
+        : '<span class="hint-dot"></span>끌어서 좌우·상하로 기울여 보세요';
+    }
+    syncSheetHeight();
+    setTimeout(function () { D3D.resize(); }, 60);
+  }
+
+  function syncEngine() {
+    var live = (global.D3D && D3D.getState) ? D3D.getState() : S;
+    S.engine = live.engine || S.engine;
+    var btns = document.querySelectorAll('.engine-btn');
+    for (var i = 0; i < btns.length; i++) {
+      btns[i].classList.toggle('on', btns[i].getAttribute('data-engine') === S.engine);
+    }
+  }
+
+  function aiStatus(kind, msg) {
+    var el = $('eng-status');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.remove('busy', 'err');
+    if (kind === 'loading') el.classList.add('busy');
+    if (kind === 'error') el.classList.add('err');
+  }
+
+  function wireModes() {
+    var btns = document.querySelectorAll('.mode-btn');
+    for (var i = 0; i < btns.length; i++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          var m = btn.getAttribute('data-mode');
+          if (m === S.mode) return;
+          syncMode(m);
+          D3D.setMode(m);
+          save();
+          hideHint();
+          toast(m === 'fixed' ? '배경을 고정하고 피사체만 3D로 띄웁니다' : '사진 전체를 2.5D 카드로 띄웁니다');
+        });
+      })(btns[i]);
+    }
+
+    var ebtns = document.querySelectorAll('.engine-btn');
+    for (var k = 0; k < ebtns.length; k++) {
+      (function (btn) {
+        btn.addEventListener('click', function () {
+          var e = btn.getAttribute('data-engine');
+          if (e === S.engine) return;
+          S.engine = e;
+          syncEngine();
+          D3D.setEngine(e);
+          save();
+          if (e === 'fast') aiStatus('idle', '고속 마스크 · 즉시 분리');
+          hideHint();
+        });
+      })(ebtns[k]);
+    }
   }
 
   /* -------------------------------------------------------------- 토글 */
@@ -199,20 +323,46 @@
   function updateMeta() {
     var d = D3D.debug ? D3D.debug() : null;
     var meta = $('photo-meta');
-    if (!meta) return;
-    if (d && d.ready) {
+    if (!meta || !d) return;
+    if (!d.ready) { meta.textContent = '기기 안에서 깊이를 계산합니다'; return; }
+    if (d.mode === 'fixed') {
+      var eng = d.maskEngine === 'ai' ? 'AI 피사체 분리' : '고속 분리';
+      var extra = [];
+      if (d.contourPoints) extra.push('실루엣 ' + d.contourPoints.toLocaleString('ko-KR') + '점');
+      if (d.bgMs) extra.push('배경 채움 ' + d.bgMs + 'ms');
+      meta.textContent = eng + ' · ' + (d.aiStatus && d.aiStatus.lastMs ? (d.aiStatus.lastMs / 1000).toFixed(1) + 's · ' : '') +
+        (extra.length ? extra.join(' · ') : '배경 고정');
+    } else {
       meta.textContent = '깊이 ' + d.depthMap[0] + '×' + d.depthMap[1] + ' · 변위 메쉬 ' + d.segments[0] + '×' + d.segments[1];
     }
+  }
+
+  function updateThumb() {
+    var thumb = $('depth-thumb');
+    if (!thumb) return;
+    var d = D3D.debug ? D3D.debug() : null;
+    if (d && d.mode === 'fixed' && d.hasMask && D3D.getMaskPreview) D3D.getMaskPreview(thumb);
+    else if (D3D.getDepthPreview) D3D.getDepthPreview(thumb);
   }
 
   function onPhotoLoaded(label, w, h) {
     $('photo-name').textContent = label || '내 사진';
     updateMeta();
-    var thumb = $('depth-thumb');
-    if (thumb && D3D.getDepthPreview) D3D.getDepthPreview(thumb);
+    updateThumb();
     hideLoading();
     hideHint();
     D3D.fit();
+  }
+
+  function onRebuilt(mode, engine) {
+    updateMeta();
+    updateThumb();
+  }
+
+  function onModeChanged(mode) {
+    syncMode(mode);
+    updateMeta();
+    updateThumb();
   }
 
   function loadSample(i) {
@@ -261,7 +411,6 @@
     if (global.Android && Android.setImmersive) {
       Android.setImmersive(immersive);
     } else {
-      // 일반 브라우저에서는 전체화면으로 대신한다
       try {
         if (immersive && document.documentElement.requestFullscreen) {
           document.documentElement.requestFullscreen();
@@ -279,7 +428,6 @@
     $('btn-immersive').addEventListener('click', function () { setImmersive(!immersive, false); });
     $('btn-restore').addEventListener('click', function () { setImmersive(false, false); });
 
-    // 몰입 상태에서 화면을 톡 치면 컨트롤이 돌아온다
     var down = null;
     var c = $('gl');
     c.addEventListener('pointerdown', function (e) { down = { x: e.clientX, y: e.clientY, t: performance.now() }; });
@@ -315,9 +463,12 @@
   function boot() {
     load();
     syncSliders();
+    syncMode(S.mode);
     syncToggles();
+    syncEngine();
     syncSheetHeight();
     wireSliders();
+    wireModes();
     wireToggles();
     wireSources();
     wireImmersive();
@@ -341,7 +492,12 @@
     D3D.setParam('lightAngle', S.lightAngle);
     D3D.setParam('lightPower', S.lightPower);
     D3D.setParam('invert', S.invert);
+    D3D.setParam('bgLock', S.bgLock);
+    D3D.setParam('feather', S.feather);
+    D3D.setParam('cutoff', S.cutoff);
     D3D.setSway(S.sway);
+    D3D.setParam('mode', S.mode);
+    D3D.setParam('engine', S.engine);
 
     if (samples.length) {
       setTimeout(function () { loadSample(0); }, 80);
@@ -361,6 +517,10 @@
     loadingProgress: loadingProgress,
     toast: toast,
     onPhotoLoaded: onPhotoLoaded,
+    onRebuilt: onRebuilt,
+    onModeChanged: onModeChanged,
+    aiStatus: aiStatus,
+    syncEngine: syncEngine,
     setImmersive: setImmersive,
     syncToggles: syncToggles,
     onInteract: hideHint,
