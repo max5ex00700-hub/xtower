@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(3,4,8,.72);backdrop-filter:blur(6px)}
     padding:0 0 var(--safe-b);z-index:15;
     transition:height .34s cubic-bezier(.4,0,.2,1);
   }
-  .sheet.collapsed{height:calc(64px + var(--safe-b));overflow:hidden}
+  .sheet.collapsed{height:calc(64px + var(--safe-b));min-height:0;overflow:hidden}
   .sheet-body{padding:0 15px 2px}
   .cta{padding:10px 15px calc(12px + var(--safe-b))}
   .stage-empty{display:none}
@@ -476,7 +476,7 @@ dialog::backdrop{background:rgba(3,4,8,.72);backdrop-filter:blur(6px)}
     <div class="stage-empty" id="stageEmpty">
       <div>
         <b>아직 3D 모델이 없습니다</b>
-        <small>이미지를 고르고 <b style="color:#8d95a8">3D 모델 만들기</b>를 눌러주세요</small>
+        <small>이미지를 고르고 <b style="color:var(--gold2);font-weight:600">3D 모델 만들기</b>를 눌러주세요</small>
       </div>
     </div>
 
@@ -805,6 +805,7 @@ function resize() {
   if (shift > 0) camera.setViewOffset(w, h, 0, shift, w, h);
   else camera.clearViewOffset();
   camera.updateProjectionMatrix();
+  idle.position.y = shift > 0 ? 0.02 : 0.62;
 }
 new ResizeObserver(resize).observe(stageEl);
 window.addEventListener('orientationchange', () => setTimeout(resize, 200));
