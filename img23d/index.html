@@ -727,7 +727,7 @@ function frameObject(obj, keepView) {
     const frac = visibleFrac();
     const fovVeff = 2 * Math.atan(Math.tan(fovV / 2) * frac);
     const fovH = 2 * Math.atan(Math.tan(fovV / 2) * Math.max(0.2, camera.aspect));
-    const dist = Math.max(radius / Math.sin(fovVeff / 2), radius / Math.sin(fovH / 2)) * 1.1;
+    const dist = Math.max(radius / Math.sin(fovVeff / 2), radius / Math.sin(fovH / 2)) * 1.28;
     camera.position.set(0, radius * 0.1, dist);
     camera.near = Math.max(0.01, dist * 0.03);
     camera.far = dist * 30;
