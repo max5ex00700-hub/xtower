@@ -283,8 +283,8 @@
           var e = btn.getAttribute('data-engine');
           if (e === S.engine) return;
           S.engine = e;
-          syncEngine();
-          D3D.setEngine(e);
+          D3D.setEngine(e);      // 먼저 뷰어 상태를 바꾸고
+          syncEngine();          // 그 다음 화면을 맞춘다 (반대 순서면 상태가 되돌아간다)
           save();
           if (e === 'fast') aiStatus('idle', '고속 마스크 · 즉시 분리');
           hideHint();
@@ -302,10 +302,11 @@
     });
 
     $('p-engine').addEventListener('click', function () {
-      var e = (S.engine === 'ai') ? 'fast' : 'ai';
+      var live = (global.D3D && D3D.getState) ? D3D.getState() : S;
+      var e = (live.engine === 'ai') ? 'fast' : 'ai';
       S.engine = e;
-      syncEngine();
       D3D.setEngine(e);
+      syncEngine();
       save();
       hideHint();
       toast(e === 'ai' ? 'AI 정밀 분리 (u2netp)' : '고속 분리 · 깊이 컷오프');
