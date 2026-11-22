@@ -839,6 +839,7 @@ function startTournament(size){
     S.total = pool.length - 1;
     beginRound(pool);
   }
+  S.participants = (size === "full") ? n : Math.min(size, n);
   S.scaleLabel = (size === "full") ? (fmt(n) + "명 풀 토너먼트") : (size + "강 토너먼트");
   go("match");
   renderMatch(true);
@@ -991,7 +992,7 @@ function champion(item){
   $("winImg").src = item.s;
   $("winImg").alt = item.n;
   $("winName").textContent = item.n;
-  $("winSub").textContent = S.scaleLabel + " · " + fmt(ITEMS.length) + "명 중 1위";
+  $("winSub").textContent = S.scaleLabel + " · " + fmt(S.participants || ITEMS.length) + "명 중 1위";
   $("stMatches").textContent = String(championWins);
   $("stTitles").textContent = String(titles);
   $("stRate").textContent = t ? Math.round(s.w / t * 100) + "%" : "100%";
