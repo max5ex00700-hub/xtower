@@ -1348,7 +1348,7 @@
       frameCv = document.createElement('canvas');
       frameCv.width = w;
       frameCv.height = h;
-      frameCtx = frameCv.getContext('2d');
+      frameCtx = frameCv.getContext('2d', { willReadFrequently: true });
     }
     frameCtx.clearRect(0, 0, w, h);
     frameCtx.drawImage(canvas, 0, 0, w, h);
