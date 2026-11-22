@@ -289,6 +289,13 @@
     .size.full{grid-column:1 / -1}
     #home{max-width:720px}
   }
+  /* 넓은 화면에서는 좌·우 대결로 */
+  @media (min-width:820px) and (orientation:landscape){
+    #match{max-width:1240px;margin:0 auto;width:100%;padding-left:18px;padding-right:18px}
+    .arena{flex-direction:row;gap:10px}
+    .vs{font-size:11px}
+    .m-foot{height:16px}
+  }
   @media (orientation:landscape) and (max-height:560px){
     #match{padding:calc(var(--safe-t) + 4px) calc(var(--safe-b) + 10px) 6px}
     .arena{flex-direction:row}
