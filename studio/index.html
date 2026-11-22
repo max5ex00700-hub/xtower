@@ -556,6 +556,10 @@
     .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
     .toolbar-inner{flex-wrap:nowrap}
   }
+  @media (max-width:560px){
+    .group-head .hint{display:none}
+    .group-head h2::before{height:17px}
+  }
   @media (max-width:380px){
     .seg button{padding:0 10px;font-size:12.5px}
     .stats .stat{padding:9px 12px}
@@ -611,9 +615,9 @@
 
     <section class="group" data-group="apk">
       <div class="group-head apk">
-        <h2>안드로이드 APK · 드라이브 다운로드</h2>
+        <h2>안드로이드 APK · 다운로드</h2>
         <div class="rule"></div>
-        <div class="hint">설치 허용 후 실행</div>
+        <div class="hint">드라이브 · 설치 허용 후 실행</div>
       </div>
       <div class="grid" id="gridApk"></div>
     </section>
