@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0b0d12">
+<title>포시즌jo의 작업실</title>
+<meta name="description" content="포시즌jo가 지금까지 만든 웹앱과 안드로이드 APK를 한 곳에 모은 작업실입니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0b0d12;
+    --bg-2:#0e1118;
+    --card:#12161f;
+    --card-2:#161b25;
+    --line:rgba(255,255,255,.075);
+    --line-strong:rgba(255,255,255,.14);
+    --gold:#e4b968;
+    --gold-soft:rgba(228,185,104,.14);
+    --mint:#38d9a9;
+    --mint-soft:rgba(56,217,169,.13);
+    --txt:#eef1f6;
+    --muted:#8d96a7;
+    --muted-2:#6d7686;
+    --radius:18px;
+    --maxw:1180px;
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--txt);
+    font-family:"Noto Sans KR",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  body::before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    background:
+      radial-gradient(900px 520px at 8% -12%, rgba(228,185,104,.16), transparent 62%),
+      radial-gradient(820px 520px at 96% 4%, rgba(56,217,169,.10), transparent 60%),
+      radial-gradient(1000px 700px at 50% 108%, rgba(228,185,104,.06), transparent 65%);
+  }
+  .wrap{
+    position:relative;
+    z-index:1;
+    width:100%;
+    max-width:var(--maxw);
+    margin:0 auto;
+    padding:0 20px;
+    padding-left:max(20px,env(safe-area-inset-left));
+    padding-right:max(20px,env(safe-area-inset-right));
+  }
+
+  /* ── header ── */
+  header.hero{
+    padding:clamp(34px,7vw,64px) 0 clamp(20px,3.4vw,30px);
+  }
+  .kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:9px;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.22em;
+    text-transform:uppercase;
+    color:var(--gold);
+    border:1px solid rgba(228,185,104,.32);
+    background:var(--gold-soft);
+    border-radius:999px;
+    padding:7px 14px 7px 12px;
+  }
+  .kicker .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--mint);
+    box-shadow:0 0 0 3px rgba(56,217,169,.18);
+  }
+  h1{
+    margin:20px 0 0;
+    font-size:clamp(30px,7.6vw,54px);
+    line-height:1.16;
+    font-weight:900;
+    letter-spacing:-.03em;
+    word-break:keep-all;
+  }
+  h1 .accent{
+    background:linear-gradient(100deg,var(--gold) 0%,#f4d79a 46%,var(--gold) 100%);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+  }
+  .lede{
+    margin:16px 0 0;
+    max-width:640px;
+    color:var(--muted);
+    font-size:clamp(14.5px,3.6vw,17px);
+    line-height:1.75;
+    word-break:keep-all;
+  }
+  .lede strong{color:#cfd6e2;font-weight:700}
+  .stats{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:8px;
+    margin-top:22px;
+    max-width:440px;
+  }
+  .stat{
+    display:flex;
+    flex-direction:column;
+    gap:1px;
+    padding:12px 13px 11px;
+    border:1px solid var(--line);
+    border-radius:13px;
+    background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.008));
+    min-width:0;
+  }
+  .stat b{
+    font-size:22px;
+    font-weight:900;
+    letter-spacing:-.03em;
+    line-height:1.1;
+  }
+  .stat b.gold{color:var(--gold)}
+  .stat b.mint{color:var(--mint)}
+  .stat span{font-size:11.5px;color:var(--muted-2);font-weight:600;letter-spacing:-.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  /* ── toolbar ── */
+  .toolbar{
+    position:sticky;
+    top:0;
+    z-index:20;
+    padding:10px 0 10px;
+    margin:6px 0 0;
+    background:rgba(11,13,18,.965);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(14px);
+    -webkit-backdrop-filter:blur(14px);
+  }
+  .toolbar-inner{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px;
+  }
+  .search{
+    position:relative;
+    flex:1 1 220px;
+    min-width:0;
+  }
+  .search svg{
+    position:absolute;
+    left:14px;
+    top:50%;
+    transform:translateY(-50%);
+    width:17px;height:17px;
+    stroke:var(--muted-2);
+    fill:none;
+    stroke-width:2;
+    pointer-events:none;
+  }
+  input[type="search"]{
+    width:100%;
+    height:48px;
+    padding:0 16px 0 42px;
+    border-radius:14px;
+    border:1px solid var(--line);
+    background:var(--card);
+    color:var(--txt);
+    font-family:inherit;
+    font-size:15px;
+    font-weight:500;
+    appearance:none;
+    -webkit-appearance:none;
+    transition:border-color .18s, background .18s;
+  }
+  input[type="search"]::placeholder{color:var(--muted-2);font-weight:400}
+  input[type="search"]:focus{
+    outline:none;
+    border-color:rgba(228,185,104,.5);
+    background:var(--card-2);
+    box-shadow:0 0 0 3px rgba(228,185,104,.1);
+  }
+  input[type="search"]::-webkit-search-cancel-button{
+    -webkit-appearance:none;
+    height:14px;width:14px;
+    background:
+      linear-gradient(45deg,transparent 44%,var(--muted) 44%,var(--muted) 56%,transparent 56%),
+      linear-gradient(-45deg,transparent 44%,var(--muted) 44%,var(--muted) 56%,transparent 56%);
+    cursor:pointer;
+  }
+  .seg{
+    display:flex;
+    gap:4px;
+    padding:4px;
+    border:1px solid var(--line);
+    border-radius:14px;
+    background:var(--card);
+    flex:0 0 auto;
+  }
+  .seg button{
+    font-family:inherit;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--muted);
+    background:none;
+    border:0;
+    border-radius:10px;
+    padding:0 14px;
+    height:40px;
+    cursor:pointer;
+    white-space:nowrap;
+    transition:color .16s, background .16s;
+  }
+  .seg button:hover{color:#cdd4e0}
+  .seg button[aria-pressed="true"]{
+    color:#101318;
+    background:linear-gradient(180deg,#f0cd8c,var(--gold));
+    box-shadow:0 4px 14px rgba(228,185,104,.22);
+  }
+  .seg button[aria-pressed="true"][data-filter="apk"]{
+    background:linear-gradient(180deg,#6fe6c2,var(--mint));
+    box-shadow:0 4px 14px rgba(56,217,169,.2);
+  }
+  .count{
+    margin:16px 2px 0;
+    font-size:12.5px;
+    color:var(--muted-2);
+    letter-spacing:.02em;
+  }
+  .count b{color:var(--muted);font-weight:700}
+
+  /* ── sections ── */
+  section.group{
+    padding:26px 0 8px;
+    scroll-margin-top:120px;
+  }
+  .group-head{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    margin-bottom:16px;
+  }
+  .group-head h2{
+    margin:0;
+    font-size:clamp(17px,4.4vw,21px);
+    font-weight:900;
+    letter-spacing:-.02em;
+    display:flex;
+    align-items:center;
+    gap:10px;
+  }
+  .group-head h2::before{
+    content:"";
+    width:4px;height:19px;
+    border-radius:3px;
+    background:linear-gradient(180deg,var(--gold),rgba(228,185,104,.25));
+  }
+  .group-head.apk h2::before{background:linear-gradient(180deg,var(--mint),rgba(56,217,169,.25))}
+  .group-head .hint{
+    font-size:12.5px;
+    color:var(--muted-2);
+    font-weight:500;
+    margin-left:auto;
+    text-align:right;
+  }
+  .rule{
+    flex:1;
+    height:1px;
+    background:linear-gradient(90deg,var(--line-strong),transparent);
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:1fr;
+    gap:12px;
+  }
+
+  /* ── card ── */
+  article.card{
+    position:relative;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    padding:18px;
+    border-radius:var(--radius);
+    border:1px solid var(--line);
+    background:
+      radial-gradient(420px 180px at 100% 0%, rgba(228,185,104,.07), transparent 70%),
+      linear-gradient(180deg,var(--card),#10141c);
+    transition:transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+    overflow:hidden;
+  }
+  article.card::after{
+    content:"";
+    position:absolute;
+    inset:0 0 auto 0;
+    height:1px;
+    background:linear-gradient(90deg,transparent,rgba(228,185,104,.55),transparent);
+    opacity:0;
+    transition:opacity .2s ease;
+  }
+  article.card[data-cat="apk"]{
+    background:
+      radial-gradient(420px 180px at 100% 0%, rgba(56,217,169,.07), transparent 70%),
+      linear-gradient(180deg,var(--card),#10141c);
+  }
+  article.card[data-cat="apk"]::after{
+    background:linear-gradient(90deg,transparent,rgba(56,217,169,.5),transparent);
+  }
+  @media (hover:hover){
+    article.card:hover{
+      transform:translateY(-3px);
+      border-color:rgba(228,185,104,.3);
+      box-shadow:0 18px 40px -22px rgba(0,0,0,.9);
+    }
+    article.card[data-cat="apk"]:hover{
+      border-color:rgba(56,217,169,.3);
+    }
+    article.card:hover::after{opacity:1}
+  }
+  .card-top{
+    display:flex;
+    align-items:flex-start;
+    gap:12px;
+  }
+  .mark{
+    flex:0 0 auto;
+    width:46px;height:46px;
+    display:grid;
+    place-items:center;
+    border-radius:13px;
+    font-size:16px;
+    font-weight:900;
+    letter-spacing:-.02em;
+    color:#1a1305;
+    background:linear-gradient(150deg,#f6db9f,var(--gold) 58%,#b98f3f);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5), 0 6px 16px -8px rgba(228,185,104,.65);
+  }
+  article.card[data-cat="apk"] .mark{
+    color:#04211a;
+    background:linear-gradient(150deg,#8ef0d2,var(--mint) 58%,#1f9e79);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 6px 16px -8px rgba(56,217,169,.6);
+  }
+  .mark.sm{font-size:13.5px}
+  .titles{
+    min-width:0;
+    flex:1 1 auto;
+  }
+  .titles h3{
+    margin:1px 0 0;
+    font-size:17px;
+    font-weight:900;
+    letter-spacing:-.02em;
+    line-height:1.35;
+    word-break:keep-all;
+  }
+  .pills{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    margin-top:7px;
+  }
+  .pill{
+    font-size:11px;
+    font-weight:700;
+    letter-spacing:.06em;
+    padding:3px 8px;
+    border-radius:6px;
+    border:1px solid rgba(228,185,104,.34);
+    color:var(--gold);
+    background:rgba(228,185,104,.09);
+    white-space:nowrap;
+  }
+  article.card[data-cat="apk"] .pill{
+    border-color:rgba(56,217,169,.32);
+    color:var(--mint);
+    background:rgba(56,217,169,.08);
+  }
+  .pill.kind{
+    border-color:var(--line);
+    color:var(--muted-2);
+    background:rgba(255,255,255,.03);
+    letter-spacing:.14em;
+  }
+  .tagline{
+    margin:0;
+    font-size:14.5px;
+    line-height:1.68;
+    color:#b9c2d2;
+    word-break:keep-all;
+  }
+  .card-bottom{
+    margin-top:auto;
+    padding-top:2px;
+  }
+  .meta{
+    display:block;
+    font-size:12px;
+    color:var(--muted-2);
+    letter-spacing:.02em;
+    margin:0 0 10px;
+  }
+  .actions{
+    display:flex;
+    gap:8px;
+    width:100%;
+  }
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:7px;
+    flex:1 1 auto;
+    min-height:46px;
+    padding:0 18px;
+    border-radius:12px;
+    font-family:inherit;
+    font-size:14.5px;
+    font-weight:800;
+    letter-spacing:-.01em;
+    text-decoration:none;
+    border:1px solid transparent;
+    cursor:pointer;
+    transition:transform .16s ease, filter .16s ease, background .16s ease, border-color .16s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+  .btn-primary{
+    color:#151008;
+    background:linear-gradient(180deg,#f2d195,var(--gold) 62%,#d3a552);
+    box-shadow:0 8px 20px -12px rgba(228,185,104,.8);
+  }
+  .btn-primary:active{transform:translateY(1px) scale(.995)}
+  @media (hover:hover){.btn-primary:hover{filter:brightness(1.06)}}
+  article.card[data-cat="apk"] .btn-primary{
+    color:#03221a;
+    background:linear-gradient(180deg,#82efd0,var(--mint) 62%,#25b98d);
+    box-shadow:0 8px 20px -12px rgba(56,217,169,.75);
+  }
+  .btn-ghost{
+    flex:0 0 auto;
+    color:#c3cbd8;
+    background:rgba(255,255,255,.035);
+    border-color:var(--line);
+    min-width:52px;
+    padding:0 14px;
+  }
+  @media (hover:hover){.btn-ghost:hover{background:rgba(255,255,255,.07);border-color:var(--line-strong)}}
+  .btn-ghost:active{transform:translateY(1px)}
+  .btn:focus-visible,
+  .seg button:focus-visible,
+  input[type="search"]:focus-visible{
+    outline:2px solid var(--mint);
+    outline-offset:2px;
+  }
+
+  /* ── empty ── */
+  .empty{
+    display:none;
+    margin:34px 0 10px;
+    padding:44px 22px;
+    text-align:center;
+    border:1px dashed var(--line-strong);
+    border-radius:var(--radius);
+    color:var(--muted);
+    background:rgba(255,255,255,.015);
+  }
+  .empty.show{display:block}
+  .empty strong{display:block;color:#dfe5ee;font-size:16px;margin-bottom:6px}
+  .empty span{font-size:13.5px;color:var(--muted-2)}
+
+  /* ── footer ── */
+  footer{
+    margin-top:clamp(34px,6vw,58px);
+    border-top:1px solid var(--line);
+    padding:26px 0 calc(34px + env(safe-area-inset-bottom));
+  }
+  .foot{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px 18px;
+  }
+  .credit{
+    font-size:14px;
+    font-weight:700;
+    color:#cfd6e2;
+    letter-spacing:.01em;
+  }
+  .credit b{
+    color:var(--gold);
+    font-weight:900;
+    letter-spacing:.02em;
+  }
+  .foot-top{
+    display:flex;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:10px 18px;
+  }
+  .foot-note{
+    font-size:12px;
+    color:var(--muted-2);
+    line-height:1.75;
+    max-width:620px;
+    margin:14px 0 0;
+    word-break:keep-all;
+  }
+  .stamp{
+    margin-left:auto;
+    font-size:11px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:rgba(141,150,167,.55);
+    white-space:nowrap;
+  }
+
+  /* ── toast ── */
+  #toast{
+    position:fixed;
+    left:50%;
+    bottom:calc(26px + env(safe-area-inset-bottom));
+    transform:translate(-50%,16px);
+    z-index:60;
+    padding:12px 20px;
+    border-radius:999px;
+    background:rgba(20,25,34,.96);
+    border:1px solid rgba(56,217,169,.4);
+    color:#e9fff8;
+    font-size:13.5px;
+    font-weight:700;
+    box-shadow:0 16px 40px -16px rgba(0,0,0,.9);
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .22s ease, transform .22s ease;
+  }
+  #toast.show{opacity:1;transform:translate(-50%,0)}
+
+  /* ── desktop ── */
+  @media (min-width:680px){
+    .grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    article.card{padding:20px}
+  }
+  @media (min-width:1040px){
+    .grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+    .toolbar-inner{flex-wrap:nowrap}
+  }
+  @media (max-width:380px){
+    .seg button{padding:0 10px;font-size:12.5px}
+    .stats .stat{padding:9px 12px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;animation:none!important}
+  }
+  ::selection{background:rgba(228,185,104,.28);color:#fff}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="kicker"><span class="dot"></span>FOUR SEASONS STUDIO</div>
+    <h1>포시즌jo의 <span class="accent">작업실</span></h1>
+    <p class="lede">
+      지금까지 직접 만들고 배포한 앱과 웹앱을 한 곳에 모았습니다.
+      <strong>웹앱은 눌러서 바로 실행</strong>되고, 안드로이드 앱은 <strong>구글 드라이브에서 내려받습니다</strong>.
+    </p>
+    <div class="stats">
+      <div class="stat"><b class="gold" id="statWeb">6</b><span>웹앱 바로 실행</span></div>
+      <div class="stat"><b class="mint" id="statApk">6</b><span>안드로이드 APK</span></div>
+      <div class="stat"><b id="statTotal">12</b><span>전체 프로젝트</span></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="toolbar-inner">
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>
+        <label for="q" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">검색</label>
+        <input id="q" type="search" placeholder="이름·기능으로 찾기 (계약서, 3D)" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="seg" role="group" aria-label="분류 필터">
+        <button type="button" data-filter="all" aria-pressed="true">전체</button>
+        <button type="button" data-filter="web" aria-pressed="false">웹앱</button>
+        <button type="button" data-filter="apk" aria-pressed="false">안드로이드 APK</button>
+      </div>
+    </div>
+  </div>
+  <div class="count">표시 중 <b id="shownCount">12</b>개 · 카드를 누르면 링크가 열립니다</div>
+
+  <main id="list">
+    <section class="group" data-group="web">
+      <div class="group-head">
+        <h2>웹앱 · 바로 실행</h2>
+        <div class="rule"></div>
+        <div class="hint">설치 없이 브라우저에서</div>
+      </div>
+      <div class="grid" id="gridWeb"></div>
+    </section>
+
+    <section class="group" data-group="apk">
+      <div class="group-head apk">
+        <h2>안드로이드 APK · 드라이브 다운로드</h2>
+        <div class="rule"></div>
+        <div class="hint">설치 허용 후 실행</div>
+      </div>
+      <div class="grid" id="gridApk"></div>
+    </section>
+
+    <div class="empty" id="empty">
+      <strong>찾는 프로젝트가 없습니다</strong>
+      <span>다른 낱말로 검색하거나 필터를 ‘전체’로 바꿔 보세요.</span>
+    </div>
+  </main>
+
+  <footer>
+    <div class="foot">
+      <div class="foot-top">
+        <div class="credit">제작: <b>포시즌jo</b></div>
+        <div class="stamp">Four Seasons · 2026</div>
+      </div>
+      <p class="foot-note">
+        웹앱은 모두 이 주소(xtower)에서 직접 서비스하고, APK는 포시즌jo 님의 구글 드라이브에 올린 최신 빌드로 연결됩니다.
+        드라이브 링크는 구글 계정으로 로그인되어 있으면 바로 열립니다.
+      </p>
+    </div>
+  </footer>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  "use strict";
+
+  var BASE = "https://max5ex00700-hub.github.io/xtower/";
+  var DRIVE = "https://drive.google.com/file/d/";
+
+  var ITEMS = [
+    /* ───────── 웹앱 ───────── */
+    {
+      cat:"web", mark:"계", name:"전자근로계약서", ver:"v2.1",
+      tagline:"사업주와 근로자가 각자 자기 폰에서 서명하는 근로계약서. 링크 하나로 주고받고 A4·PDF로 바로 출력합니다.",
+      meta:"공용 · Supabase 연동",
+      url:BASE,
+      tags:["근로계약서","계약서","서명","전자계약","출력","pdf","공용"]
+    },
+    {
+      cat:"web", mark:"KSC", name:"KSC 전자근로계약서", ver:"v2.0",
+      tagline:"주식회사 케이에스씨 현장직 일용직 전용. 회사·대표자 정보가 기본값으로 들어간 서명 링크 방식입니다.",
+      meta:"KSC 전용 · 서명 링크",
+      url:BASE+"ksc/",
+      tags:["케이에스씨","ksc","근로계약서","계약서","서명","일용직","현장직"]
+    },
+    {
+      cat:"web", mark:"♪", name:"같이 듣기", ver:"v2",
+      tagline:"6자리 방 코드 하나로 같은 MP3를 동시에. 대화하면서도 같은 순간에 같은 곡을 듣고, 실시간 리액션과 곡 저장까지 됩니다.",
+      meta:"Realtime 동기화 · 6자리 방",
+      url:BASE+"listen/",
+      tags:["음악","mp3","같이듣기","동시청취","플레이어","방코드","리액션"]
+    },
+    {
+      cat:"web", mark:"U1", name:"UNIYOU ONE 3D", ver:"LIVE",
+      tagline:"키보드 콘셉트를 웹에서 3D로. 본체를 돌리고 키를 누르면 중앙 OLED가 바뀌고 금색 다이얼까지 움직입니다.",
+      meta:"Three.js · 단일 HTML",
+      url:BASE+"uniyou-one/",
+      tags:["키보드","3d","유니유","uniyou","웹 3d","콘셉트"]
+    },
+    {
+      cat:"web", mark:"3D", name:"img23d", ver:"LIVE",
+      tagline:"2D 이미지를 넣으면 AI가 앞뒤가 있는 3D 모델(.glb)로 만들어 줍니다. 360° 돌려 보고 그대로 내려받으세요.",
+      meta:"TRELLIS.2 · Tripo3D · Meshy",
+      url:BASE+"img23d/",
+      tags:["이미지","3d 변환","ai","image to 3d","glb","모델","img23d"]
+    },
+    {
+      cat:"web", mark:"D3", name:"Depth3D", ver:"v1.1.0",
+      tagline:"설치 없이 쓰는 2.5D 입체 뷰어. AI가 피사체만 분리해 배경은 고정하고 피사체만 좌우·상하로 돌아갑니다.",
+      meta:"웹판 · 온디바이스 AI",
+      url:BASE+"depth3d/",
+      tags:["깊이","2.5d","3d","피사체","배경","depth","ai"]
+    },
+
+    /* ───────── APK ───────── */
+    {
+      cat:"apk", mark:"탑", name:"백팩 타워", ver:"v1.1.6",
+      tagline:"여전사 3인으로 F층 × 10 스테이지 무한 등반. 전격·야수·기계 3각 상성, 무한 합성과 보스 축복으로 키우는 Godot 4 오토배틀 RPG.",
+      meta:"43.9 MB · 2026-11-16",
+      url:DRIVE+"1kNQS5R2qTXpJ9wGdeML3ftDMYSdeDzye/view?usp=drivesdk",
+      tags:["게임","rpg","godot","백팩","타워","무한등반","오토배틀"]
+    },
+    {
+      cat:"apk", mark:"JK", name:"JoKeyboard", ver:"2.10.18",
+      tagline:"직접 만든 안드로이드 키보드. UNIYOU ONE 3D 키캡 테마에 눌림 깊이와 경사 베벨을 살렸고, 타자 읽어주기(TTS)를 켜고 끌 수 있습니다.",
+      meta:"32.7 MB · 2026-11-22",
+      url:DRIVE+"1ok5SuNqFMZhVmFlwzLOoSL9ktceNwdfn/view?usp=drivesdk",
+      tags:["키보드","조보드","jokeyboard","한글","tts","테마","입력"]
+    },
+    {
+      cat:"apk", mark:"D3", name:"Depth3D", ver:"v1.1.0",
+      tagline:"S26에서 인터넷 없이 도는 AI 피사체 분리 3D. 배경은 고정하고 피사체만 입체로, 좌우·상하 회전과 자이로에 반응합니다.",
+      meta:"7.7 MB · 2026-11-22",
+      url:DRIVE+"1Vpqd3Wfnpcl5OhiWNMMNx016Z1k2Ii8J/view?usp=drivesdk",
+      tags:["사진","3d","피사체 분리","오프라인","ai","depth","s26"]
+    },
+    {
+      cat:"apk", mark:"식", name:"조선소 식사메뉴", ver:"v2.3.0",
+      tagline:"거제 15개 식당 식단을 한 화면에. 로그인 없이, 광고 없이, 끊겨도 마지막에 받은 식단을 그대로 보여줍니다.",
+      meta:"44 KB · 2026-11-18",
+      url:DRIVE+"1S84CVqaPdzarDozNsV6ltCRZJfDR58ul/view?usp=drivesdk",
+      tags:["식단","조선소","거제","삼성중공업","한화오션","급식","밥"]
+    },
+    {
+      cat:"apk", mark:"jo", name:"jo식단", ver:"v1.1.0",
+      tagline:"포시즌jo 전용 식단 앱. 보고 있는 식당 하나만 실시간으로 조회하고 새 식단을 올리며, 나머지는 예약 동기화가 채웁니다.",
+      meta:"59 KB · 2026-11-18",
+      url:DRIVE+"1qMUpDijE6IMJCeRTJpC6AcyMxE3jyc_z/view?usp=drivesdk",
+      tags:["식단","jo식단","개인용","조선소","동기화"]
+    },
+    {
+      cat:"apk", mark:"✍", name:"전자근로계약서", ver:"v1.0.0",
+      tagline:"계약서를 폰에서 작성하고 서명해 출력하는 첫 APK. 지금은 웹판 v2.1이 더 편해서 웹 쪽을 권합니다.",
+      meta:"27.6 MB · 2026-11-17",
+      url:DRIVE+"1xNnleg3nHfOMCaaS8O6G6CnMY8Bdav8d/view?usp=drivesdk",
+      tags:["근로계약서","계약서","서명","apk","ksc","출력"]
+    }
+  ];
+
+  var gridWeb = document.getElementById("gridWeb");
+  var gridApk = document.getElementById("gridApk");
+  var q = document.getElementById("q");
+  var empty = document.getElementById("empty");
+  var shown = document.getElementById("shownCount");
+  var toast = document.getElementById("toast");
+  var toastTimer = null;
+
+  var ICON_OPEN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 4h6v6"/><path d="M20 4l-8.5 8.5"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg>';
+  var ICON_DOWN = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11"/><path d="M7 12l5 5 5-5"/><path d="M5 20h14"/></svg>';
+  var ICON_COPY = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 5H6a2 2 0 0 0-2 2v9"/></svg>';
+
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function build(item, i){
+    var art = document.createElement("article");
+    art.className = "card";
+    art.dataset.cat = item.cat;
+    art.dataset.index = String(i);
+    var isApk = item.cat === "apk";
+    var primary = isApk ? "다운로드" : "바로 열기";
+    var icon = isApk ? ICON_DOWN : ICON_OPEN;
+    var markClass = item.mark.length > 1 ? "mark sm" : "mark";
+    art.innerHTML =
+      '<div class="card-top">' +
+        '<div class="' + markClass + '" aria-hidden="true">' + esc(item.mark) + '</div>' +
+        '<div class="titles">' +
+          '<h3>' + esc(item.name) + '</h3>' +
+          '<div class="pills">' +
+            '<span class="pill">' + esc(item.ver) + '</span>' +
+            '<span class="pill kind">' + (isApk ? "APK" : "WEB") + '</span>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<p class="tagline">' + esc(item.tagline) + '</p>' +
+      '<div class="card-bottom">' +
+        '<span class="meta">' + esc(item.meta) + '</span>' +
+        '<div class="actions">' +
+          '<a class="btn btn-primary" href="' + esc(item.url) + '" target="_blank" rel="noopener"' +
+            ' aria-label="' + esc(item.name + " " + item.ver + " " + primary) + '">' +
+            icon + '<span>' + primary + '</span></a>' +
+          '<button class="btn btn-ghost" type="button" data-copy="' + esc(item.url) + '"' +
+            ' aria-label="' + esc(item.name + " 링크 복사") + '">' + ICON_COPY + '</button>' +
+        '</div>' +
+      '</div>';
+    return art;
+  }
+
+  var nodes = [];
+  ITEMS.forEach(function(item, i){
+    var node = build(item, i);
+    nodes.push(node);
+    (item.cat === "web" ? gridWeb : gridApk).appendChild(node);
+  });
+
+  document.getElementById("statWeb").textContent = ITEMS.filter(function(x){return x.cat==="web";}).length;
+  document.getElementById("statApk").textContent = ITEMS.filter(function(x){return x.cat==="apk";}).length;
+  document.getElementById("statTotal").textContent = ITEMS.length;
+
+  var state = { filter: "all", term: "" };
+
+  function norm(s){ return String(s).toLowerCase().replace(/\s+/g, " ").trim(); }
+
+  function matches(item, term){
+    if (!term) return true;
+    var hay = norm(item.name + " " + item.ver + " " + item.tagline + " " + item.meta + " " + (item.tags || []).join(" "));
+    return term.split(" ").every(function(tok){ return hay.indexOf(tok) !== -1; });
+  }
+
+  function render(){
+    var term = norm(state.term);
+    var visible = 0;
+    nodes.forEach(function(node, i){
+      var item = ITEMS[i];
+      var okCat = state.filter === "all" || item.cat === state.filter;
+      var okTerm = matches(item, term);
+      var show = okCat && okTerm;
+      node.hidden = !show;
+      if (show) visible++;
+    });
+    document.querySelectorAll("section.group").forEach(function(sec){
+      var cat = sec.dataset.group;
+      var any = Array.prototype.some.call(sec.querySelectorAll("article.card"), function(a){ return !a.hidden; });
+      sec.hidden = !any;
+    });
+    empty.classList.toggle("show", visible === 0);
+    shown.textContent = String(visible);
+  }
+
+  document.querySelectorAll(".seg button").forEach(function(btn){
+    btn.addEventListener("click", function(){
+      document.querySelectorAll(".seg button").forEach(function(b){
+        b.setAttribute("aria-pressed", String(b === btn));
+      });
+      state.filter = btn.dataset.filter;
+      render();
+    });
+  });
+
+  q.addEventListener("input", function(){
+    state.term = q.value;
+    render();
+  });
+  q.addEventListener("keydown", function(e){
+    if (e.key === "Escape") { q.value = ""; state.term = ""; render(); }
+  });
+
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add("show");
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ toast.classList.remove("show"); }, 1900);
+  }
+
+  function copyText(text){
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function(resolve, reject){
+      try {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.setAttribute("readonly", "");
+        ta.style.position = "fixed";
+        ta.style.top = "-1000px";
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand("copy");
+        document.body.removeChild(ta);
+        ok ? resolve() : reject(new Error("copy failed"));
+      } catch (err) { reject(err); }
+    });
+  }
+
+  document.addEventListener("click", function(e){
+    var btn = e.target.closest ? e.target.closest("[data-copy]") : null;
+    if (!btn) return;
+    var url = btn.getAttribute("data-copy");
+    copyText(url).then(function(){
+      showToast("링크를 복사했습니다");
+    }).catch(function(){
+      showToast("복사가 막혔습니다 · 길게 눌러 복사해 주세요");
+    });
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
