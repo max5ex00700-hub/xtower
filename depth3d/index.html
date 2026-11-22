@@ -29,10 +29,13 @@
           <span class="rev">2.5D+</span>
           <span class="offline">OFFLINE</span>
         </div>
-        <div class="byline">제작: 포시즌jo · v1.2.0</div>
+        <div class="byline">제작: 포시즌jo · v1.3.0</div>
       </div>
     </div>
     <div class="top-actions">
+      <button class="pill act gif" id="btn-gif" aria-label="GIF 움짤 만들기">
+        <span class="ico">🎞</span><b>움짤</b>
+      </button>
       <button class="pill act save" id="btn-save" aria-label="이미지 저장">
         <span class="ico">📸</span><b>저장</b>
       </button>
@@ -148,12 +151,34 @@
     </div>
 
     <div class="panel-actions">
-      <button class="btn wide" id="btn-save-panel"><span class="ico">📸</span><span>이미지 저장 (현재 각도·확대 그대로)</span></button>
+      <button class="btn wide" id="btn-save-panel"><span class="ico">📸</span><span>이미지 저장 (사진 비율 그대로 · 순수 사진만)</span></button>
     </div>
 
     <div class="panel-foot">
       <span class="pip"></span>인터넷 없이 기기 안에서만 동작합니다
     </div>
+  </section>
+
+  <!-- ------------------------------------------------ 🎞 GIF 움짤 키프레임 바 -->
+  <section class="kfbar" id="kfbar" aria-hidden="true">
+    <div class="kf-head">
+      <div class="kf-title">
+        <b>🎞 GIF 움짤</b>
+        <span id="kf-note">화면을 돌려 각도를 담고 GIF 로 만드세요</span>
+      </div>
+      <button class="ghost" id="kf-close">닫기</button>
+    </div>
+    <div class="kf-chips" id="kf-chips"></div>
+    <div class="kf-actions">
+      <button class="pill" id="kf-add">＋ 각도 추가</button>
+      <button class="pill" id="kf-auto">↔ 자동 왕복</button>
+      <button class="pill" id="kf-clear">↺ 초기화</button>
+    </div>
+    <div class="kf-opt">
+      <button class="pill mini on" id="kf-loop"><span class="dot"></span><b>왕복 루프</b></button>
+      <span class="kf-meta" id="kf-meta">각도 0/8</span>
+    </div>
+    <button class="btn primary wide" id="kf-make">GIF 만들기</button>
   </section>
 
   <!-- ------------------------------------------------ 브러시 보정 -->
@@ -197,6 +222,7 @@
 <script src="samples.js"></script>
 <script src="depth.js"></script>
 <script src="segment.js"></script>
+<script src="gif.js"></script>
 <script src="viewer.js"></script>
 <script src="ui.js"></script>
 </body>

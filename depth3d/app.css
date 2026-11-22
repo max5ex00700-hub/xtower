@@ -284,6 +284,51 @@ body.mode-full .fx,
 body.mode-full .engines,
 body.mode-full .eng-status { display: none; }
 
+/* ------------------------------------------------------------ 🎞 GIF 움짤 키프레임 바 */
+.kfbar {
+  position: absolute; left: 7px; right: 7px;
+  bottom: calc(var(--bottombar-h) + var(--safe-bottom) + 4px);
+  z-index: 6;
+  display: none;
+  flex-direction: column; gap: 9px;
+  padding: 12px 13px calc(12px + var(--safe-bottom) * 0.2);
+  border-radius: 20px;
+  background: linear-gradient(180deg, rgba(19,26,40,.95) 0%, rgba(9,13,20,.97) 62%);
+  border: 1px solid rgba(233,196,106,.18);
+  box-shadow: 0 -18px 44px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.05);
+  backdrop-filter: blur(22px) saturate(120%);
+  -webkit-backdrop-filter: blur(22px) saturate(120%);
+}
+body.kf-open .kfbar { display: flex; }
+body.immersive .kfbar { display: none; }
+.kf-head { display: flex; align-items: center; gap: 8px; }
+.kf-title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.kf-title b { font-size: 12.5px; letter-spacing: .04em; color: #F6E6BD; }
+.kf-title span { font-size: 9.5px; letter-spacing: .02em; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.kf-chips { display: flex; gap: 6px; overflow-x: auto; min-height: 44px; padding-bottom: 1px; scrollbar-width: none; }
+.kf-chips::-webkit-scrollbar { display: none; }
+.kf-chip {
+  position: relative; flex: none; font-family: inherit; text-align: left;
+  padding: 6px 21px 6px 9px; border-radius: 10px; min-width: 74px;
+  border: 1px solid rgba(255,255,255,.10); background: rgba(255,255,255,.04); color: #cbd5e3;
+  display: flex; flex-direction: column; gap: 1px; transition: border-color .16s, background .16s;
+}
+.kf-chip b { font-size: 11px; font-weight: 700; letter-spacing: .02em; color: #F0DFB2; }
+.kf-chip span { font-size: 9px; letter-spacing: .01em; color: rgba(133,147,168,.96); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.kf-chip.on { border-color: rgba(78,214,184,.52); background: rgba(78,214,184,.11); }
+.kf-chip.on b { color: #DFF6EF; }
+.kf-chip .del {
+  position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%;
+  font-size: 11px; line-height: 15px; text-align: center; color: rgba(232,140,120,.92);
+  background: rgba(255,255,255,.06);
+}
+.kf-empty { flex: none; display: flex; align-items: center; font-size: 10px; letter-spacing: .02em; color: rgba(133,147,168,.9); padding: 0 3px; }
+.kf-actions { display: flex; gap: 6px; }
+.kf-actions .pill { flex: 1; height: 34px; }
+.kf-opt { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.kf-opt .pill.mini { height: 28px; padding: 0 10px; font-size: 10.5px; }
+.kf-meta { font-size: 9.5px; letter-spacing: .02em; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
 /* ------------------------------------------------------------ 브러시 보정 */
 .brush-layer {
   position: absolute; inset: 0; z-index: 7;
@@ -365,4 +410,16 @@ body.immersive .hint, body.immersive .zoom-badge { opacity: 0; visibility: hidde
   .sliders { gap: 4px; }
   .sources { margin-bottom: 9px; }
   .chip { height: 31px; }
+}
+
+/* 좁은 폰: 상단 바에 🎞 움짤까지 넣어도 브랜드가 잘리지 않게 */
+.brand-txt { overflow: hidden; }
+@media (max-width: 430px) {
+  .offline { display: none; }
+}
+@media (max-width: 380px) {
+  h1 { font-size: 13px; letter-spacing: .10em; }
+  .top-actions { gap: 5px; }
+  .pill { padding: 0 9px; }
+  .pill.icon { width: 30px; }
 }

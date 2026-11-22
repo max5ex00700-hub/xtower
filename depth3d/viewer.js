@@ -188,6 +188,7 @@
   var FRAG_BG = [
     'uniform sampler2D uBg;',
     'uniform float uVig;',
+    'uniform float uEdge;',
     'varying vec2 vUv;',
     'void main() {',
     '  vec2 uv = clamp(vUv, vec2(0.0005), vec2(0.9995));',
@@ -195,7 +196,8 @@
     '  vec2 q = vUv - 0.5;',
     '  c *= 1.0 - dot(q, q) * uVig;',
     '  float t = max(abs(q.x), abs(q.y)) * 2.0;',   // 0 가운데 ~ 1 테두리
-    '  float a = 1.0 - smoothstep(0.88, 1.0, t);',
+    '  float a = 1.0;',
+    '  if (uEdge > 0.5) a = 1.0 - smoothstep(0.88, 1.0, t);',
     '  if (a < 0.004) discard;',
     '  gl_FragColor = vec4(c, a);',
     '}'
@@ -637,7 +639,7 @@
       bgTex.generateMipmaps = false;
       bgTex.needsUpdate = true;
       var bgMat = addMaterial(new THREE.ShaderMaterial({
-        uniforms: { uBg: { value: bgTex }, uVig: { value: 0.34 } },
+        uniforms: { uBg: { value: bgTex }, uVig: { value: 0.34 }, uEdge: { value: bgEdge } },
         vertexShader: VERT_BG, fragmentShader: FRAG_BG,
         transparent: true, depthTest: false, depthWrite: false, side: THREE.FrontSide
       }));
@@ -776,6 +778,7 @@
       if (u.uMaskTex) u.uMaskTex.value = maskTex;
       if (u.uCutout) u.uCutout.value = maskTex ? 1 : 0;
       if (u.uBg) u.uBg.value = bgTex;
+      if (u.uEdge) u.uEdge.value = bgEdge;
     }
     if (bgMesh) bgMesh.position.z = -0.002;
   }
@@ -976,6 +979,7 @@
 
   function animate() {
     requestAnimationFrame(animate);
+    if (exporting) return;          // 내보내기 중에는 프레임을 직접 그린다
     var now = performance.now();
     var dt = lastTime ? Math.min(0.05, (now - lastTime) / 1000) : 0.016;
     lastTime = now;
@@ -1008,6 +1012,12 @@
     view.panY += (view.tPanY - view.panY) * followZ;
     applyView();
 
+    updateTransforms(now, dt);
+    renderer.render(scene, camera);
+  }
+
+  /* 장면 변환(회전·배경 커버·조명) 계산 — 실시간 루프와 PNG/GIF 내보내기가 함께 쓴다. */
+  function updateTransforms(now, dt) {
     var targetAmp = state.sway ? 1 : 0;
     sway.amp += (targetAmp - sway.amp) * Math.min(1, dt * 2.2);
     if (state.sway) sway.t += dt;
@@ -1059,8 +1069,6 @@
       glow.position.x = -ry * 0.22;
       glow.position.y = -rx * 0.22;
     }
-
-    if (renderer && scene && camera) renderer.render(scene, camera);
   }
 
   /* ------------------------------------------------------------ photos */
@@ -1211,61 +1219,291 @@
     return { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
   }
 
-  /* 지금 화면에 보이는 그대로를 고화질 PNG 로 뽑는다(3D 장면만, HUD 제외). */
-  function capture() {
-    if (!renderer || !scene || !camera) throw new Error('3D 화면이 준비되지 않았습니다');
-    var w = canvas.clientWidth || global.innerWidth;
-    var h = canvas.clientHeight || global.innerHeight;
-    var longEdge = 2160;
-    var k = longEdge / Math.max(1, Math.max(w, h));
-    if (!isFinite(k) || k <= 0) k = 2;
-    if (k < 1) k = 1;
-    if (k > 3.2) k = 3.2;
-    var cw = Math.max(64, Math.round(w * k));
-    var ch = Math.max(64, Math.round(h * k));
+  /* ------------------------------------------------------------ 순수 사진 캡처 · GIF 내보내기 */
 
-    var oldPR = renderer.getPixelRatio();
-    var oldAspect = camera.aspect;
-    try {
-      // ① 고해상도로 한 번 더 렌더
-      renderer.setPixelRatio(1);
-      renderer.setSize(cw, ch, false);
-      camera.aspect = cw / ch;
-      camera.updateProjectionMatrix();
-      camera.updateMatrixWorld();
-      renderer.render(scene, camera);
+  var exporting = false;
+  var exportEnv = null;
+  var bgEdge = 1;          // 배경 평면 테두리 페이드 (내보낼 때는 0 = 사진 테두리까지 꽉 차게)
+  var frameCv = null, frameCtx = null;
 
-      // ② 앱 배경색 위에 합성 — 투명 구멍 없이 갤러리에서 그대로 보이게
-      var out = document.createElement('canvas');
-      out.width = cw; out.height = ch;
-      var g = out.getContext('2d');
-      g.fillStyle = '#0B0F17';
-      g.fillRect(0, 0, cw, ch);
-      var rad = g.createRadialGradient(cw * 0.5, -ch * 0.08, Math.min(cw, ch) * 0.1,
-        cw * 0.5, ch * 0.42, Math.max(cw, ch) * 0.78);
-      rad.addColorStop(0, '#17212f');
-      rad.addColorStop(0.46, '#0d131e');
-      rad.addColorStop(1, '#070a10');
-      g.fillStyle = rad;
-      g.fillRect(0, 0, cw, ch);
-      g.drawImage(canvas, 0, 0, cw, ch);
+  function photoAspect() {
+    var iw = doc.img ? (doc.img.naturalWidth || doc.img.width) : 1;
+    var ih = doc.img ? (doc.img.naturalHeight || doc.img.height) : 1;
+    if (!iw || !ih) return 1;
+    return iw / ih;
+  }
 
-      var url = out.toDataURL('image/png');
-      return {
-        dataUrl: url, width: cw, height: ch,
-        bytes: Math.max(0, Math.round((url.length - url.indexOf(',') - 1) * 3 / 4)),
-        view: { yaw: view.yaw * 180 / Math.PI, pitch: view.pitch * 180 / Math.PI, zoom: view.zoom }
-      };
-    } finally {
-      // ③ 화면 크기·비율 복구
-      renderer.setPixelRatio(oldPR);
-      renderer.setSize(w, h, false);
-      camera.aspect = oldAspect;
-      camera.updateProjectionMatrix();
-      fit();
-      renderer.render(scene, camera);
+  /* 긴 변 longEdge, 원본 사진 비율에 꼭 맞춘 짝수 픽셀 크기 */
+  function exportSize(longEdge, aspect) {
+    var w, h;
+    if (aspect >= 1) { w = longEdge; h = Math.round(longEdge / aspect); }
+    else { h = longEdge; w = Math.round(longEdge * aspect); }
+    w = Math.max(2, w - (w % 2));
+    h = Math.max(2, h - (h % 2));
+    return { w: w, h: h };
+  }
+
+  function beginExport(w, h) {
+    if (exporting) throw new Error('이미 내보내는 중입니다');
+    var scrW = canvas.clientWidth || global.innerWidth;
+    var scrH = canvas.clientHeight || global.innerHeight;
+    var viewH = 2 * Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
+    exportEnv = {
+      w: scrW, h: scrH,
+      pr: renderer.getPixelRatio(),
+      aspect: camera.aspect, z: camera.position.z,
+      scale: group.scale.x, px: group.position.x, py: group.position.y,
+      bgCover: bgCover, sway: state.sway, gyro: state.gyro, swayAmp: sway.amp,
+      viewH: viewH, viewW: viewH * camera.aspect, fitY: fitY,
+      view: {
+        yaw: view.yaw, pitch: view.pitch, zoom: view.zoom, panX: view.panX, panY: view.panY,
+        tYaw: view.tYaw, tPitch: view.tPitch, tZoom: view.tZoom, tPanX: view.tPanX, tPanY: view.tPanY
+      }
+    };
+    exporting = true;
+    state.sway = false;
+    state.gyro = false;
+    sway.amp = 0;
+    renderer.setPixelRatio(1);
+    renderer.setSize(w, h, false);
+    renderer.setClearColor(0x0B0F17, 1);       // 내보내기 프레임은 불투명(빈 곳도 앱 배경색)
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+    return exportEnv;
+  }
+
+  function endExport() {
+    if (!exportEnv) { exporting = false; return; }
+    var e = exportEnv;
+    exportEnv = null;
+    exporting = false;
+    renderer.setPixelRatio(e.pr);
+    renderer.setSize(e.w, e.h, false);
+    renderer.setClearColor(0x000000, 0);
+    camera.aspect = e.aspect;
+    camera.position.z = e.z;
+    camera.updateProjectionMatrix();
+    state.sway = e.sway;
+    state.gyro = e.gyro;
+    sway.amp = e.swayAmp;
+    bgCover = e.bgCover;
+    setBgEdge(1);
+    var v = e.view;
+    view.yaw = v.yaw; view.pitch = v.pitch; view.zoom = v.zoom; view.panX = v.panX; view.panY = v.panY;
+    view.tYaw = v.tYaw; view.tPitch = v.tPitch; view.tZoom = v.tZoom; view.tPanX = v.tPanX; view.tPanY = v.tPanY;
+    fit();
+    renderer.render(scene, camera);
+  }
+
+  /* 사진 비율 프레임에 장면을 배치한다 — 사진 바깥 검은 여백이 0px 이 되도록
+     현재 줌/패닝(확대한 부분)은 그대로 살리고, 프레임은 언제나 사진 안쪽에 들어간다. */
+  function placeExport(st) {
+    var e = exportEnv;
+    if (!e) return;
+    var zoom = st.zoom || 1;
+    var s = fitScale * zoom;
+    var k = Math.min(1, zoom);
+    var pw = planeW * s, ph = planeH * s;
+    var vw = planeW * fitScale * k * 0.9975;
+    var vh = planeH * fitScale * k * 0.9975;
+    var as = camera.aspect;
+    if (vw / as > vh) vh = vw / as; else vw = vh * as;    // 프레임 비율에 정확히 맞춤
+    var cx = (st.panX || 0) * e.viewW;
+    var cy = e.fitY + (st.panY || 0) * e.viewH;
+    var limX = Math.max(0, (pw - vw) * 0.5);
+    var limY = Math.max(0, (ph - vh) * 0.5);
+    cx = clamp(cx, -limX, limX);
+    cy = clamp(cy, -limY, limY);
+
+    view.tYaw = view.yaw = clamp(st.yaw || 0, -maxAngleY, maxAngleY);
+    view.tPitch = view.pitch = clamp(st.pitch || 0, -maxAngleX, maxAngleX);
+    view.vYaw = view.vPitch = 0;
+    view.zoom = view.tZoom = zoom;
+    view.panX = view.tPanX = st.panX || 0;
+    view.panY = view.tPanY = st.panY || 0;
+
+    group.scale.setScalar(s);
+    group.position.set(cx, cy, 0);
+    // 내보내기는 사진 사각형 = 프레임: 배경을 거의 1:1 로 두되, 프레임 가장자리 한 줄이
+    // 비지 않도록 0.6%만 키운다. 테두리 페이드(uEdge)는 꺼서 사진 가장자리까지 꽉 채운다.
+    bgCover = (state.mode === 'fixed') ? 1.006 : 1;
+    setBgEdge(0);
+    camera.position.z = vh / (2 * Math.tan(camera.fov * Math.PI / 360));
+    camera.updateProjectionMatrix();
+    camera.updateMatrixWorld();
+    updateTransforms(performance.now(), 0.016);
+    renderer.render(scene, camera);
+  }
+
+  function setBgEdge(v) {
+    bgEdge = v;
+    for (var i = 0; i < materials.length; i++) {
+      if (materials[i].uniforms && materials[i].uniforms.uEdge) materials[i].uniforms.uEdge.value = v;
     }
   }
+
+  /* 지금 내보내기 캔버스의 픽셀 */
+  function grabFrame(w, h) {
+    if (!frameCv || frameCv.width !== w || frameCv.height !== h) {
+      frameCv = document.createElement('canvas');
+      frameCv.width = w;
+      frameCv.height = h;
+      frameCtx = frameCv.getContext('2d');
+    }
+    frameCtx.clearRect(0, 0, w, h);
+    frameCtx.drawImage(canvas, 0, 0, w, h);
+    return frameCtx.getImageData(0, 0, w, h).data;
+  }
+
+  function currentState() {
+    return { yaw: view.tYaw, pitch: view.tPitch, zoom: view.tZoom, panX: view.tPanX, panY: view.tPanY };
+  }
+
+  /* 순수 사진 PNG — 원본 사진 비율 그대로, HUD 0px, 검은 레터박스 0px */
+  function capturePhoto(opts) {
+    opts = opts || {};
+    if (!renderer || !scene || !camera || !frontMesh || !doc.img) throw new Error('3D 화면이 준비되지 않았습니다');
+    var longEdge = opts.longEdge || 2048;
+    var st = opts.view || currentState();
+    var A = photoAspect();
+    var sz = exportSize(longEdge, A);
+    var url;
+    beginExport(sz.w, sz.h);
+    try {
+      placeExport(st);
+      url = canvas.toDataURL('image/png');
+    } finally {
+      endExport();
+    }
+    return {
+      dataUrl: url, width: sz.w, height: sz.h,
+      bytes: Math.max(0, Math.round((url.length - url.indexOf(',') - 1) * 3 / 4)),
+      aspect: +(sz.w / sz.h).toFixed(4), sourceAspect: +A.toFixed(4),
+      view: { yaw: (st.yaw || 0) * 180 / Math.PI, pitch: (st.pitch || 0) * 180 / Math.PI, zoom: st.zoom || 1 }
+    };
+  }
+
+  /* ------------------------------------------------------------ GIF 움짤 */
+
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+
+  function d2r(a) { return (a || 0) * Math.PI / 180; }
+
+  function kfState(kf) {
+    return { yaw: d2r(kf.yaw), pitch: d2r(kf.pitch), zoom: kf.zoom || 1, panX: kf.panX || 0, panY: kf.panY || 0 };
+  }
+
+  function mixState(a, b, t) {
+    return {
+      yaw: a.yaw + (b.yaw - a.yaw) * t,
+      pitch: a.pitch + (b.pitch - a.pitch) * t,
+      zoom: a.zoom + (b.zoom - a.zoom) * t,
+      panX: a.panX + (b.panX - a.panX) * t,
+      panY: a.panY + (b.panY - a.panY) * t
+    };
+  }
+
+  function gifSegments(n, pingpong) {
+    var segs = [], i;
+    for (i = 0; i < n - 1; i++) segs.push([i, i + 1]);
+    if (pingpong) {
+      for (i = n - 2; i >= 0; i--) segs.push([i + 1, i]);
+    }
+    return segs;
+  }
+
+  /* 각도 키프레임들 → 부드러운 ease-in-out 프레임 → 진짜 GIF89a 바이트 */
+  function renderGif(opts) {
+    opts = opts || {};
+    var kfs = (opts.keyframes || []).slice(0, 8);
+    var steps = Math.max(3, Math.min(12, opts.steps || 7));
+    var pingpong = opts.pingpong !== false;
+    var longEdge = opts.longEdge || 560;
+    var delay = Math.max(2, Math.min(20, opts.delay || 5));       // 1/100초
+    var dither = opts.dither === undefined ? 5 : opts.dither;
+    var onProgress = opts.onProgress || function () {};
+
+    return new Promise(function (resolve, reject) {
+      if (kfs.length < 2) { reject(new Error('각도를 2개 이상 담아 주세요')); return; }
+      if (!frontMesh || !doc.img) { reject(new Error('사진을 먼저 불러와 주세요')); return; }
+      if (!global.GifEnc) { reject(new Error('GIF 인코더를 읽지 못했습니다')); return; }
+
+      var sz = exportSize(longEdge, photoAspect());
+      var segs = gifSegments(kfs.length, pingpong);
+      var states = [], i;
+      for (i = 0; i < kfs.length; i++) states.push(kfState(kfs[i]));
+
+      var frames = [];
+      for (i = 0; i < segs.length; i++) {
+        var a = states[segs[i][0]], b = states[segs[i][1]];
+        for (var j = 1; j <= steps; j++) {
+          // 왕복 마지막 프레임은 첫 프레임과 같으니 뺀다(루프가 매끄럽다)
+          if (pingpong && i === segs.length - 1 && j === steps) break;
+          frames.push({ a: a, b: b, t: easeInOut(j / steps) });
+        }
+      }
+
+      var t0 = performance.now();
+      var enc, colors = 0;
+      try {
+        beginExport(sz.w, sz.h);
+        var samples = [];
+        for (i = 0; i < states.length; i++) {           // 팔레트 표본 = 각 각도의 실제 렌더
+          placeExport(states[i]);
+          samples.push(grabFrame(sz.w, sz.h));
+        }
+        enc = global.GifEnc.create(sz.w, sz.h, { dither: dither, loop: 0 });
+        colors = enc.setPalette(samples, 256).colors;
+        samples.length = 0;
+      } catch (err) {
+        endExport();
+        reject(err);
+        return;
+      }
+
+      var fi = 0;
+      var total = frames.length;
+
+      function nextFrame() {
+        if (fi >= total) { finish(); return; }
+        try {
+          var f = frames[fi];
+          placeExport(mixState(f.a, f.b, f.t));
+          enc.addFrame(grabFrame(sz.w, sz.h), delay);
+        } catch (err2) {
+          endExport();
+          reject(err2);
+          return;
+        }
+        fi++;
+        onProgress(fi, total, '움짤 그리는 중 · ' + fi + '/' + total);
+        setTimeout(nextFrame, 0);
+      }
+
+      function finish() {
+        var bytes;
+        try {
+          bytes = enc.finish();
+        } catch (err3) {
+          endExport();
+          reject(err3);
+          return;
+        }
+        endExport();
+        resolve({
+          bytes: bytes, width: sz.w, height: sz.h, frames: enc.frames, colors: colors,
+          keyframes: kfs.length, steps: steps, pingpong: pingpong, delay: delay,
+          ms: Math.round(performance.now() - t0)
+        });
+      }
+
+      onProgress(0, total, '움짤 준비 중');
+      setTimeout(nextFrame, 0);
+    });
+  }
+
 
   /* ------------------------------------------------------------ 브러시 보정 */
 
@@ -1443,7 +1681,11 @@
     fit: fit,
     loadPhoto: loadPhoto,
     resetView: resetView,
-    capture: capture,
+    capture: capturePhoto,
+    capturePhoto: capturePhoto,
+    renderGif: renderGif,
+    photoAspect: photoAspect,
+    isExporting: function () { return exporting; },
     beginBrush: beginBrush,
     brushPaint: brushPaint,
     brushOverlay: brushOverlay,

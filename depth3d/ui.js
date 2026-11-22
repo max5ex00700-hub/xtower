@@ -104,7 +104,10 @@
     if (p) p.setAttribute('aria-hidden', panelOpen ? 'false' : 'true');
     var b = $('btn-panel');
     if (b) b.classList.toggle('on', panelOpen);
-    if (panelOpen) hideHint();
+    if (panelOpen) {
+      if (kf && kf.open) kfOpen(false);
+      hideHint();
+    }
   }
 
   function closePanel() { if (panelOpen) setPanel(false); }
@@ -516,7 +519,7 @@
     document.body.appendChild(a);
     a.click();
     setTimeout(function () { if (a.parentNode) a.parentNode.removeChild(a); }, 400);
-    if (!silent) toast('PNG 저장 · ' + res.width + '×' + res.height + ' (' + humanBytes(res.bytes) + ')');
+    if (!silent) toast('PNG 저장 · 순수 사진 ' + res.width + '×' + res.height + ' (' + humanBytes(res.bytes) + ')');
     return { ok: true, name: name, width: res.width, height: res.height, bytes: res.bytes, url: res.dataUrl };
   }
 
@@ -524,6 +527,227 @@
     $('btn-save').addEventListener('click', function () { saveImage(false); });
     var b = $('btn-save-panel');
     if (b) b.addEventListener('click', function () { saveImage(false); });
+  }
+
+  /* -------------------------------------------------------------- 🎞 GIF 움짤 */
+
+  var kf = { open: false, list: [], steps: 6, pingpong: true, busy: false, applied: -1 };
+  var KP_MAX = 8;
+
+  function kfFrames(n, pingpong) {
+    if (n < 2) return 0;
+    var segs = pingpong ? (n - 1) * 2 : (n - 1);
+    return segs * kf.steps - (pingpong ? 1 : 0);
+  }
+
+  function kfLabel(k) {
+    var yaw = Math.round(k.yaw || 0);
+    var pitch = Math.round(k.pitch || 0);
+    var z = Math.round((k.zoom || 1) * 10) / 10;
+    var txt = (yaw > 0 ? '+' : '') + yaw + '°';
+    if (Math.abs(pitch) >= 2) txt += ' · ' + (pitch > 0 ? '+' : '') + pitch + '°';
+    if (Math.abs(z - 1) >= 0.05) txt += ' · ' + z.toFixed(1) + '×';
+    return txt;
+  }
+
+  function kfRender() {
+    var box = $('kf-chips');
+    if (!box) return;
+    var html = '';
+    if (!kf.list.length) {
+      html = '<div class="kf-empty">화면을 돌린 뒤 ＋ 각도 추가</div>';
+    }
+    for (var i = 0; i < kf.list.length; i++) {
+      html += '<button class="kf-chip' + (i === kf.applied ? ' on' : '') + '" data-i="' + i + '">' +
+        '<b>#' + (i + 1) + '</b><span>' + kfLabel(kf.list[i]) + '</span>' +
+        '<i class="del" data-del="' + i + '">×</i></button>';
+    }
+    box.innerHTML = html;
+    var chips = box.querySelectorAll('.kf-chip');
+    for (var j = 0; j < chips.length; j++) {
+      chips[j].addEventListener('click', function (e) {
+        var t = e.target;
+        if (t && t.getAttribute && t.getAttribute('data-del') !== null) {
+          e.stopPropagation();
+          kfDelete(+t.getAttribute('data-del'));
+          return;
+        }
+        kfApply(+this.getAttribute('data-i'));
+      });
+    }
+    var meta = $('kf-meta');
+    if (meta) {
+      meta.textContent = '각도 ' + kf.list.length + '/' + KP_MAX +
+        (kf.list.length >= 2 ? ' · ' + kfFrames(kf.list.length, kf.pingpong) + '프레임' : ' · 2개 이상 필요');
+    }
+    var make = $('kf-make');
+    if (make) make.classList.toggle('dim', kf.list.length < 2);
+  }
+
+  function kfOpen(on) {
+    kf.open = !!on;
+    document.body.classList.toggle('kf-open', kf.open);
+    var el = $('kfbar');
+    if (el) el.setAttribute('aria-hidden', kf.open ? 'false' : 'true');
+    var b = $('btn-gif');
+    if (b) b.classList.toggle('on', kf.open);
+    if (kf.open) {
+      setPanel(false);
+      hideHint();
+      kfRender();
+    }
+  }
+
+  function kfAdd() {
+    if (kf.busy) return;
+    if (kf.list.length >= KP_MAX) { toast('각도는 ' + KP_MAX + '개까지 담을 수 있습니다'); return; }
+    if (!global.D3D || !D3D.getView) { toast('3D 화면이 아직 준비되지 않았습니다'); return; }
+    var v = D3D.getView();
+    kf.list.push({
+      yaw: Math.round(v.yaw * 10) / 10,
+      pitch: Math.round(v.pitch * 10) / 10,
+      zoom: Math.round(v.zoom * 100) / 100,
+      panX: Math.round(v.panX * 1000) / 1000,
+      panY: Math.round(v.panY * 1000) / 1000
+    });
+    kf.applied = kf.list.length - 1;
+    kfRender();
+    toast('#' + kf.list.length + ' 각도 담음 · ' + kfLabel(kf.list[kf.list.length - 1]));
+  }
+
+  function kfApply(i) {
+    var k = kf.list[i];
+    if (!k) return;
+    kf.applied = i;
+    if (D3D.setView) D3D.setView(k.yaw, k.pitch);
+    if (D3D.setZoom) D3D.setZoom(k.zoom, k.panX, k.panY);
+    kfRender();
+    hideHint();
+  }
+
+  function kfDelete(i) {
+    if (kf.busy) return;
+    kf.list.splice(i, 1);
+    if (kf.applied >= kf.list.length) kf.applied = kf.list.length - 1;
+    kfRender();
+  }
+
+  function kfAuto() {
+    if (kf.busy) return;
+    var v = (global.D3D && D3D.getView) ? D3D.getView() : { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
+    var base = { yaw: v.yaw || 0, pitch: v.pitch || 0, zoom: v.zoom || 1, panX: 0, panY: 0 };
+    var span = 20;
+    var limY = 40, limP = 25;                 // 뷰어 회전 한계(±40° / ±25°) 안으로
+    var cy = Math.max(-limP, Math.min(limP, base.pitch));
+    function k(yaw) {
+      return { yaw: Math.round(Math.max(-limY, Math.min(limY, yaw)) * 10) / 10,
+               pitch: Math.round(cy * 10) / 10, zoom: base.zoom, panX: 0, panY: 0 };
+    }
+    kf.list = [k(base.yaw - span), k(base.yaw), k(base.yaw + span)];
+    kf.applied = 1;
+    kfRender();
+    toast('지금 각도 기준 좌 -20° · 정면 · 우 +20° 세 각도로 채웠습니다');
+  }
+
+  function kfClear() {
+    if (kf.busy) return;
+    kf.list = [];
+    kf.applied = -1;
+    kfRender();
+    toast('담은 각도를 지웠습니다');
+  }
+
+  function bytesToBase64(bytes) {
+    var s = '', CH = 8192, i;
+    for (i = 0; i < bytes.length; i += CH) {
+      s += String.fromCharCode.apply(null, bytes.subarray(i, Math.min(bytes.length, i + CH)));
+    }
+    return btoa(s);
+  }
+
+  function saveGif(res) {
+    var name = stamp();
+    var n = res.bytes.length;
+    var url = 'data:image/gif;base64,' + bytesToBase64(res.bytes);
+
+    if (global.Android && Android.saveGifBegin) {
+      try {
+        Android.saveGifBegin(name);
+        var CHUNK = 192 * 1024;
+        for (var i = 0; i < url.length; i += CHUNK) {
+          Android.saveGifPart(url.substr(i, CHUNK));
+        }
+        var r = String(Android.saveGifEnd());
+        if (r.indexOf('ok') === 0) {
+          toast('갤러리에 저장 · Pictures/Depth3D (' + res.frames + '프레임 · ' + humanBytes(n) + ')');
+          return { ok: true, name: name, frames: res.frames, bytes: n, target: r };
+        }
+        toast('GIF 저장 실패: ' + r);
+        return { ok: false, error: r };
+      } catch (e) {
+        console.error(e);
+        toast('GIF 저장 중 오류가 났습니다');
+        return { ok: false, error: String(e) };
+      }
+    }
+
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = name + '.gif';
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(function () { if (a.parentNode) a.parentNode.removeChild(a); }, 400);
+    toast('GIF 저장 · ' + res.width + '×' + res.height + ' · ' + res.frames + '프레임 · ' + humanBytes(n));
+    return { ok: true, name: name, frames: res.frames, bytes: n, width: res.width, height: res.height, url: url };
+  }
+
+  function makeGif() {
+    if (kf.busy) return;
+    if (kf.list.length < 2) { toast('각도를 2개 이상 담아 주세요'); return; }
+    if (!global.D3D || !D3D.renderGif) { toast('움짤 엔진을 읽지 못했습니다'); return; }
+    if (D3D.isExporting && D3D.isExporting()) return;
+    kf.busy = true;
+    showLoading('움짤 준비 중');
+    var t0 = performance.now();
+    D3D.renderGif({
+      keyframes: kf.list,
+      steps: kf.steps,
+      pingpong: kf.pingpong,
+      longEdge: 560,
+      onProgress: function (done, total, msg) {
+        showLoading(msg || '움짤 만드는 중');
+        loadingProgress(total ? done / total : 0);
+      }
+    }).then(function (res) {
+      hideLoading();
+      kf.busy = false;
+      res.ms = Math.round(performance.now() - t0);
+      var out = saveGif(res);
+      if (global.D3DUI && D3DUI.lastGif !== undefined) D3DUI.lastGif = { frames: res.frames, bytes: res.bytes.length, ms: res.ms, saved: out };
+      return out;
+    }).catch(function (e) {
+      hideLoading();
+      kf.busy = false;
+      console.error(e);
+      toast('움짤을 만들지 못했습니다 · ' + ((e && e.message) || e));
+    });
+  }
+
+  function wireGif() {
+    $('btn-gif').addEventListener('click', function () { kfOpen(!kf.open); });
+    $('kf-close').addEventListener('click', function () { kfOpen(false); });
+    $('kf-add').addEventListener('click', kfAdd);
+    $('kf-auto').addEventListener('click', kfAuto);
+    $('kf-clear').addEventListener('click', kfClear);
+    $('kf-loop').addEventListener('click', function () {
+      kf.pingpong = !kf.pingpong;
+      this.classList.toggle('on', kf.pingpong);
+      this.querySelector('b').textContent = kf.pingpong ? '왕복 루프' : '편도 재생';
+      kfRender();
+    });
+    $('kf-make').addEventListener('click', makeGif);
+    kfRender();
   }
 
   /* -------------------------------------------------------------- 브러시 보정 */
@@ -782,6 +1006,7 @@
     wireSources();
     wireImmersive();
     wireSave();
+    wireGif();
     wireBrush();
     $('b-size').value = brushUI.size;
     $('b-size-val').textContent = brushUI.size;
@@ -859,11 +1084,17 @@
     openBrush: openBrush,
     onBackPressed: function () {
       if (brushUI.on) { finishBrush(false); return true; }
+      if (kf.open) { kfOpen(false); return true; }
       if (immersive) { setImmersive(false); return true; }
       if (panelOpen) { setPanel(false); return true; }
       return false;
     },
     brush: brushUI,
+    gif: kf,
+    openGif: kfOpen,
+    addKeyframe: kfAdd,
+    makeGif: makeGif,
+    saveGif: saveGif,
     state: S
   };
 
