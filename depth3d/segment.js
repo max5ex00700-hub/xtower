@@ -227,15 +227,71 @@
     return out;
   }
 
+  /* 가장 큰 연결 덩어리만 남기고, 안쪽 구멍은 메운다 (깊이 마스크의 잔티끌 제거) */
+  function largestBlob(bin, w, h) {
+    var n = w * h;
+    var lab = new Int32Array(n);
+    var stack = new Int32Array(n);
+    var best = 0, bestCount = 0, cur = 0, i;
+    var counts = [];
+    for (i = 0; i < n; i++) {
+      if (!bin[i] || lab[i]) continue;
+      cur++;
+      var sp = 0, count = 0;
+      stack[sp++] = i;
+      lab[i] = cur;
+      while (sp > 0) {
+        var p = stack[--sp];
+        count++;
+        var x = p % w, y = (p / w) | 0;
+        if (x > 0 && bin[p - 1] && !lab[p - 1]) { lab[p - 1] = cur; stack[sp++] = p - 1; }
+        if (x < w - 1 && bin[p + 1] && !lab[p + 1]) { lab[p + 1] = cur; stack[sp++] = p + 1; }
+        if (y > 0 && bin[p - w] && !lab[p - w]) { lab[p - w] = cur; stack[sp++] = p - w; }
+        if (y < h - 1 && bin[p + w] && !lab[p + w]) { lab[p + w] = cur; stack[sp++] = p + w; }
+      }
+      counts[cur] = count;
+      if (count > bestCount) { bestCount = count; best = cur; }
+    }
+    if (!best) return bin;
+    var out = new Uint8Array(n);
+    for (i = 0; i < n; i++) out[i] = (lab[i] === best) ? 1 : 0;
+
+    // 구멍 메우기: 테두리에서 닿지 않는 배경은 피사체 내부로 본다
+    var outside = new Uint8Array(n);
+    var sp2 = 0;
+    for (i = 0; i < n; i++) {
+      var xx = i % w, yy = (i / w) | 0;
+      if (out[i]) continue;
+      if (xx === 0 || yy === 0 || xx === w - 1 || yy === h - 1) { outside[i] = 1; stack[sp2++] = i; }
+    }
+    while (sp2 > 0) {
+      var q = stack[--sp2];
+      var qx = q % w, qy = (q / w) | 0;
+      if (qx > 0 && !out[q - 1] && !outside[q - 1]) { outside[q - 1] = 1; stack[sp2++] = q - 1; }
+      if (qx < w - 1 && !out[q + 1] && !outside[q + 1]) { outside[q + 1] = 1; stack[sp2++] = q + 1; }
+      if (qy > 0 && !out[q - w] && !outside[q - w]) { outside[q - w] = 1; stack[sp2++] = q - w; }
+      if (qy < h - 1 && !out[q + w] && !outside[q + w]) { outside[q + w] = 1; stack[sp2++] = q + w; }
+    }
+    for (i = 0; i < n; i++) if (!outside[i]) out[i] = 1;
+    return out;
+  }
+
   function depthMask(depth, cutoff) {
     var w = depth.w, h = depth.h, n = w * h;
     var src = depth.relief || depth.depth;
     var soft = global.DepthEngine.blur(src, w, h, 2);
-    var lo = cutoff - 0.14, hi = cutoff + 0.04;
+    var lo = cutoff - 0.12, hi = cutoff + 0.06;
+    var bin = new Uint8Array(n);
+    var thr = 0.5 * (lo + hi) - 0.06;   // 살짝 넉넉하게 잡아 어깨·몸통까지 포함
+    for (var i = 0; i < n; i++) bin[i] = soft[i] > thr ? 1 : 0;
+
+    // 사진 가장자리에 닿은 큰 덩어리(인물/사물)만 남기고 잔티끌은 버린다
+    bin = largestBlob(bin, w, h);
+
     var out = new Float32Array(n);
-    for (var i = 0; i < n; i++) out[i] = smoothstep(lo, hi, soft[i]);
-    out = dilate(out, w, h, 2);                       // 에지 확장: 인물 테두리까지 포함
-    out = global.DepthEngine.blur(out, w, h, 1);
+    for (i = 0; i < n; i++) out[i] = bin[i];
+    out = dilate(out, w, h, 2);                       // 에지 확장: 테두리까지 포함
+    out = global.DepthEngine.blur(out, w, h, 2);
     return { w: w, h: h, mask: out, engine: 'fast', ms: 0 };
   }
 

@@ -1060,6 +1060,11 @@
       }).then(function (m) {
         doc.aiBusy = false;
         if (!doc.img || doc.gen !== gen) { maybeRunAI(); return; }   // 사진이 바뀌었으면 새 사진으로 다시
+        if (state.engine !== 'ai' || state.mode !== 'fixed') {       // 그 사이 사용자가 고속/전체로 바꿨다
+          hideLoading();
+          if (global.D3DUI) global.D3DUI.aiStatus('idle', 'AI 분리 결과를 보류했습니다');
+          return;
+        }
         doc.rawMask = m;
         doc.maskEngine = 'ai';
         var pack = fixedPack(true);
@@ -1344,7 +1349,7 @@
         model: SegEngine ? SegEngine.MODEL : null,
         contourPoints: doc.contourCount || 0,
         hasMask: !!maskTex,
-        hasBg: !!bgTex,
+        hasBg: !!(bgMesh && bgMesh.visible),
         bgMs: bgMs,
         vertices: frontMesh ? frontMesh.geometry.getAttribute('position').count : 0,
         wallVertices: wallMesh ? wallMesh.geometry.getAttribute('position').count : 0,
