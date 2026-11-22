@@ -22,7 +22,13 @@
     cutoff: 0.50            // 전경 컷오프
   };
 
-  var view = { yaw: 0, pitch: 0, tYaw: 0, tPitch: 0, vYaw: 0, vPitch: 0 };
+  /* 회전(yaw/pitch) + 확대(zoom 0.5~3.5) + 이동(pan, 화면 폭·높이 대비 비율) */
+  var ZOOM_MIN = 0.5, ZOOM_MAX = 3.5, PAN_LIMIT = 0.95;
+  var view = {
+    yaw: 0, pitch: 0, tYaw: 0, tPitch: 0, vYaw: 0, vPitch: 0,
+    zoom: 1, tZoom: 1, panX: 0, panY: 0, tPanX: 0, tPanY: 0
+  };
+  var fitScale = 1, fitY = 0, bgCover = 1;
   var sway = { amp: 0, t: 0 };
   var gyro = { on: false, calYaw: null, calPitch: null, yaw: 0, pitch: 0, tYaw: 0, tPitch: 0, ready: false };
 
@@ -221,7 +227,8 @@
 
   function init() {
     renderer = new THREE.WebGLRenderer({
-      canvas: canvas, antialias: true, alpha: true, powerPreference: 'high-performance'
+      canvas: canvas, antialias: true, alpha: true, powerPreference: 'high-performance',
+      preserveDrawingBuffer: true   // 📸 저장: 마지막 렌더를 그대로 PNG 로 뽑기 위해
     });
     renderer.setClearColor(0x000000, 0);
     renderer.setPixelRatio(Math.min(global.devicePixelRatio || 1, 2));
@@ -798,36 +805,103 @@
     var viewH = 2 * Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
     var viewW = viewH * camera.aspect;
 
-    var availH = Math.max(140, h - a.top - a.bottom);
-    var s = Math.min((w * 0.80) / w * viewW / planeW, availH / h * viewH * 0.86 / planeH);
-    group.scale.setScalar(s);
+    var availH = Math.max(150, h - a.top - a.bottom);
+    // 폭·높이를 모두 채우는 배율 — 3D 화면이 상하좌우 빈틈 없이 꽉 찬다.
+    var s = Math.min((viewW * 0.98) / planeW, (availH / h) * viewH * 0.94 / planeH);
+    fitScale = s;
 
     var centerPx = a.top + availH * 0.5;
     var ndc = 1 - 2 * (centerPx / h);
-    group.position.y = ndc * viewH * 0.5;
+    fitY = ndc * viewH * 0.5;
+    applyView();
+  }
+
+  /* 줌·패닝을 반영한 장면 배치 */
+  function applyView() {
+    if (!camera || !group) return;
+    var viewH = 2 * Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
+    var viewW = viewH * camera.aspect;
+    var s = Math.max(0.0001, fitScale * view.zoom);
+    group.scale.setScalar(s);
+    group.position.set(view.panX * viewW, fitY + view.panY * viewH, 0);
+    /* 배경 고정 모드: 인페인팅한 배경 평면을 화면 밖까지 늘여 깔아
+       사진 사각형 테두리가 보이지 않게 한다 (20:9 풀블리드). */
+    /* 셰이더가 평면 테두리에서 투명해지므로 1.2배 더 늘려 페이드 구간을 화면 밖으로 밀어낸다. */
+    bgCover = (state.mode === 'fixed')
+      ? 1.2 * Math.max(viewW / (planeW * s), viewH / (planeH * s))
+      : 1;
   }
 
   /* ------------------------------------------------------------ interaction */
 
   var drag = { active: false, id: null, x: 0, y: 0, t: 0, moved: false };
+  var pointers = {};
+  var pinch = null;
 
   function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
 
+  function pointerIds() {
+    var out = [];
+    for (var k in pointers) if (pointers.hasOwnProperty(k)) out.push(k);
+    return out;
+  }
+
+  function pinchStart() {
+    var ids = pointerIds();
+    if (ids.length < 2) return null;
+    var a = pointers[ids[0]], b = pointers[ids[1]];
+    var dx = b.x - a.x, dy = b.y - a.y;
+    return {
+      dist: Math.max(1, Math.sqrt(dx * dx + dy * dy)),
+      mx: (a.x + b.x) * 0.5,
+      my: (a.y + b.y) * 0.5,
+      zoom: view.tZoom, panX: view.tPanX, panY: view.tPanY
+    };
+  }
+
+  /* 두 손가락: 핀치 확대/축소 + 두 손가락 드래그 이동 */
+  function pinchMove() {
+    var ids = pointerIds();
+    if (!pinch || ids.length < 2) return;
+    var a = pointers[ids[0]], b = pointers[ids[1]];
+    var dx = b.x - a.x, dy = b.y - a.y;
+    var dist = Math.max(1, Math.sqrt(dx * dx + dy * dy));
+    var mx = (a.x + b.x) * 0.5, my = (a.y + b.y) * 0.5;
+    var w = canvas.clientWidth || global.innerWidth || 1;
+    var h = canvas.clientHeight || global.innerHeight || 1;
+    view.tZoom = clamp(pinch.zoom * (dist / pinch.dist), ZOOM_MIN, ZOOM_MAX);
+    view.tPanX = clamp(pinch.panX + (mx - pinch.mx) / w, -PAN_LIMIT, PAN_LIMIT);
+    view.tPanY = clamp(pinch.panY - (my - pinch.my) / h, -PAN_LIMIT, PAN_LIMIT);
+    if (global.D3DUI && global.D3DUI.onZoom) global.D3DUI.onZoom(view.tZoom);
+  }
+
   function bindPointer() {
     canvas.addEventListener('pointerdown', function (e) {
-      if (e.button !== undefined && e.button !== 0) return;
-      drag.active = true;
-      drag.id = e.pointerId;
-      drag.x = e.clientX;
-      drag.y = e.clientY;
-      drag.t = performance.now();
-      drag.moved = false;
-      view.vYaw = 0; view.vPitch = 0;
+      if (e.pointerType === 'mouse' && e.button !== undefined && e.button !== 0) return;
+      if (e.pointerType === 'mouse') { pointers = {}; pinch = null; }  // 남아 있는 터치 상태 정리
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
       try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+      var ids = pointerIds();
+      if (ids.length === 1) {
+        drag.active = true;
+        drag.id = e.pointerId;
+        drag.x = e.clientX;
+        drag.y = e.clientY;
+        drag.t = performance.now();
+        drag.moved = false;
+        view.vYaw = 0; view.vPitch = 0;
+      } else if (ids.length === 2) {
+        drag.active = false;
+        pinch = pinchStart();
+      }
       if (global.D3DUI) global.D3DUI.onInteract();
     });
 
     canvas.addEventListener('pointermove', function (e) {
+      if (e.pointerType === 'mouse' && pinch) { pinch = null; }   // 터치 캡처가 남아 있으면 정리
+      if (!pointers[e.pointerId]) return;
+      pointers[e.pointerId] = { x: e.clientX, y: e.clientY };
+      if (pinch && e.pointerType !== 'mouse') { pinchMove(); return; }
       if (!drag.active || e.pointerId !== drag.id) return;
       var now = performance.now();
       var dt = Math.max(8, now - drag.t) / 1000;
@@ -846,17 +920,39 @@
     });
 
     function end(e) {
+      delete pointers[e.pointerId];
+      try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
+      if (e.type === 'pointercancel') { pointers = {}; pinch = null; drag.active = false; return; }
+      var ids = pointerIds();
+      if (ids.length >= 2) { pinch = pinchStart(); return; }
+      pinch = null;
+      if (ids.length === 1) {
+        // 핀치에서 손가락 하나를 뗐다 → 남은 손가락으로 바로 회전 이어가기
+        var p = pointers[ids[0]];
+        drag.active = true;
+        drag.id = +ids[0];
+        drag.x = p.x; drag.y = p.y; drag.t = performance.now();
+        return;
+      }
       if (!drag.active) return;
       drag.active = false;
       if (Math.abs(view.vYaw) < 0.03) view.vYaw = 0;
       if (Math.abs(view.vPitch) < 0.03) view.vPitch = 0;
       view.vYaw = clamp(view.vYaw, -2.2, 2.2);
       view.vPitch = clamp(view.vPitch, -1.6, 1.6);
-      try { canvas.releasePointerCapture(e.pointerId); } catch (err) {}
     }
     canvas.addEventListener('pointerup', end);
     canvas.addEventListener('pointercancel', end);
     canvas.addEventListener('pointerleave', end);
+
+    /* 데스크톱: 마우스 휠 확대·축소 (가운데 기준) */
+    canvas.addEventListener('wheel', function (e) {
+      e.preventDefault();
+      var f = Math.exp(-(e.deltaY || 0) * 0.0016);
+      view.tZoom = clamp(view.tZoom * f, ZOOM_MIN, ZOOM_MAX);
+      if (global.D3DUI && global.D3DUI.onZoom) global.D3DUI.onZoom(view.tZoom);
+      if (global.D3DUI) global.D3DUI.onInteract();
+    }, { passive: false });
 
     global.addEventListener('keydown', function (e) {
       if (!frontMesh) return;
@@ -905,6 +1001,13 @@
     view.yaw += (view.tYaw - view.yaw) * follow;
     view.pitch += (view.tPitch - view.pitch) * follow;
 
+    // 확대·이동은 조금 더 빠르게 따라가 손가락에 붙는다.
+    var followZ = Math.min(1, dt * 22);
+    view.zoom += (view.tZoom - view.zoom) * followZ;
+    view.panX += (view.tPanX - view.panX) * followZ;
+    view.panY += (view.tPanY - view.panY) * followZ;
+    applyView();
+
     var targetAmp = state.sway ? 1 : 0;
     sway.amp += (targetAmp - sway.amp) * Math.min(1, dt * 2.2);
     if (state.sway) sway.t += dt;
@@ -931,7 +1034,7 @@
       var drift = (1 - state.bgLock) * 0.55;
       bgRoot.rotation.y = -ry * drift;
       bgRoot.rotation.x = -rx * drift;
-      var zoom = 1 + (1 - state.bgLock) * 0.06;
+      var zoom = (1 + (1 - state.bgLock) * 0.06) * bgCover;
       if (bgMesh) {
         bgMesh.scale.set(zoom, zoom, 1);
         bgMesh.position.x = -Math.sin(ry) * drift * 0.10;
@@ -1098,6 +1201,240 @@
     }, 40);
   }
 
+  /* ------------------------------------------------------------ 확대·이동·각도 저장 */
+
+  function resetView() {
+    view.tYaw = 0; view.tPitch = 0;
+    view.vYaw = 0; view.vPitch = 0;
+    view.tZoom = 1; view.tPanX = 0; view.tPanY = 0;
+    if (global.D3DUI && global.D3DUI.onZoom) global.D3DUI.onZoom(1);
+    return { yaw: 0, pitch: 0, zoom: 1, panX: 0, panY: 0 };
+  }
+
+  /* 지금 화면에 보이는 그대로를 고화질 PNG 로 뽑는다(3D 장면만, HUD 제외). */
+  function capture() {
+    if (!renderer || !scene || !camera) throw new Error('3D 화면이 준비되지 않았습니다');
+    var w = canvas.clientWidth || global.innerWidth;
+    var h = canvas.clientHeight || global.innerHeight;
+    var longEdge = 2160;
+    var k = longEdge / Math.max(1, Math.max(w, h));
+    if (!isFinite(k) || k <= 0) k = 2;
+    if (k < 1) k = 1;
+    if (k > 3.2) k = 3.2;
+    var cw = Math.max(64, Math.round(w * k));
+    var ch = Math.max(64, Math.round(h * k));
+
+    var oldPR = renderer.getPixelRatio();
+    var oldAspect = camera.aspect;
+    try {
+      // ① 고해상도로 한 번 더 렌더
+      renderer.setPixelRatio(1);
+      renderer.setSize(cw, ch, false);
+      camera.aspect = cw / ch;
+      camera.updateProjectionMatrix();
+      camera.updateMatrixWorld();
+      renderer.render(scene, camera);
+
+      // ② 앱 배경색 위에 합성 — 투명 구멍 없이 갤러리에서 그대로 보이게
+      var out = document.createElement('canvas');
+      out.width = cw; out.height = ch;
+      var g = out.getContext('2d');
+      g.fillStyle = '#0B0F17';
+      g.fillRect(0, 0, cw, ch);
+      var rad = g.createRadialGradient(cw * 0.5, -ch * 0.08, Math.min(cw, ch) * 0.1,
+        cw * 0.5, ch * 0.42, Math.max(cw, ch) * 0.78);
+      rad.addColorStop(0, '#17212f');
+      rad.addColorStop(0.46, '#0d131e');
+      rad.addColorStop(1, '#070a10');
+      g.fillStyle = rad;
+      g.fillRect(0, 0, cw, ch);
+      g.drawImage(canvas, 0, 0, cw, ch);
+
+      var url = out.toDataURL('image/png');
+      return {
+        dataUrl: url, width: cw, height: ch,
+        bytes: Math.max(0, Math.round((url.length - url.indexOf(',') - 1) * 3 / 4)),
+        view: { yaw: view.yaw * 180 / Math.PI, pitch: view.pitch * 180 / Math.PI, zoom: view.zoom }
+      };
+    } finally {
+      // ③ 화면 크기·비율 복구
+      renderer.setPixelRatio(oldPR);
+      renderer.setSize(w, h, false);
+      camera.aspect = oldAspect;
+      camera.updateProjectionMatrix();
+      fit();
+      renderer.render(scene, camera);
+    }
+  }
+
+  /* ------------------------------------------------------------ 브러시 보정 */
+
+  var brush = { on: false, w: 0, h: 0, base: null, layer: null, swayWas: false, gyroWas: false, tint: null };
+
+  function composeBrush() {
+    var n = brush.w * brush.h;
+    var out = new Float32Array(n);
+    var B = brush.base, L = brush.layer;
+    for (var i = 0; i < n; i++) {
+      var l = L[i];
+      var b = B[i];
+      out[i] = l > 0 ? Math.max(b, l) : (l < 0 ? Math.min(b, 1 + l) : b);
+    }
+    return out;
+  }
+
+  function brushAlpha() {
+    if (!doc.rawMask) return null;
+    var mask = brush.on ? composeBrush() : doc.rawMask.mask;
+    return { alpha: SegEngine.buildAlpha({
+      w: brush.w || doc.rawMask.w, h: brush.h || doc.rawMask.h,
+      mask: mask, refined: !!doc.rawMask.refined
+    }, state.cutoff, state.feather), w: brush.w || doc.rawMask.w, h: brush.h || doc.rawMask.h };
+  }
+
+  /* 3D 평면이 화면에서 차지하는 사각형(브러시 캔버스를 겹칠 위치) */
+  function photoRect() {
+    var w = canvas.clientWidth || global.innerWidth;
+    var h = canvas.clientHeight || global.innerHeight;
+    var viewH = 2 * Math.tan(camera.fov * Math.PI / 360) * camera.position.z;
+    var viewW = viewH * camera.aspect;
+    var s = fitScale * view.zoom;
+    var pw = planeW * s, ph = planeH * s;
+    var cx = group.position.x, cy = group.position.y;
+    var x0 = w * 0.5 + ((cx - pw * 0.5) / viewW) * w;
+    var x1 = w * 0.5 + ((cx + pw * 0.5) / viewW) * w;
+    var y0 = h * 0.5 - ((cy + ph * 0.5) / viewH) * h;
+    var y1 = h * 0.5 - ((cy - ph * 0.5) / viewH) * h;
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  }
+
+  function beginBrush() {
+    if (!doc.rawMask || !doc.img) return null;
+    if (state.mode !== 'fixed') return null;
+    brush.on = true;
+    brush.w = doc.rawMask.w;
+    brush.h = doc.rawMask.h;
+    brush.base = new Float32Array(doc.rawMask.mask);
+    brush.layer = new Float32Array(brush.w * brush.h);
+    brush.tint = null;
+    // 회전·줌을 초기화해야 사진이 화면 사각형과 정확히 겹친다.
+    view.tYaw = view.yaw = 0; view.tPitch = view.pitch = 0;
+    view.vYaw = view.vPitch = 0;
+    view.tZoom = view.zoom = 1;
+    view.tPanX = view.panX = view.tPanY = view.panY = 0;
+    brush.swayWas = state.sway; brush.gyroWas = state.gyro;
+    state.sway = false; state.gyro = false;
+    if (global.Android && Android.stopSensors) Android.stopSensors();
+    fit();
+    renderer.render(scene, camera);
+    return { w: brush.w, h: brush.h, rect: photoRect() };
+  }
+
+  /* u,v(0~1, 사진 좌표) 위를 반지름 r(마스크 픽셀) 로 칠한다 */
+  function brushPaint(u0, v0, u1, v1, r, add) {
+    if (!brush.on || !brush.layer) return 0;
+    var w = brush.w, h = brush.h;
+    var x0 = u0 * (w - 1), y0 = v0 * (h - 1);
+    var x1 = u1 * (w - 1), y1 = v1 * (h - 1);
+    var dx = x1 - x0, dy = y1 - y0;
+    var len2 = dx * dx + dy * dy;
+    var rr = Math.max(1.2, r);
+    var minX = Math.max(0, Math.floor(Math.min(x0, x1) - rr));
+    var maxX = Math.min(w - 1, Math.ceil(Math.max(x0, x1) + rr));
+    var minY = Math.max(0, Math.floor(Math.min(y0, y1) - rr));
+    var maxY = Math.min(h - 1, Math.ceil(Math.max(y0, y1) + rr));
+    var painted = 0;
+    for (var y = minY; y <= maxY; y++) {
+      for (var x = minX; x <= maxX; x++) {
+        var t = len2 > 0.0001 ? ((x - x0) * dx + (y - y0) * dy) / len2 : 0;
+        t = t < 0 ? 0 : (t > 1 ? 1 : t);
+        var px = x0 + dx * t, py = y0 + dy * t;
+        var ddx = x - px, ddy = y - py;
+        var d = Math.sqrt(ddx * ddx + ddy * ddy);
+        if (d > rr) continue;
+        var wgt = 1 - SegEngine.smoothstep(rr * 0.62, rr, d);
+        if (wgt <= 0.001) continue;
+        var i = y * w + x;
+        if (add) {
+          if (wgt > brush.layer[i]) brush.layer[i] = wgt;
+        } else {
+          if (-wgt < brush.layer[i]) brush.layer[i] = -wgt;
+        }
+        painted++;
+      }
+    }
+    if (painted) brush.tint = null;
+    return painted;
+  }
+
+  /* 브러시 화면용: 사진 + 현재 마스크(민트색) */
+  function brushOverlay(cv) {
+    if (!brush.on || !doc.img || !cv || !cv.getContext) return false;
+    var W = cv.width, H = cv.height;
+    var g = cv.getContext('2d');
+    g.clearRect(0, 0, W, H);
+    g.fillStyle = '#05070b';
+    g.fillRect(0, 0, W, H);
+    g.imageSmoothingEnabled = true;
+    g.imageSmoothingQuality = 'high';
+    g.drawImage(doc.img, 0, 0, W, H);
+
+    var a = brushAlpha();
+    if (!a) return true;
+    if (!brush.tint || brush.tint.width !== a.w || brush.tint.height !== a.h) {
+      brush.tint = document.createElement('canvas');
+      brush.tint.width = a.w;
+      brush.tint.height = a.h;
+    }
+    var tc = brush.tint.getContext('2d');
+    var im = tc.createImageData(a.w, a.h);
+    var d = im.data;
+    for (var i = 0; i < a.w * a.h; i++) {
+      var al = a.alpha[i];
+      var o = i * 4;
+      if (al <= 0.02) { d[o + 3] = 0; continue; }
+      // 피사체 = 민트 반투명, 경계 = 밝은 금빛 선
+      var edge = al > 0.15 && al < 0.85 ? (1 - Math.abs(al - 0.5) * 2) : 0;
+      d[o] = Math.round(78 * (1 - edge) + 233 * edge);
+      d[o + 1] = Math.round(214 * (1 - edge) + 196 * edge);
+      d[o + 2] = Math.round(184 * (1 - edge) + 106 * edge);
+      d[o + 3] = Math.round(Math.min(1, al * 0.42 + edge * 0.5) * 255);
+    }
+    tc.putImageData(im, 0, 0);
+    g.drawImage(brush.tint, 0, 0, W, H);
+    return true;
+  }
+
+  /* 완료: 브러시 결과를 피사체·배경 인페인팅에 반영 */
+  function applyBrush() {
+    if (!brush.on) return false;
+    var composed = composeBrush();
+    brush.on = false;
+    doc.rawMask = { w: brush.w, h: brush.h, mask: composed, engine: doc.maskEngine, refined: !!doc.rawMask.refined };
+    doc.bg = null;
+    doc.shadow = null;
+    if (doc.img) {
+      var pack = fixedPack(true);
+      if (pack) buildScene(doc.img, doc.depth, pack);
+    }
+    state.sway = brush.swayWas;
+    state.gyro = brush.gyroWas;
+    brush.base = brush.layer = brush.tint = null;
+    if (global.D3DUI) global.D3DUI.onRebuilt(state.mode, doc.maskEngine);
+    return true;
+  }
+
+  function cancelBrush() {
+    if (!brush.on) return false;
+    brush.on = false;
+    brush.base = brush.layer = brush.tint = null;
+    state.sway = brush.swayWas;
+    state.gyro = brush.gyroWas;
+    fit();
+    if (global.D3DUI) global.D3DUI.onRebuilt(state.mode, doc.maskEngine);
+    return true;
+  }
+
   /* ------------------------------------------------------------ public */
 
   var D3D = {
@@ -1105,6 +1442,51 @@
     resize: resize,
     fit: fit,
     loadPhoto: loadPhoto,
+    resetView: resetView,
+    capture: capture,
+    beginBrush: beginBrush,
+    brushPaint: brushPaint,
+    brushOverlay: brushOverlay,
+    applyBrush: applyBrush,
+    cancelBrush: cancelBrush,
+    photoRect: photoRect,
+    brushDebug: function () {
+      if (!brush.on || !brush.layer) return null;
+      var minX = 1e9, minY = 1e9, maxX = -1, maxY = -1, ones = 0, n = brush.w * brush.h;
+      for (var y = 0; y < brush.h; y++) {
+        for (var x = 0; x < brush.w; x++) {
+          var v = brush.layer[y * brush.w + x];
+          if (v !== 0) {
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+            if (v >= 0.99 || v <= -0.99) ones++;
+          }
+        }
+      }
+      return { minX: minX, minY: minY, maxX: maxX, maxY: maxY, full: ones, w: brush.w, h: brush.h };
+    },
+    brushState: function () {
+      return {
+        on: brush.on, w: brush.w, h: brush.h,
+        painted: brush.on ? (function () {
+          var c = 0; for (var i = 0; i < brush.layer.length; i++) if (brush.layer[i] !== 0) c++;
+          return c;
+        })() : 0,
+        maskCoverage: doc.rawMask ? (function () {
+          var m = doc.rawMask.mask, s = 0, n = m.length;
+          for (var i = 0; i < n; i++) s += m[i] > 0.5 ? 1 : 0;
+          return s / n;
+        })() : 0,
+        composedCoverage: (function () {
+          if (!brush.on || !brush.layer) return -1;
+          var m = composeBrush(), s = 0, n = m.length;
+          for (var i = 0; i < n; i++) s += m[i] > 0.5 ? 1 : 0;
+          return s / n;
+        })()
+      };
+    },
 
     getDepthPreview: function (cv) {
       if (!depthInfo || !cv || !cv.getContext) return false;
@@ -1217,8 +1599,17 @@
       view.vYaw = view.vPitch = 0;
     },
 
+    setZoom: function (z, panX, panY) {
+      view.tZoom = clamp(z || 1, ZOOM_MIN, ZOOM_MAX);
+      if (typeof panX === 'number') view.tPanX = clamp(panX, -PAN_LIMIT, PAN_LIMIT);
+      if (typeof panY === 'number') view.tPanY = clamp(panY, -PAN_LIMIT, PAN_LIMIT);
+    },
+
     getView: function () {
-      return { yaw: view.yaw * 180 / Math.PI, pitch: view.pitch * 180 / Math.PI };
+      return {
+        yaw: view.yaw * 180 / Math.PI, pitch: view.pitch * 180 / Math.PI,
+        zoom: view.zoom, panX: view.panX, panY: view.panY
+      };
     },
 
     setSway: function (on) { state.sway = !!on; },
@@ -1362,7 +1753,11 @@
         scale: group ? group.scale.x : 0,
         dispScale: dispScale,
         plane: [planeW, planeH],
-        view: { yaw: view.yaw * 180 / Math.PI, pitch: view.pitch * 180 / Math.PI }
+        view: {
+          yaw: view.yaw * 180 / Math.PI, pitch: view.pitch * 180 / Math.PI,
+          zoom: view.zoom, panX: view.panX, panY: view.panY,
+          fitScale: fitScale, fitY: fitY, bgCover: bgCover
+        }
       };
     },
 
