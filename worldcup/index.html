@@ -153,6 +153,7 @@
     height:100dvh;height:100svh;
     padding:calc(var(--safe-t) + 8px) calc(var(--pad) * .62) calc(var(--safe-b) + 8px);
     gap:8px;
+    overflow:hidden;
   }
   .m-head{display:flex;align-items:center;gap:8px}
   .icon-btn{
@@ -175,30 +176,40 @@
   .bar{height:3px;border-radius:99px;background:rgba(255,255,255,.07);overflow:hidden;margin:2px 2px 2px}
   .bar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--gold),var(--gold-2));transition:width .35s cubic-bezier(.4,0,.2,1)}
 
-  .arena{position:relative;flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
+  .arena{position:relative;flex:1;display:flex;flex-direction:column;gap:8px;min-height:0;
+    perspective:1400px;perspective-origin:50% 50%}
   .card{
     position:relative;flex:1;min-height:0;border-radius:18px;overflow:hidden;
     background:linear-gradient(180deg,#10141d,#0b0e14);
     border:1px solid rgba(255,255,255,.09);
     transition:transform .28s cubic-bezier(.2,.8,.2,1), box-shadow .28s ease, border-color .28s ease, filter .28s ease, opacity .28s ease;
     will-change:transform;
+    backface-visibility:hidden;
   }
-  .card img{width:100%;height:100%;display:block;opacity:0;transition:opacity .3s ease, transform .5s cubic-bezier(.2,.8,.2,1)}
+  /* 뒤 레이어: 같은 사진을 블러로 깔아 원본 비율(contain) 여백을 채우는 액자 */
+  .card .bleed{
+    position:absolute;inset:0;z-index:0;pointer-events:none;
+    background-size:cover;background-position:50% 32%;background-repeat:no-repeat;
+    filter:blur(24px) brightness(.45);
+    transform:scale(1.12);opacity:0;transition:opacity .4s ease;
+  }
+  .card .bleed.ok{opacity:1}
+  .card img{position:relative;z-index:1;width:100%;height:100%;display:block;opacity:0;transition:opacity .3s ease, transform .5s cubic-bezier(.2,.8,.2,1)}
   .card img.ok{opacity:1}
-  .card.fit-cover img{object-fit:cover}
-  .card.fit-contain img{object-fit:contain}
+  .card.fit-cover img{object-fit:cover;object-position:50% 8%}
+  .card.fit-contain img{object-fit:contain;object-position:50% 50%}
   .card.fit-contain{background:radial-gradient(120% 90% at 50% 0%,#12161f,#07080c)}
   .card::after{
-    content:"";position:absolute;inset:0;pointer-events:none;
+    content:"";position:absolute;inset:0;z-index:2;pointer-events:none;
     background:linear-gradient(180deg,transparent 62%,rgba(0,0,0,.52));
   }
   .card .no{
-    position:absolute;left:10px;bottom:9px;z-index:2;font-size:11.5px;font-weight:800;letter-spacing:.03em;
+    position:absolute;left:10px;bottom:9px;z-index:4;font-size:11.5px;font-weight:800;letter-spacing:.03em;
     color:rgba(255,255,255,.9);background:rgba(8,10,14,.55);backdrop-filter:blur(6px);
     padding:3px 9px;border-radius:8px;border:1px solid rgba(255,255,255,.12);font-variant-numeric:tabular-nums;
   }
   .card .pick{
-    position:absolute;right:10px;bottom:9px;z-index:2;font-size:11px;font-weight:900;color:#151007;
+    position:absolute;right:10px;bottom:9px;z-index:4;font-size:11px;font-weight:900;color:#151007;
     background:linear-gradient(180deg,var(--gold-2),var(--gold));padding:3px 10px;border-radius:8px;
     opacity:0;transform:translateY(6px) scale(.9);transition:.24s cubic-bezier(.2,.8,.2,1);
   }
@@ -215,6 +226,76 @@
   }
   .m-foot{text-align:center;font-size:11px;color:var(--muted-2);letter-spacing:.04em;height:15px;flex:none}
   .m-foot b{color:var(--gold);font-weight:800}
+
+  /* ───────── 등장 연출 6종 (320~500ms · 터치 방해 없음) ───────── */
+  .card .beam{
+    position:absolute;left:50%;top:-6%;bottom:-6%;width:44%;margin-left:-22%;z-index:3;pointer-events:none;opacity:0;
+    background:linear-gradient(90deg,transparent,rgba(248,230,189,.42) 28%,rgba(255,255,255,.92) 50%,rgba(248,230,189,.42) 72%,transparent);
+    mix-blend-mode:screen;
+  }
+  .card::before{
+    content:"";position:absolute;inset:-2%;z-index:3;pointer-events:none;opacity:0;
+    background:linear-gradient(102deg,transparent 36%,rgba(255,255,255,.10) 45%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.10) 55%,transparent 64%);
+    transform:translateX(-130%);
+  }
+  .card.fx-focus::before{animation:wcShine .56s cubic-bezier(.22,.61,.36,1) both}
+  @keyframes wcShine{0%{opacity:0;transform:translateX(-130%)}22%{opacity:1}100%{opacity:0;transform:translateX(130%)}}
+
+  /* ① 슬라이드 교차 입장 */
+  .card.fx-slidea{animation:wcSlideA .46s cubic-bezier(.22,.61,.36,1) both}
+  .card.fx-slideb{animation:wcSlideB .46s cubic-bezier(.22,.61,.36,1) both}
+  @keyframes wcSlideA{
+    0%{opacity:0;transform:translate3d(-17%,-12%,0) rotate(-1.8deg) scale(.96)}
+    62%{opacity:1;transform:translate3d(1.1%,.7%,0) rotate(.3deg) scale(1.008)}
+    100%{opacity:1;transform:translate3d(0,0,0) rotate(0deg) scale(1)}
+  }
+  @keyframes wcSlideB{
+    0%{opacity:0;transform:translate3d(17%,12%,0) rotate(1.8deg) scale(.96)}
+    62%{opacity:1;transform:translate3d(-1.1%,-.7%,0) rotate(-.3deg) scale(1.008)}
+    100%{opacity:1;transform:translate3d(0,0,0) rotate(0deg) scale(1)}
+  }
+  /* ② 시네마틱 포커스 인 (+빛 스워) */
+  .card.fx-focus{animation:wcFocus .48s cubic-bezier(.24,.66,.32,1) both}
+  @keyframes wcFocus{
+    0%{opacity:0;transform:scale(1.09);filter:blur(13px) brightness(.72) saturate(.85)}
+    58%{opacity:1;filter:blur(2px) brightness(.96) saturate(1.02)}
+    100%{opacity:1;transform:scale(1);filter:blur(0) brightness(1) saturate(1)}
+  }
+  /* ③ 3D 카드 플립 */
+  .card.fx-flipa{animation:wcFlipA .48s cubic-bezier(.3,.68,.28,1) both;transform-origin:0% 50%}
+  .card.fx-flipb{animation:wcFlipB .48s cubic-bezier(.3,.68,.28,1) both;transform-origin:100% 50%}
+  @keyframes wcFlipA{0%{opacity:0;transform:rotateY(-94deg)}52%{opacity:1}100%{opacity:1;transform:rotateY(0deg)}}
+  @keyframes wcFlipB{0%{opacity:0;transform:rotateY(94deg)}52%{opacity:1}100%{opacity:1;transform:rotateY(0deg)}}
+  /* ④ 스포트라이트 커튼 오픈 */
+  .card.fx-curtain{animation:wcCurtain .5s cubic-bezier(.24,.68,.3,1) both}
+  @keyframes wcCurtain{
+    0%{opacity:.35;clip-path:inset(0 50% 0 50% round 18px);filter:brightness(1.6)}
+    68%{opacity:1;clip-path:inset(0 0 0 0 round 18px);filter:brightness(1.05)}
+    100%{opacity:1;clip-path:inset(0 0 0 0 round 18px);filter:brightness(1)}
+  }
+  .card.fx-curtain .beam{animation:wcBeam .52s cubic-bezier(.26,.7,.32,1) both}
+  @keyframes wcBeam{
+    0%{opacity:.9;transform:scaleY(.18) scaleX(.3)}
+    55%{opacity:.55;transform:scaleY(1) scaleX(1)}
+    100%{opacity:0;transform:scaleY(1) scaleX(1.35)}
+  }
+  /* ⑤ 골드 글로우 팝업 */
+  .card.fx-gold{animation:wcGold .48s cubic-bezier(.26,.7,.32,1) both}
+  @keyframes wcGold{
+    0%{opacity:0;transform:scale(.86);filter:brightness(.16) saturate(.35);
+       box-shadow:0 0 0 0 rgba(231,193,121,0),inset 0 0 0 1px rgba(231,193,121,.85)}
+    55%{opacity:1;transform:scale(1.015);filter:brightness(1.1) saturate(1.06);
+       box-shadow:0 0 0 9px rgba(231,193,121,.16),0 0 44px 8px rgba(231,193,121,.34),inset 0 0 0 2px rgba(248,230,189,.85)}
+    100%{opacity:1;transform:scale(1);filter:brightness(1) saturate(1);
+       box-shadow:0 0 0 0 rgba(231,193,121,0),0 0 0 0 rgba(231,193,121,0),inset 0 0 0 1px rgba(255,255,255,0)}
+  }
+  /* ⑥ 스쿼시 스프링 팝 */
+  .card.fx-squash{animation:wcSquash .46s cubic-bezier(.26,.72,.34,1) both;transform-origin:50% 100%}
+  @keyframes wcSquash{
+    0%{opacity:0;transform:scale(1.12,.6) translateY(12px)}
+    62%{opacity:1;transform:scale(.975,1.045)}
+    100%{opacity:1;transform:scale(1)}
+  }
 
   /* round banner */
   .banner{
@@ -251,7 +332,7 @@
     border:1px solid rgba(231,193,121,.45);box-shadow:0 30px 70px -30px rgba(231,193,121,.55),0 0 0 1px rgba(255,255,255,.05) inset;
     background:#0b0e14;
   }
-  .w-card img{width:100%;display:block;aspect-ratio:4/5;object-fit:cover}
+  .w-card img{width:100%;display:block;aspect-ratio:4/5;object-fit:cover;object-position:50% 8%}
   .w-card .tag{
     position:absolute;left:0;right:0;bottom:0;padding:26px 14px 13px;
     background:linear-gradient(180deg,transparent,rgba(4,5,8,.9));
@@ -366,14 +447,18 @@
   <div class="bar"><i id="progBar"></i></div>
 
   <div class="arena" id="arena">
-    <button class="card fit-cover" data-side="a" id="cardA" aria-label="위쪽 후보 선택">
+    <button class="card fit-contain" data-side="a" id="cardA" aria-label="위쪽 후보 선택">
+      <div class="bleed" aria-hidden="true"></div>
       <img alt="" decoding="async">
+      <span class="beam" aria-hidden="true"></span>
       <span class="no">No.0001</span>
       <span class="pick">PICK ✓</span>
     </button>
     <div class="vs">VS</div>
-    <button class="card fit-cover" data-side="b" id="cardB" aria-label="아래쪽 후보 선택">
+    <button class="card fit-contain" data-side="b" id="cardB" aria-label="아래쪽 후보 선택">
+      <div class="bleed" aria-hidden="true"></div>
       <img alt="" decoding="async">
+      <span class="beam" aria-hidden="true"></span>
       <span class="no">No.0002</span>
       <span class="pick">PICK ✓</span>
     </button>
@@ -421,13 +506,13 @@
 var LS_STATS = "wc.stats.v2", LS_HOF = "wc.hof.v2", LS_PREF = "wc.pref.v2";
 var $ = function(id){ return document.getElementById(id); };
 var ITEMS = [], byId = {};
-var stats = {}, hof = [], pref = { sound:true, fit:"cover" };
+var stats = {}, hof = [], pref = { sound:true, fit:"contain" };
 var S = null;
 
 function loadStore(){
   try{ stats = JSON.parse(localStorage.getItem(LS_STATS) || "{}") || {}; }catch(e){ stats = {}; }
   try{ hof = JSON.parse(localStorage.getItem(LS_HOF) || "[]") || []; }catch(e){ hof = []; }
-  try{ pref = Object.assign({ sound:true, fit:"cover" }, JSON.parse(localStorage.getItem(LS_PREF) || "{}") || {}); }catch(e){}
+  try{ pref = Object.assign({ sound:true, fit:"contain" }, JSON.parse(localStorage.getItem(LS_PREF) || "{}") || {}); }catch(e){}
 }
 function saveStats(){ try{ localStorage.setItem(LS_STATS, JSON.stringify(stats)); }catch(e){} }
 function saveHof(){ try{ localStorage.setItem(LS_HOF, JSON.stringify(hof.slice(-40))); }catch(e){} }
@@ -874,8 +959,13 @@ var cardA = $("cardA"), cardB = $("cardB");
 var cur = null;
 function paint(card, item){
   var img = card.querySelector("img");
+  var bleed = card.querySelector(".bleed");
   card.classList.remove("win","lose");
   img.classList.remove("ok");
+  if(bleed){
+    bleed.style.backgroundImage = 'url("' + item.s + '")';
+    bleed.classList.add("ok");
+  }
   card.querySelector(".no").textContent = item.n;
   img.alt = item.n;
   var done = function(){ img.classList.add("ok"); };
@@ -887,6 +977,41 @@ function paint(card, item){
 }
 function prefetch(list){
   list.forEach(function(it){ var i = new Image(); i.src = it.s; });
+}
+
+/* ══════════ 등장 연출 6종 (매치마다 교대·랜덤) ══════════
+   ① 슬라이드 교차 ② 시네마틱 포커스 ③ 3D 플립
+   ④ 스포트라이트 커튼 ⑤ 골드 글로우 팝업 ⑥ 스퀴시 스프링 팝 */
+var FX_IN = {
+  slide:   ["fx-slidea", "fx-slideb"],
+  focus:   ["fx-focus",  "fx-focus"],
+  flip:    ["fx-flipa",  "fx-flipb"],
+  curtain: ["fx-curtain","fx-curtain"],
+  gold:    ["fx-gold",   "fx-gold"],
+  squash:  ["fx-squash", "fx-squash"]
+};
+var FX_IN_KEYS = Object.keys(FX_IN);
+var FX_IN_ALL = (function(){ var o = []; FX_IN_KEYS.forEach(function(k){ o = o.concat(FX_IN[k]); }); return o; })();
+var inBag = [], inLast = "", inTimer = 0;
+function pickIn(){
+  if(!inBag.length){
+    inBag = FX_IN_KEYS.slice();
+    for(var i = inBag.length - 1; i > 0; i--){ var j = (Math.random()*(i+1))|0, t = inBag[i]; inBag[i] = inBag[j]; inBag[j] = t; }
+    if(inBag[0] === inLast && inBag.length > 1){ var s = inBag[0]; inBag[0] = inBag[1]; inBag[1] = s; }
+  }
+  inLast = inBag.shift();
+  return inLast;
+}
+function clearEnter(card){ FX_IN_ALL.forEach(function(c){ card.classList.remove(c); }); }
+function playEnter(){
+  var k = pickIn(), cls = FX_IN[k];
+  [cardA, cardB].forEach(function(c, idx){
+    clearEnter(c);
+    void c.offsetWidth;                 // 같은 연출이 연속돼도 다시 재생
+    c.classList.add(cls[idx]);
+  });
+  clearTimeout(inTimer);
+  inTimer = setTimeout(function(){ clearEnter(cardA); clearEnter(cardB); }, 640);
 }
 
 function renderMatch(first){
@@ -919,6 +1044,7 @@ function renderMatch(first){
     }
   }
 
+  playEnter();
 }
 
 var bannerTimer = 0;
@@ -1143,7 +1269,8 @@ document.addEventListener("keydown", function(e){
 /* ══════════ 시작 ══════════ */
 loadStore();
 applyPrefs();
-window.__wc = { get state(){ return S; }, get items(){ return ITEMS; }, choose: choose, start: startTournament, fx: FX };
+window.__wc = { get state(){ return S; }, get items(){ return ITEMS; }, choose: choose, start: startTournament, fx: FX,
+  render: renderMatch, item: function(n){ for(var i=0;i<ITEMS.length;i++) if(ITEMS[i].n === n) return ITEMS[i]; return null; } };
 })();
 </script>
 </body>
