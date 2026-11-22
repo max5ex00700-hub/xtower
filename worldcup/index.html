@@ -1011,6 +1011,7 @@ function makeZoom(el, img, opt){
   function chipUI(){
     st.chip.classList.toggle("on", st.s > 1.02);
     st.chip.textContent = (st.s >= 1.15 ? st.s.toFixed(1) : "1.0") + "×";
+    syncHint();
   }
   function clampT(){
     var w = el.clientWidth || 1, h = el.clientHeight || 1;
@@ -1144,6 +1145,18 @@ var ZOOM = {
 function zoomBlocked(k){
   var z = ZOOM[k];
   return !!(z && (z.blocked() || z.zoomed()));
+}
+/* 확대 중에는 탭이 선택으로 이어지지 않는다는 걸 하단 힌트로 알려줌 */
+function syncHint(){
+  var f = $("footHint");
+  if(!f || typeof ZOOM === "undefined" || !ZOOM) return;
+  var z = ZOOM.a.zoomed() || ZOOM.b.zoomed();
+  var mode = z ? "1" : "0";
+  if(f.dataset.mode === mode) return;
+  f.dataset.mode = mode;
+  f.innerHTML = z
+    ? "확대 중 · <b>↺</b> 눌러 원위치 후 선택"
+    : "끌리는 쪽을 <b>터치</b> · 사진 <b>두 손가락 확대</b>";
 }
 function paint(card, item){
   var img = card.querySelector("img");
