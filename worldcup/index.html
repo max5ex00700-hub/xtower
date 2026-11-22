@@ -238,7 +238,7 @@
     background:linear-gradient(102deg,transparent 36%,rgba(255,255,255,.10) 45%,rgba(255,255,255,.55) 50%,rgba(255,255,255,.10) 55%,transparent 64%);
     transform:translateX(-130%);
   }
-  .card.fx-focus::before{animation:wcShine .56s cubic-bezier(.22,.61,.36,1) both}
+  .card.fx-focus::before{animation:wcShine .48s cubic-bezier(.22,.61,.36,1) both}
   @keyframes wcShine{0%{opacity:0;transform:translateX(-130%)}22%{opacity:1}100%{opacity:0;transform:translateX(130%)}}
 
   /* ① 슬라이드 교차 입장 */
@@ -267,13 +267,13 @@
   @keyframes wcFlipA{0%{opacity:0;transform:rotateY(-94deg)}52%{opacity:1}100%{opacity:1;transform:rotateY(0deg)}}
   @keyframes wcFlipB{0%{opacity:0;transform:rotateY(94deg)}52%{opacity:1}100%{opacity:1;transform:rotateY(0deg)}}
   /* ④ 스포트라이트 커튼 오픈 */
-  .card.fx-curtain{animation:wcCurtain .5s cubic-bezier(.24,.68,.3,1) both}
+  .card.fx-curtain{animation:wcCurtain .46s cubic-bezier(.24,.68,.3,1) both}
   @keyframes wcCurtain{
     0%{opacity:.35;clip-path:inset(0 50% 0 50% round 18px);filter:brightness(1.6)}
     68%{opacity:1;clip-path:inset(0 0 0 0 round 18px);filter:brightness(1.05)}
     100%{opacity:1;clip-path:inset(0 0 0 0 round 18px);filter:brightness(1)}
   }
-  .card.fx-curtain .beam{animation:wcBeam .52s cubic-bezier(.26,.7,.32,1) both}
+  .card.fx-curtain .beam{animation:wcBeam .48s cubic-bezier(.26,.7,.32,1) both}
   @keyframes wcBeam{
     0%{opacity:.9;transform:scaleY(.18) scaleX(.3)}
     55%{opacity:.55;transform:scaleY(1) scaleX(1)}
