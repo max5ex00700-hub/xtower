@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0b11">
+<title>애니 캐릭터 조합 엔진 — 포시즌jo</title>
+<meta name="description" content="시드로 재현하는 애니 스타일 캐릭터 조합 엔진. 세계관·팔레트·충돌 규칙으로 26개 슬롯을 조합하고, 9종 배치·PNG·AI 프롬프트까지 내보냅니다.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="grain"></div>
+
+<header class="top">
+  <div class="brand">
+    <div class="mark">奏</div>
+    <div class="titles">
+      <h1>애니 캐릭터 조합 엔진</h1>
+      <p>ANIME CHARACTER COMBINATOR · <span class="by">제작: 포시즌jo</span></p>
+    </div>
+  </div>
+  <div class="top-right">
+    <div class="seedchip" id="seedChip" title="클릭하면 시드 복사">
+      <span class="dot"></span><span id="seedText">0x00000000</span>
+    </div>
+  </div>
+</header>
+
+<main class="shell">
+  <section class="stage-col">
+    <div class="stage" id="stage">
+      <canvas id="cv" width="1024" height="1280"></canvas>
+      <div class="stage-badge">제작: 포시즌jo</div>
+      <div class="stage-meta">
+        <span id="metaWorld">전체 랜덤</span>
+        <span id="metaHeight">표준 164cm · 7.2등신</span>
+      </div>
+    </div>
+
+    <div class="stage-tools">
+      <div class="zoomgroup" id="zoomGroup">
+        <button data-zoom="bust">클로즈업</button>
+        <button data-zoom="knee" class="on">무릎 위</button>
+        <button data-zoom="full">전신</button>
+      </div>
+      <button class="ghost" id="bgToggle" title="배경 켜기/끄기"><span>배경</span> ON</button>
+    </div>
+
+    <div class="primary">
+      <button class="btn main" id="rerollAll"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 1 1 2.3 5.6"/><path d="M4 20v-6h6"/></svg>전체 리롤</button>
+      <button class="btn" id="batchBtn"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.6"/><rect x="14" y="3" width="7" height="7" rx="1.6"/><rect x="3" y="14" width="7" height="7" rx="1.6"/><rect x="14" y="14" width="7" height="7" rx="1.6"/></svg>9종 한 번에</button>
+    </div>
+
+    <div class="exportrow">
+      <button class="btn sm" id="pngBtn">PNG 저장</button>
+      <button class="btn sm" id="promptBtn">AI 프롬프트</button>
+      <button class="btn sm" id="jsonBtn">레시피 JSON</button>
+    </div>
+
+    <div class="panel rules">
+      <div class="panel-head">
+        <h3>규칙 · 충돌 로그</h3>
+        <span class="hint">엔진이 이 캐릭터에서 해결한 것</span>
+      </div>
+      <ul id="ruleList"></ul>
+    </div>
+  </section>
+
+  <section class="panel-col">
+    <div class="panel">
+      <div class="panel-head">
+        <h3>시드</h3>
+        <span class="hint">같은 시드 = 같은 캐릭터</span>
+      </div>
+      <div class="seedrow">
+        <input id="seedInput" spellcheck="false" autocomplete="off" value="0x00000000">
+        <button class="btn sm" id="seedRun">재실행</button>
+        <button class="btn sm accent" id="seedNew">새 시드</button>
+      </div>
+      <div class="worldrow" id="worldRow"></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <h3>슬롯 잠금</h3>
+        <span class="hint">🔒 잠근 슬롯은 리롤에서 유지</span>
+      </div>
+      <div id="slotList"></div>
+      <div class="locksummary">
+        <button class="btn sm" id="lockClear">잠금 모두 해제</button>
+        <span id="lockCount">0 / 26 잠금</span>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  <span>제작: 포시즌jo</span>
+  <span class="sep">·</span>
+  <span>anime character combinator v2.0</span>
+</footer>
+
+<div class="modal" id="gridModal">
+  <div class="modal-inner">
+    <div class="modal-head">
+      <h2>9종 한 번에 뽑기</h2>
+      <p class="hint">중복 0 — 마음에 드는 카드를 누르면 메인으로 불러옵니다.</p>
+      <button class="close" id="gridClose">✕</button>
+    </div>
+    <div class="grid9" id="grid9"></div>
+    <div class="modal-foot">
+      <span id="gridInfo"></span>
+      <button class="btn sm accent" id="gridAgain">다시 9종</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="textModal">
+  <div class="modal-inner narrow">
+    <div class="modal-head">
+      <h2 id="textTitle">AI 프롬프트</h2>
+      <button class="close" id="textClose">✕</button>
+    </div>
+    <pre id="textBody"></pre>
+    <div class="modal-foot">
+      <button class="btn sm accent" id="textCopy">복사</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="engine.js"></script>
+<script src="draw-core.js"></script>
+<script src="draw-hair.js"></script>
+<script src="draw-body.js"></script>
+<script src="draw-scene.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
