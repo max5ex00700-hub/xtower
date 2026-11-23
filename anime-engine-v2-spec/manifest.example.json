@@ -1,0 +1,2213 @@
+{
+  "schema": "anime-parts-pack/2",
+  "id": "core-female-v1",
+  "name": "코어 여성 파츠팩 v1",
+  "version": "1.0.0",
+  "author": "포시즌jo",
+  "basePath": "assets/parts/",
+  "canvas": {
+    "width": 1024,
+    "height": 1280,
+    "format": "webp",
+    "alpha": true,
+    "bleed": 8
+  },
+  "rig": {
+    "head_center": [
+      512,
+      320
+    ],
+    "eye_line": 370,
+    "chin": 480,
+    "neck": [
+      512,
+      516
+    ],
+    "shoulder_l": [
+      372,
+      588
+    ],
+    "shoulder_r": [
+      652,
+      588
+    ],
+    "waist": [
+      512,
+      792
+    ],
+    "hip": [
+      512,
+      872
+    ],
+    "knee": [
+      512,
+      1120
+    ],
+    "head_radius": 160,
+    "bands": {
+      "bust": [
+        560,
+        700
+      ],
+      "waist": [
+        700,
+        780
+      ],
+      "hip": [
+        780,
+        920
+      ]
+    }
+  },
+  "worlds": [
+    {
+      "id": "all",
+      "name": "전체 랜덤",
+      "short": "ALL",
+      "color": "#e4b968"
+    },
+    {
+      "id": "academy",
+      "name": "학원물",
+      "short": "SCHOOL",
+      "color": "#7cc6ff"
+    },
+    {
+      "id": "fantasy",
+      "name": "판타지",
+      "short": "FANTASY",
+      "color": "#8ee6b0"
+    },
+    {
+      "id": "cyber",
+      "name": "사이버·네온",
+      "short": "CYBER",
+      "color": "#ff7bd5"
+    },
+    {
+      "id": "resort",
+      "name": "리조트",
+      "short": "RESORT",
+      "color": "#ffc46b"
+    },
+    {
+      "id": "gothic",
+      "name": "다크고딕",
+      "short": "GOTHIC",
+      "color": "#c39bff"
+    }
+  ],
+  "fx": {
+    "clutter_budget": 6,
+    "luminance_lock": 24,
+    "hue_gap_min": 20,
+    "odd_eye_chance": 0.17,
+    "two_tone_chance": 0.3,
+    "tag_boost": 2.8
+  },
+  "palette": {
+    "skin_tone": [
+      {
+        "id": "pale",
+        "name": "설백 페일",
+        "color": "#fdeae3",
+        "tags": [
+          "gothic",
+          "fantasy"
+        ],
+        "prompt": "pale porcelain skin"
+      },
+      {
+        "id": "peach",
+        "name": "복숭아 피치",
+        "color": "#fbdcc8",
+        "tags": [
+          "academy",
+          "resort"
+        ],
+        "prompt": "peach tone skin"
+      },
+      {
+        "id": "ivory",
+        "name": "웜 아이보리",
+        "color": "#f6dfc4",
+        "tags": [
+          "academy",
+          "fantasy"
+        ],
+        "prompt": "warm ivory skin"
+      },
+      {
+        "id": "honey",
+        "name": "허니 베이지",
+        "color": "#efc9a4",
+        "tags": [
+          "resort",
+          "cyber"
+        ],
+        "prompt": "honey beige skin"
+      },
+      {
+        "id": "tan",
+        "name": "탠 브론즈",
+        "color": "#d9a47c",
+        "tags": [
+          "resort"
+        ],
+        "prompt": "sun-tanned bronze skin"
+      }
+    ],
+    "hair_color": [
+      {
+        "id": "jet",
+        "name": "흑발",
+        "color": "#2b1a16",
+        "tags": [
+          "academy",
+          "gothic"
+        ],
+        "prompt": "jet black hair"
+      },
+      {
+        "id": "darkbrown",
+        "name": "다크 브라운",
+        "color": "#4a2c1d",
+        "tags": [
+          "academy"
+        ],
+        "prompt": "dark brown hair"
+      },
+      {
+        "id": "chestnut",
+        "name": "밤색",
+        "color": "#7b4a2a",
+        "tags": [
+          "academy",
+          "resort"
+        ],
+        "prompt": "chestnut brown hair"
+      },
+      {
+        "id": "caramel",
+        "name": "캐러멜",
+        "color": "#a9703c",
+        "tags": [
+          "resort"
+        ],
+        "prompt": "caramel brown hair"
+      },
+      {
+        "id": "honeyblond",
+        "name": "허니 블론드",
+        "color": "#d9a55f",
+        "tags": [
+          "resort",
+          "academy"
+        ],
+        "prompt": "honey blonde hair"
+      },
+      {
+        "id": "platinum",
+        "name": "백금발",
+        "color": "#f0d9a8",
+        "tags": [
+          "fantasy",
+          "resort"
+        ],
+        "prompt": "platinum blonde hair"
+      },
+      {
+        "id": "wine",
+        "name": "와인 레드",
+        "color": "#8d3f3f",
+        "tags": [
+          "gothic"
+        ],
+        "prompt": "wine red hair"
+      },
+      {
+        "id": "rose",
+        "name": "로즈 핑크",
+        "color": "#c05a72",
+        "tags": [
+          "academy",
+          "resort"
+        ],
+        "prompt": "rose pink hair"
+      },
+      {
+        "id": "navy",
+        "name": "네이비",
+        "color": "#3f4a6b",
+        "tags": [
+          "cyber",
+          "academy"
+        ],
+        "prompt": "navy blue hair"
+      },
+      {
+        "id": "lavender",
+        "name": "라벤더",
+        "color": "#9fb4d8",
+        "tags": [
+          "fantasy"
+        ],
+        "prompt": "lavender hair"
+      },
+      {
+        "id": "silver",
+        "name": "실버",
+        "color": "#c9c3bd",
+        "tags": [
+          "cyber",
+          "gothic"
+        ],
+        "prompt": "silver grey hair"
+      },
+      {
+        "id": "mint",
+        "name": "민트",
+        "color": "#7fd8c8",
+        "tags": [
+          "fantasy",
+          "cyber"
+        ],
+        "prompt": "mint green hair"
+      },
+      {
+        "id": "neonpink",
+        "name": "네온 핑크",
+        "color": "#ff6fc0",
+        "tags": [
+          "cyber"
+        ],
+        "prompt": "neon pink hair"
+      },
+      {
+        "id": "cybercyan",
+        "name": "사이버 시안",
+        "color": "#63e6ff",
+        "tags": [
+          "cyber"
+        ],
+        "prompt": "cyan digital hair"
+      },
+      {
+        "id": "violet",
+        "name": "바이올렛",
+        "color": "#7b5ea7",
+        "tags": [
+          "gothic",
+          "fantasy"
+        ],
+        "prompt": "violet hair"
+      },
+      {
+        "id": "raven",
+        "name": "흑자색",
+        "color": "#221a28",
+        "tags": [
+          "gothic"
+        ],
+        "prompt": "blue-black hair"
+      },
+      {
+        "id": "sand",
+        "name": "샌드",
+        "color": "#f2dcae",
+        "tags": [
+          "fantasy"
+        ],
+        "prompt": "sand blonde hair"
+      },
+      {
+        "id": "coral",
+        "name": "코랄",
+        "color": "#e08a72",
+        "tags": [
+          "resort"
+        ],
+        "prompt": "coral orange hair"
+      }
+    ],
+    "outfit_color": [
+      {
+        "id": "navyblue",
+        "name": "네이비",
+        "color": "#1f2b45",
+        "tags": [
+          "academy",
+          "cyber"
+        ],
+        "prompt": "navy"
+      },
+      {
+        "id": "slate",
+        "name": "슬레이트",
+        "color": "#2d3b52",
+        "tags": [
+          "cyber"
+        ],
+        "prompt": "slate grey"
+      },
+      {
+        "id": "plum",
+        "name": "플럼",
+        "color": "#5a3a4a",
+        "tags": [
+          "gothic"
+        ],
+        "prompt": "dark plum"
+      },
+      {
+        "id": "rosewood",
+        "name": "로즈우드",
+        "color": "#8a4a5c",
+        "tags": [
+          "academy"
+        ],
+        "prompt": "rosewood"
+      },
+      {
+        "id": "cream",
+        "name": "크림",
+        "color": "#efe6d8",
+        "tags": [
+          "academy",
+          "resort"
+        ],
+        "prompt": "cream"
+      },
+      {
+        "id": "iceblue",
+        "name": "아이스 블루",
+        "color": "#d8dde8",
+        "tags": [
+          "cyber",
+          "fantasy"
+        ],
+        "prompt": "ice blue"
+      },
+      {
+        "id": "forest",
+        "name": "포레스트",
+        "color": "#3d5a4a",
+        "tags": [
+          "fantasy"
+        ],
+        "prompt": "forest green"
+      },
+      {
+        "id": "camel",
+        "name": "카멜",
+        "color": "#6b4a2a",
+        "tags": [
+          "resort"
+        ],
+        "prompt": "camel"
+      },
+      {
+        "id": "charcoal",
+        "name": "차콜",
+        "color": "#2a2a33",
+        "tags": [
+          "gothic",
+          "cyber"
+        ],
+        "prompt": "charcoal"
+      },
+      {
+        "id": "scarlet",
+        "name": "스칼렛",
+        "color": "#c94a63",
+        "tags": [
+          "resort",
+          "academy"
+        ],
+        "prompt": "scarlet"
+      },
+      {
+        "id": "seafoam",
+        "name": "씨폼",
+        "color": "#7fa86b",
+        "tags": [
+          "resort"
+        ],
+        "prompt": "seafoam green"
+      },
+      {
+        "id": "midnight",
+        "name": "미드나이트",
+        "color": "#1a1c26",
+        "tags": [
+          "cyber",
+          "gothic"
+        ],
+        "prompt": "midnight blue"
+      }
+    ],
+    "eye_color": [
+      {
+        "id": "mint",
+        "name": "민트",
+        "color": "#5fd8c0",
+        "tags": [
+          "fantasy",
+          "academy"
+        ],
+        "prompt": "mint eyes"
+      },
+      {
+        "id": "amber",
+        "name": "앰버",
+        "color": "#e0a44a",
+        "tags": [
+          "academy",
+          "resort"
+        ],
+        "prompt": "amber eyes"
+      },
+      {
+        "id": "ruby",
+        "name": "루비",
+        "color": "#c2384a",
+        "tags": [
+          "gothic"
+        ],
+        "prompt": "ruby eyes"
+      },
+      {
+        "id": "sapphire",
+        "name": "사파이어",
+        "color": "#2f5fc0",
+        "tags": [
+          "cyber",
+          "academy"
+        ],
+        "prompt": "sapphire eyes"
+      },
+      {
+        "id": "violet",
+        "name": "바이올렛",
+        "color": "#8a5fd8",
+        "tags": [
+          "fantasy",
+          "gothic"
+        ],
+        "prompt": "violet eyes"
+      },
+      {
+        "id": "gold",
+        "name": "골드",
+        "color": "#e8c85a",
+        "tags": [
+          "resort",
+          "fantasy"
+        ],
+        "prompt": "golden eyes"
+      },
+      {
+        "id": "teal",
+        "name": "틸",
+        "color": "#2fa8a0",
+        "tags": [
+          "cyber"
+        ],
+        "prompt": "teal eyes"
+      },
+      {
+        "id": "rose",
+        "name": "로즈",
+        "color": "#e07a9a",
+        "tags": [
+          "resort",
+          "academy"
+        ],
+        "prompt": "rose eyes"
+      },
+      {
+        "id": "ice",
+        "name": "아이스 블루",
+        "color": "#a8d8f0",
+        "tags": [
+          "cyber",
+          "fantasy"
+        ],
+        "prompt": "ice blue eyes"
+      },
+      {
+        "id": "copper",
+        "name": "코퍼",
+        "color": "#b0683a",
+        "tags": [
+          "resort"
+        ],
+        "prompt": "copper eyes"
+      },
+      {
+        "id": "emerald",
+        "name": "에메랄드",
+        "color": "#3aa86a",
+        "tags": [
+          "fantasy"
+        ],
+        "prompt": "emerald eyes"
+      },
+      {
+        "id": "onyx",
+        "name": "오닉스",
+        "color": "#2a2630",
+        "tags": [
+          "gothic"
+        ],
+        "prompt": "dark onyx eyes"
+      }
+    ]
+  },
+  "slots": {
+    "face_shape": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "oval",
+          "name": "계란형",
+          "file": "face_shape/oval.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "soft oval anime face"
+        },
+        {
+          "id": "vline",
+          "name": "갸름 V라인",
+          "file": "face_shape/vline.webp",
+          "tags": [
+            "gothic",
+            "cyber"
+          ],
+          "prompt": "slim V-line jaw"
+        },
+        {
+          "id": "baby",
+          "name": "둥근 베이비페이스",
+          "file": "face_shape/baby.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "round baby face, youthful cheeks"
+        },
+        {
+          "id": "cool",
+          "name": "날렵 쿨형",
+          "file": "face_shape/cool.webp",
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "sharp cool face, defined cheekbones"
+        }
+      ]
+    },
+    "skin_tone": {
+      "pick": "color"
+    },
+    "body_type": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "slim",
+          "name": "슬림",
+          "file": "body_type/slim.webp",
+          "tags": [
+            "gothic",
+            "cyber"
+          ],
+          "prompt": "slender slim figure, narrow shoulders"
+        },
+        {
+          "id": "standard",
+          "name": "표준",
+          "file": "body_type/standard.webp",
+          "tags": [
+            "academy"
+          ],
+          "prompt": "average figure"
+        },
+        {
+          "id": "glamour",
+          "name": "글래머 볼륨",
+          "file": "body_type/glamour.webp",
+          "tags": [
+            "resort",
+            "gothic"
+          ],
+          "prompt": "curvy hourglass figure"
+        },
+        {
+          "id": "athletic",
+          "name": "스포티",
+          "file": "body_type/athletic.webp",
+          "tags": [
+            "cyber",
+            "resort"
+          ],
+          "prompt": "athletic toned build, broad shoulders"
+        }
+      ]
+    },
+    "height": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "petite",
+          "name": "아담 · 6.5등신",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "petite, short stature, 6.5 heads tall, compact figure",
+          "anchor": {
+            "head": {
+              "dy": 18,
+              "scale": 1.045
+            },
+            "body": {
+              "sy": 0.94
+            }
+          }
+        },
+        {
+          "id": "standard",
+          "name": "표준 · 7.2등신",
+          "tags": [],
+          "prompt": "average height, 7.2 heads tall",
+          "anchor": {
+            "head": {
+              "dy": 0,
+              "scale": 1.0
+            },
+            "body": {
+              "sy": 1.0
+            }
+          }
+        },
+        {
+          "id": "tall",
+          "name": "장신 · 8등신",
+          "tags": [
+            "cyber",
+            "gothic",
+            "resort"
+          ],
+          "prompt": "tall, long legs, 8 heads tall, model proportions",
+          "anchor": {
+            "head": {
+              "dy": -22,
+              "scale": 0.985
+            },
+            "body": {
+              "sy": 1.055
+            }
+          }
+        }
+      ]
+    },
+    "bust": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "flat",
+          "name": "슬림",
+          "tags": [
+            "cyber",
+            "academy"
+          ],
+          "prompt": "flat chest",
+          "anchor": {
+            "bands": {
+              "bust": 0.94
+            }
+          }
+        },
+        {
+          "id": "medium",
+          "name": "보통",
+          "tags": [],
+          "prompt": "medium bust",
+          "anchor": {
+            "bands": {
+              "bust": 1.0
+            }
+          }
+        },
+        {
+          "id": "large",
+          "name": "볼륨",
+          "tags": [
+            "resort",
+            "gothic"
+          ],
+          "prompt": "large bust",
+          "anchor": {
+            "bands": {
+              "bust": 1.08
+            }
+          }
+        },
+        {
+          "id": "glamour",
+          "name": "글래머",
+          "tags": [
+            "resort"
+          ],
+          "prompt": "very large bust, glamorous",
+          "anchor": {
+            "bands": {
+              "bust": 1.15
+            }
+          }
+        }
+      ]
+    },
+    "hip": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "slim",
+          "name": "슬림 힙",
+          "tags": [
+            "cyber",
+            "academy"
+          ],
+          "prompt": "slim hips",
+          "anchor": {
+            "bands": {
+              "hip": 0.95
+            }
+          }
+        },
+        {
+          "id": "normal",
+          "name": "보통 힙",
+          "tags": [],
+          "prompt": "average hips",
+          "anchor": {
+            "bands": {
+              "hip": 1.0
+            }
+          }
+        },
+        {
+          "id": "wide",
+          "name": "골반 강조",
+          "tags": [
+            "resort",
+            "gothic"
+          ],
+          "prompt": "wide hips, pronounced waist curve",
+          "anchor": {
+            "bands": {
+              "hip": 1.08
+            }
+          }
+        },
+        {
+          "id": "full",
+          "name": "풍만 힙",
+          "tags": [
+            "resort"
+          ],
+          "prompt": "full curvy hips",
+          "anchor": {
+            "bands": {
+              "hip": 1.14
+            }
+          }
+        }
+      ]
+    },
+    "build": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "slender",
+          "name": "여리여리",
+          "tags": [
+            "gothic",
+            "fantasy"
+          ],
+          "prompt": "slender delicate frame, thin arms",
+          "anchor": {
+            "body": {
+              "sx": 0.95
+            }
+          }
+        },
+        {
+          "id": "standard",
+          "name": "표준",
+          "tags": [],
+          "prompt": "normal build",
+          "anchor": {
+            "body": {
+              "sx": 1.0
+            }
+          }
+        },
+        {
+          "id": "athletic",
+          "name": "탄탄 스포티",
+          "tags": [
+            "cyber",
+            "resort"
+          ],
+          "prompt": "athletic toned frame, firm shoulders",
+          "anchor": {
+            "body": {
+              "sx": 1.05
+            }
+          }
+        },
+        {
+          "id": "wide",
+          "name": "듬직 와이드",
+          "tags": [
+            "cyber"
+          ],
+          "prompt": "broad sturdy frame, wide shoulders",
+          "anchor": {
+            "body": {
+              "sx": 1.1
+            }
+          }
+        }
+      ]
+    },
+    "pose": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "standing",
+          "name": "정면 스탠딩",
+          "file": "pose/standing.arms.webp",
+          "tags": [
+            "academy",
+            "gothic"
+          ],
+          "prompt": "facing viewer, neutral standing pose",
+          "anchor": {
+            "head": {
+              "dx": 0,
+              "dy": 0,
+              "rot": 0
+            }
+          }
+        },
+        {
+          "id": "tilt",
+          "name": "고개 갸웃",
+          "file": "pose/tilt.arms.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "head tilted, cute pose",
+          "anchor": {
+            "head": {
+              "dx": -10,
+              "dy": 4,
+              "rot": -4
+            }
+          }
+        },
+        {
+          "id": "threequarter",
+          "name": "3/4 측면",
+          "file": "pose/threequarter.arms.webp",
+          "tags": [
+            "cyber",
+            "fantasy"
+          ],
+          "prompt": "three-quarter view, looking back",
+          "anchor": {
+            "head": {
+              "dx": 8,
+              "dy": 0,
+              "rot": 3
+            }
+          }
+        },
+        {
+          "id": "v_sign",
+          "name": "손 브이(V)",
+          "file": "pose/v_sign.arms.webp",
+          "tags": [
+            "academy",
+            "cyber"
+          ],
+          "prompt": "peace sign near cheek",
+          "anchor": {
+            "head": {
+              "dx": 4,
+              "dy": 0,
+              "rot": 2
+            }
+          }
+        },
+        {
+          "id": "wave",
+          "name": "손 인사",
+          "file": "pose/wave.arms.webp",
+          "tags": [
+            "resort",
+            "academy"
+          ],
+          "prompt": "waving hand hello",
+          "anchor": {
+            "head": {
+              "dx": -4,
+              "dy": 0,
+              "rot": -2
+            }
+          }
+        },
+        {
+          "id": "crossed",
+          "name": "팔짱",
+          "file": "pose/crossed.arms.webp",
+          "tags": [
+            "gothic",
+            "cyber"
+          ],
+          "prompt": "arms crossed",
+          "anchor": {
+            "head": {
+              "dx": 0,
+              "dy": 0,
+              "rot": 0
+            }
+          }
+        },
+        {
+          "id": "hip_hand",
+          "name": "허리 손",
+          "file": "pose/hip_hand.arms.webp",
+          "tags": [
+            "resort",
+            "cyber"
+          ],
+          "prompt": "hand on hip",
+          "anchor": {
+            "head": {
+              "dx": 6,
+              "dy": 0,
+              "rot": 3
+            }
+          }
+        },
+        {
+          "id": "chin",
+          "name": "턱 괴기",
+          "file": "pose/chin.arms.webp",
+          "tags": [
+            "gothic",
+            "fantasy"
+          ],
+          "prompt": "hand resting on chin, thoughtful",
+          "anchor": {
+            "head": {
+              "dx": -6,
+              "dy": 3,
+              "rot": -3
+            }
+          }
+        }
+      ]
+    },
+    "eyes_shape": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "round",
+          "name": "둥근 순정눈",
+          "files": {
+            "eyes": "eyes_shape/round.webp",
+            "right": "eyes_shape/round.right.webp"
+          },
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "large round eyes"
+        },
+        {
+          "id": "sharp",
+          "name": "샤프한 눈",
+          "files": {
+            "eyes": "eyes_shape/sharp.webp",
+            "right": "eyes_shape/sharp.right.webp"
+          },
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "sharp narrow eyes"
+        },
+        {
+          "id": "droopy",
+          "name": "처진 다정눈",
+          "files": {
+            "eyes": "eyes_shape/droopy.webp",
+            "right": "eyes_shape/droopy.right.webp"
+          },
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "gentle droopy eyes"
+        },
+        {
+          "id": "cat",
+          "name": "고양이눈",
+          "files": {
+            "eyes": "eyes_shape/cat.webp",
+            "right": "eyes_shape/cat.right.webp"
+          },
+          "tags": [
+            "cyber",
+            "fantasy"
+          ],
+          "prompt": "upturned cat eyes"
+        },
+        {
+          "id": "sleepy",
+          "name": "반쯤 감긴 눈",
+          "files": {
+            "eyes": "eyes_shape/sleepy.webp",
+            "right": "eyes_shape/sleepy.right.webp"
+          },
+          "tags": [
+            "gothic",
+            "cyber"
+          ],
+          "prompt": "half-lidded eyes"
+        },
+        {
+          "id": "wide",
+          "name": "또렷한 큰눈",
+          "files": {
+            "eyes": "eyes_shape/wide.webp",
+            "right": "eyes_shape/wide.right.webp"
+          },
+          "tags": [
+            "fantasy",
+            "academy"
+          ],
+          "prompt": "wide sparkling eyes"
+        }
+      ]
+    },
+    "eye_color": {
+      "pick": "color"
+    },
+    "iris_fx": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "star",
+          "name": "별 무늬",
+          "file": "iris_fx/star.webp",
+          "tags": [
+            "fantasy",
+            "academy"
+          ],
+          "prompt": "star-shaped iris highlight"
+        },
+        {
+          "id": "heart",
+          "name": "하트 무늬",
+          "file": "iris_fx/heart.webp",
+          "tags": [
+            "resort",
+            "academy"
+          ],
+          "prompt": "heart-shaped iris highlight"
+        },
+        {
+          "id": "ring",
+          "name": "동심원",
+          "file": "iris_fx/ring.webp",
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "concentric ring iris"
+        },
+        {
+          "id": "gradient",
+          "name": "그라데이션",
+          "file": "iris_fx/gradient.webp",
+          "tags": [
+            "resort",
+            "fantasy"
+          ],
+          "prompt": "vertical gradient iris"
+        },
+        {
+          "id": "sparkle",
+          "name": "반짝 다중 하이라이트",
+          "file": "iris_fx/sparkle.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "multiple sparkle highlights"
+        },
+        {
+          "id": "none",
+          "name": "없음(민무늬)",
+          "tags": [],
+          "prompt": "",
+          "clutter": 0,
+          "note": "홍채 무늬 없음"
+        }
+      ]
+    },
+    "eyebrow": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "straight",
+          "name": "일자 눈썹",
+          "file": "eyebrow/straight.webp",
+          "tags": [
+            "academy",
+            "cyber"
+          ],
+          "prompt": "straight eyebrows"
+        },
+        {
+          "id": "arch",
+          "name": "아치 눈썹",
+          "file": "eyebrow/arch.webp",
+          "tags": [
+            "gothic",
+            "resort"
+          ],
+          "prompt": "arched eyebrows"
+        },
+        {
+          "id": "cool",
+          "name": "올라간 쿨 눈썹",
+          "file": "eyebrow/cool.webp",
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "angled cool eyebrows"
+        },
+        {
+          "id": "gentle",
+          "name": "처진 순둥 눈썹",
+          "file": "eyebrow/gentle.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "gentle downward eyebrows"
+        },
+        {
+          "id": "thick",
+          "name": "굵은 눈썹",
+          "file": "eyebrow/thick.webp",
+          "tags": [
+            "resort",
+            "academy"
+          ],
+          "prompt": "thick bold eyebrows"
+        }
+      ]
+    },
+    "expression": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "calm",
+          "name": "무표정",
+          "file": "expression/calm.webp",
+          "tags": [
+            "gothic",
+            "cyber"
+          ],
+          "prompt": "calm neutral expression"
+        },
+        {
+          "id": "smile",
+          "name": "미소",
+          "file": "expression/smile.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "soft smile"
+        },
+        {
+          "id": "grin",
+          "name": "활짝 웃음",
+          "file": "expression/grin.webp",
+          "files": {
+            "mouth": "expression/grin.mouth.webp"
+          },
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "happy open smile",
+          "owns": [
+            "mouth"
+          ]
+        },
+        {
+          "id": "wink",
+          "name": "윙크",
+          "file": "expression/wink.webp",
+          "files": {
+            "mouth": "expression/wink.mouth.webp"
+          },
+          "tags": [
+            "academy",
+            "cyber"
+          ],
+          "prompt": "one eye closed wink",
+          "owns": [
+            "mouth"
+          ]
+        },
+        {
+          "id": "shy",
+          "name": "수줍음",
+          "file": "expression/shy.webp",
+          "files": {
+            "cheek_fx": "expression/shy.cheek.webp"
+          },
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "shy blushing expression",
+          "owns": [
+            "cheek_fx"
+          ]
+        },
+        {
+          "id": "cool",
+          "name": "쿨한 시선",
+          "file": "expression/cool.webp",
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "cool confident gaze"
+        },
+        {
+          "id": "surprise",
+          "name": "놀람",
+          "file": "expression/surprise.webp",
+          "files": {
+            "mouth": "expression/surprise.mouth.webp"
+          },
+          "tags": [
+            "resort",
+            "fantasy"
+          ],
+          "prompt": "surprised expression",
+          "owns": [
+            "mouth"
+          ]
+        }
+      ]
+    },
+    "nose": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "dot",
+          "name": "점코",
+          "file": "nose/dot.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "tiny dot nose"
+        },
+        {
+          "id": "line",
+          "name": "선코",
+          "file": "nose/line.webp",
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "thin line nose"
+        },
+        {
+          "id": "shade",
+          "name": "음영코",
+          "file": "nose/shade.webp",
+          "tags": [
+            "fantasy",
+            "gothic"
+          ],
+          "prompt": "shaded soft nose bridge"
+        },
+        {
+          "id": "none",
+          "name": "생략",
+          "tags": [],
+          "prompt": "",
+          "clutter": 0,
+          "note": "코 없음"
+        }
+      ]
+    },
+    "mouth": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "soft",
+          "name": "옅은 미소",
+          "file": "mouth/soft.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "soft closed smile"
+        },
+        {
+          "id": "open",
+          "name": "벌린 입",
+          "file": "mouth/open.webp",
+          "tags": [
+            "resort",
+            "academy"
+          ],
+          "prompt": "slightly open mouth"
+        },
+        {
+          "id": "cat",
+          "name": "고양이 입",
+          "file": "mouth/cat.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "cat-like :3 mouth"
+        },
+        {
+          "id": "smirk",
+          "name": "쌔끈한 미소",
+          "file": "mouth/smirk.webp",
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "confident smirk"
+        },
+        {
+          "id": "pout",
+          "name": "발그레 삐침",
+          "file": "mouth/pout.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "small pout"
+        },
+        {
+          "id": "flat",
+          "name": "일자 입",
+          "file": "mouth/flat.webp",
+          "tags": [
+            "gothic",
+            "cyber"
+          ],
+          "prompt": "flat lips"
+        }
+      ]
+    },
+    "cheek_fx": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "none",
+          "name": "없음",
+          "tags": [],
+          "prompt": "",
+          "clutter": 0,
+          "note": "볼 이펙트 없음"
+        },
+        {
+          "id": "sweat",
+          "name": "땀방울",
+          "file": "cheek_fx/sweat.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "sweat drop",
+          "clutter": 1
+        },
+        {
+          "id": "mole",
+          "name": "눈밑 점",
+          "file": "cheek_fx/mole.webp",
+          "tags": [
+            "gothic",
+            "cyber"
+          ],
+          "prompt": "beauty mole under eye",
+          "clutter": 0
+        },
+        {
+          "id": "band",
+          "name": "볼 반창고",
+          "file": "cheek_fx/band.webp",
+          "tags": [
+            "academy",
+            "cyber"
+          ],
+          "prompt": "bandage on cheek",
+          "clutter": 1
+        },
+        {
+          "id": "hatch",
+          "name": "홍조 빗금",
+          "file": "cheek_fx/hatch.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "hatched blush lines",
+          "clutter": 0
+        }
+      ]
+    },
+    "heterochromia": {
+      "pick": "flag",
+      "probability": 0.17
+    },
+    "ears": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "human",
+          "name": "인간귀",
+          "files": {
+            "ears_back": "ears/human.back.webp",
+            "ears_front": "ears/human.front.webp"
+          },
+          "tags": [
+            "academy",
+            "resort",
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "normal human ears",
+          "weight": 2.4
+        },
+        {
+          "id": "elf",
+          "name": "엘프 뾰족귀",
+          "files": {
+            "ears_back": "ears/elf.back.webp",
+            "ears_front": "ears/elf.front.webp"
+          },
+          "tags": [
+            "fantasy"
+          ],
+          "prompt": "long pointed elf ears"
+        },
+        {
+          "id": "cat",
+          "name": "수인 고양이귀",
+          "files": {
+            "ears_back": "ears/cat.back.webp",
+            "ears_front": "ears/cat.front.webp"
+          },
+          "tags": [
+            "fantasy",
+            "cyber",
+            "academy"
+          ],
+          "prompt": "fluffy cat ears on head"
+        },
+        {
+          "id": "fox",
+          "name": "수인 여우귀",
+          "files": {
+            "ears_back": "ears/fox.back.webp",
+            "ears_front": "ears/fox.front.webp"
+          },
+          "tags": [
+            "fantasy",
+            "resort"
+          ],
+          "prompt": "fox ears on head"
+        },
+        {
+          "id": "rabbit",
+          "name": "수인 토끼귀",
+          "files": {
+            "ears_back": "ears/rabbit.back.webp",
+            "ears_front": "ears/rabbit.front.webp"
+          },
+          "tags": [
+            "fantasy",
+            "resort",
+            "academy"
+          ],
+          "prompt": "long rabbit ears on head"
+        }
+      ]
+    },
+    "hair_back": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "long_straight",
+          "name": "긴 생머리",
+          "files": {
+            "hair_back": "hair_back/long_straight.webp",
+            "inner": "hair_back/long_straight.inner.webp"
+          },
+          "tags": [
+            "academy",
+            "gothic"
+          ],
+          "prompt": "long straight hair"
+        },
+        {
+          "id": "twin_tails",
+          "name": "트윈테일",
+          "files": {
+            "hair_back": "hair_back/twin_tails.webp",
+            "inner": "hair_back/twin_tails.inner.webp"
+          },
+          "tags": [
+            "academy",
+            "cyber"
+          ],
+          "prompt": "long twin tails"
+        },
+        {
+          "id": "ponytail",
+          "name": "포니테일",
+          "files": {
+            "hair_back": "hair_back/ponytail.webp",
+            "inner": "hair_back/ponytail.inner.webp"
+          },
+          "tags": [
+            "resort",
+            "academy"
+          ],
+          "prompt": "high ponytail"
+        },
+        {
+          "id": "wavy",
+          "name": "웨이브 롱",
+          "files": {
+            "hair_back": "hair_back/wavy.webp",
+            "inner": "hair_back/wavy.inner.webp"
+          },
+          "tags": [
+            "resort",
+            "fantasy"
+          ],
+          "prompt": "long wavy hair"
+        },
+        {
+          "id": "bob",
+          "name": "단발",
+          "files": {
+            "hair_back": "hair_back/bob.webp",
+            "inner": "hair_back/bob.inner.webp"
+          },
+          "tags": [
+            "cyber",
+            "academy"
+          ],
+          "prompt": "short bob cut"
+        },
+        {
+          "id": "braid",
+          "name": "땋은 머리",
+          "files": {
+            "hair_back": "hair_back/braid.webp",
+            "inner": "hair_back/braid.inner.webp"
+          },
+          "tags": [
+            "fantasy",
+            "academy"
+          ],
+          "prompt": "braided hair"
+        },
+        {
+          "id": "short",
+          "name": "숏컷",
+          "files": {
+            "hair_back": "hair_back/short.webp",
+            "inner": "hair_back/short.inner.webp"
+          },
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "short pixie hair"
+        }
+      ]
+    },
+    "hair_side": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "short",
+          "name": "짧은 옆머리",
+          "file": "hair_side/short.webp",
+          "tags": [
+            "cyber",
+            "academy"
+          ],
+          "prompt": "short face-framing strands"
+        },
+        {
+          "id": "long",
+          "name": "긴 옆머리",
+          "file": "hair_side/long.webp",
+          "tags": [
+            "gothic",
+            "fantasy"
+          ],
+          "prompt": "long face-framing locks"
+        },
+        {
+          "id": "curl",
+          "name": "휘어진 옆머리",
+          "file": "hair_side/curl.webp",
+          "tags": [
+            "resort",
+            "fantasy"
+          ],
+          "prompt": "curled side locks"
+        },
+        {
+          "id": "braid",
+          "name": "옆 땋기",
+          "file": "hair_side/braid.webp",
+          "tags": [
+            "fantasy",
+            "academy"
+          ],
+          "prompt": "small side braid"
+        },
+        {
+          "id": "spiky",
+          "name": "삐죽 옆머리",
+          "file": "hair_side/spiky.webp",
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "spiky side strands"
+        }
+      ]
+    },
+    "hair_front": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "blunt",
+          "name": "일자 앞머리",
+          "file": "hair_front/blunt.webp",
+          "tags": [
+            "academy",
+            "gothic"
+          ],
+          "prompt": "blunt straight bangs"
+        },
+        {
+          "id": "parted",
+          "name": "6:4 가르마",
+          "file": "hair_front/parted.webp",
+          "tags": [
+            "academy",
+            "cyber"
+          ],
+          "prompt": "side-parted bangs"
+        },
+        {
+          "id": "side_swept",
+          "name": "쓸어넘긴 앞머리",
+          "file": "hair_front/side_swept.webp",
+          "tags": [
+            "resort",
+            "fantasy"
+          ],
+          "prompt": "swept side bangs"
+        },
+        {
+          "id": "hime",
+          "name": "히메컷",
+          "file": "hair_front/hime.webp",
+          "tags": [
+            "gothic",
+            "fantasy"
+          ],
+          "prompt": "hime-cut straight bangs"
+        },
+        {
+          "id": "choppy",
+          "name": "층진 앞머리",
+          "file": "hair_front/choppy.webp",
+          "tags": [
+            "cyber",
+            "fantasy"
+          ],
+          "prompt": "choppy layered bangs"
+        },
+        {
+          "id": "curtain",
+          "name": "커튼 뱅",
+          "file": "hair_front/curtain.webp",
+          "tags": [
+            "resort",
+            "academy"
+          ],
+          "prompt": "curtain bangs"
+        },
+        {
+          "id": "see_through",
+          "name": "시스루 뱅",
+          "file": "hair_front/see_through.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "see-through wispy bangs"
+        }
+      ]
+    },
+    "ahoge": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "none",
+          "name": "없음",
+          "tags": [],
+          "prompt": "",
+          "clutter": 0,
+          "note": "삐침 없음"
+        },
+        {
+          "id": "single",
+          "name": "삐침 한 가닥",
+          "file": "ahoge/single.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "ahoge"
+        },
+        {
+          "id": "double",
+          "name": "쌍삐침",
+          "file": "ahoge/double.webp",
+          "tags": [
+            "cyber",
+            "academy"
+          ],
+          "prompt": "double ahoge"
+        },
+        {
+          "id": "curl",
+          "name": "말린 삐침",
+          "file": "ahoge/curl.webp",
+          "tags": [
+            "resort",
+            "fantasy"
+          ],
+          "prompt": "curled ahoge"
+        }
+      ]
+    },
+    "hair_color": {
+      "pick": "color"
+    },
+    "hair_two_tone": {
+      "pick": "flag",
+      "probability": 0.3
+    },
+    "outfit": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "sailor",
+          "name": "세일러복",
+          "files": {
+            "outfit": "outfit/sailor.webp",
+            "accent": "outfit/sailor.accent.webp"
+          },
+          "tags": [
+            "academy"
+          ],
+          "prompt": "sailor school uniform with neckerchief"
+        },
+        {
+          "id": "hoodie",
+          "name": "후드티",
+          "files": {
+            "outfit": "outfit/hoodie.webp",
+            "accent": "outfit/hoodie.accent.webp"
+          },
+          "tags": [
+            "cyber",
+            "academy"
+          ],
+          "prompt": "oversized hoodie"
+        },
+        {
+          "id": "blazer",
+          "name": "블레이저 교복",
+          "files": {
+            "outfit": "outfit/blazer.webp",
+            "accent": "outfit/blazer.accent.webp"
+          },
+          "tags": [
+            "academy",
+            "gothic"
+          ],
+          "prompt": "blazer school uniform with necktie"
+        },
+        {
+          "id": "cyber",
+          "name": "사이버 재킷",
+          "files": {
+            "outfit": "outfit/cyber.webp",
+            "accent": "outfit/cyber.accent.webp"
+          },
+          "tags": [
+            "cyber"
+          ],
+          "prompt": "techwear cyberpunk jacket"
+        },
+        {
+          "id": "gothic",
+          "name": "고딕 드레스",
+          "files": {
+            "outfit": "outfit/gothic.webp",
+            "accent": "outfit/gothic.accent.webp"
+          },
+          "tags": [
+            "gothic",
+            "fantasy"
+          ],
+          "prompt": "gothic lolita dress"
+        },
+        {
+          "id": "resort",
+          "name": "리조트 웨어",
+          "files": {
+            "outfit": "outfit/resort.webp",
+            "accent": "outfit/resort.accent.webp"
+          },
+          "tags": [
+            "resort"
+          ],
+          "prompt": "summer resort off-shoulder top"
+        }
+      ]
+    },
+    "outfit_color": {
+      "pick": "color"
+    },
+    "head_acc": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "none",
+          "name": "없음",
+          "tags": [],
+          "prompt": "",
+          "clutter": 0,
+          "note": "머리 악세 없음"
+        },
+        {
+          "id": "ribbon",
+          "name": "리본",
+          "file": "head_acc/ribbon.webp",
+          "tags": [
+            "academy",
+            "gothic"
+          ],
+          "prompt": "hair ribbon",
+          "clutter": 1
+        },
+        {
+          "id": "headband",
+          "name": "헤어밴드",
+          "file": "head_acc/headband.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "hair band",
+          "clutter": 1
+        },
+        {
+          "id": "hairpin",
+          "name": "별 핀",
+          "file": "head_acc/hairpin.webp",
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "star hairpin",
+          "clutter": 1
+        },
+        {
+          "id": "headphones",
+          "name": "헤드폰",
+          "file": "head_acc/headphones.webp",
+          "tags": [
+            "cyber"
+          ],
+          "prompt": "headphones",
+          "clutter": 2
+        },
+        {
+          "id": "beret",
+          "name": "베레모",
+          "file": "head_acc/beret.webp",
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "beret",
+          "clutter": 2,
+          "hides": [
+            "ahoge"
+          ],
+          "note": "모자 위로 삐침이 나오면 어색 → ahoge 은폐"
+        },
+        {
+          "id": "crown",
+          "name": "티아라",
+          "file": "head_acc/crown.webp",
+          "tags": [
+            "gothic",
+            "fantasy"
+          ],
+          "prompt": "tiara crown",
+          "clutter": 3,
+          "hides": [
+            "ahoge"
+          ],
+          "note": "티아라가 정수리를 덮음 → ahoge 은폐"
+        }
+      ]
+    },
+    "glasses": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "none",
+          "name": "없음",
+          "tags": [],
+          "prompt": "",
+          "clutter": 0,
+          "note": "안경 없음"
+        },
+        {
+          "id": "round",
+          "name": "라운드 안경",
+          "file": "glasses/round.webp",
+          "tags": [
+            "academy",
+            "gothic"
+          ],
+          "prompt": "round glasses",
+          "clutter": 1
+        },
+        {
+          "id": "half",
+          "name": "하프림",
+          "file": "glasses/half.webp",
+          "tags": [
+            "academy",
+            "cyber"
+          ],
+          "prompt": "half-rim glasses",
+          "clutter": 1
+        },
+        {
+          "id": "visor",
+          "name": "사이버 바이저",
+          "file": "glasses/visor.webp",
+          "tags": [
+            "cyber"
+          ],
+          "prompt": "translucent cyber visor",
+          "clutter": 2,
+          "hides": [
+            "eyebrow"
+          ],
+          "note": "바이저가 눈썹을 덮음 → eyebrow 은폐"
+        }
+      ]
+    },
+    "aura": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "none",
+          "name": "없음",
+          "tags": [],
+          "prompt": "",
+          "clutter": 0,
+          "note": "오라 없음"
+        },
+        {
+          "id": "bokeh",
+          "name": "보케 빛망울",
+          "files": {
+            "aura_back": "aura/bokeh.back.webp",
+            "aura_front": "aura/bokeh.front.webp"
+          },
+          "tags": [
+            "academy",
+            "resort"
+          ],
+          "prompt": "bokeh light particles",
+          "clutter": 1
+        },
+        {
+          "id": "sakura",
+          "name": "벚꽃잎",
+          "files": {
+            "aura_back": "aura/sakura.back.webp",
+            "aura_front": "aura/sakura.front.webp"
+          },
+          "tags": [
+            "academy",
+            "fantasy"
+          ],
+          "prompt": "floating cherry blossom petals",
+          "clutter": 1
+        },
+        {
+          "id": "neon",
+          "name": "네온 그리드",
+          "files": {
+            "aura_back": "aura/neon.back.webp",
+            "aura_front": "aura/neon.front.webp"
+          },
+          "tags": [
+            "cyber"
+          ],
+          "prompt": "neon grid light",
+          "clutter": 1
+        },
+        {
+          "id": "magic",
+          "name": "마법진",
+          "files": {
+            "aura_back": "aura/magic.back.webp",
+            "aura_front": "aura/magic.front.webp"
+          },
+          "tags": [
+            "fantasy",
+            "gothic"
+          ],
+          "prompt": "glowing magic circle",
+          "clutter": 1
+        },
+        {
+          "id": "speed",
+          "name": "스피드 라인",
+          "files": {
+            "aura_back": "aura/speed.back.webp",
+            "aura_front": "aura/speed.front.webp"
+          },
+          "tags": [
+            "cyber",
+            "gothic"
+          ],
+          "prompt": "manga speed lines",
+          "clutter": 1
+        }
+      ]
+    },
+    "background": {
+      "pick": "part",
+      "parts": [
+        {
+          "id": "classroom",
+          "name": "교실 창가",
+          "file": "background/classroom.webp",
+          "tags": [
+            "academy"
+          ],
+          "prompt": "classroom with sunlit windows"
+        },
+        {
+          "id": "forest",
+          "name": "요정의 숲",
+          "file": "background/forest.webp",
+          "tags": [
+            "fantasy"
+          ],
+          "prompt": "enchanted forest bokeh"
+        },
+        {
+          "id": "neon_city",
+          "name": "네온 시티",
+          "file": "background/neon_city.webp",
+          "tags": [
+            "cyber"
+          ],
+          "prompt": "neon cyberpunk city at night"
+        },
+        {
+          "id": "sunset_sea",
+          "name": "노을 바다",
+          "file": "background/sunset_sea.webp",
+          "tags": [
+            "resort"
+          ],
+          "prompt": "tropical sunset ocean"
+        },
+        {
+          "id": "gothic_hall",
+          "name": "고딕 성당",
+          "file": "background/gothic_hall.webp",
+          "tags": [
+            "gothic"
+          ],
+          "prompt": "dark gothic cathedral"
+        },
+        {
+          "id": "bokeh_soft",
+          "name": "소프트 보케",
+          "file": "background/bokeh_soft.webp",
+          "tags": [
+            "academy",
+            "resort",
+            "fantasy"
+          ],
+          "prompt": "soft gradient bokeh backdrop"
+        }
+      ]
+    }
+  }
+}

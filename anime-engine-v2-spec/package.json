@@ -1,0 +1,15 @@
+{
+  "name": "anime-character-combinator",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "애니 캐릭터 조합 엔진 v2 — 파츠팩 아키텍처 (시드 결정론 · 30슬롯 · 20레이어 합성)",
+  "author": "포시즌jo",
+  "main": "engine.js",
+  "scripts": {
+    "test": "node test/engine.test.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "keywords": ["anime", "character", "compositor", "canvas", "parts-pack"],
+  "license": "UNLICENSED"
+}
