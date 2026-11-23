@@ -310,7 +310,7 @@
     for (const a of arms) {
       if (which && a.which !== which) continue;
       const pts = armPoints(fig, a.s, a.mode);
-      const w = fig.limb * 1.28;
+      const w = fig.limb * 2.05;
       if (phase === 'limb') {
         const poly = limbPoly(pts, w * 1.02, w * 0.86, w * 0.72);
         AE.fill(poly, P.skin);
@@ -393,7 +393,7 @@
   function sleeve(fig, a, short, pal) {
     const ctx = AE.G.ctx;
     const pts = armPoints(fig, a.s, a.mode);
-    const wS = fig.limb * 1.95, wE = fig.limb * 1.62, wW = fig.limb * 1.30;
+    const wS = fig.limb * 2.55, wE = fig.limb * 2.05, wW = fig.limb * 1.65;
     const poly = short
       ? (() => {
         const mx = pts.sx + (pts.ex - pts.sx) * 0.42, my = pts.sy + (pts.ey - pts.sy) * 0.42;
@@ -509,9 +509,24 @@
 
     /* 상의 — 어깨~힙 */
     const tp = AE.torsoPath(fig);
+    const hemY = id === 'hoodie' ? fig.hipY + (fig.kneeY - fig.hipY) * 0.30 : fig.hipY + 14;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(0, 0, 1200, hemY);
+    ctx.clip();
     AE.fill(tp, P.outfit);
     shadeFabric(tp, P, { folds: 6, span: fig.shW * 1.6, y0: fig.bustY + 40, foldLen: 200, salt: 'top', a: 0.75 });
     AE.stroke(tp, AE.alpha(P.outfitDeep, 0.5), 3.4, 0.5);
+    ctx.restore();
+    // 밑단 라인
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(CX - fig.hipW * 1.02, hemY);
+    ctx.quadraticCurveTo(CX, hemY + 18, CX + fig.hipW * 1.02, hemY);
+    ctx.strokeStyle = AE.alpha(P.outfitDeep, 0.55);
+    ctx.lineWidth = 3.4;
+    ctx.stroke();
+    ctx.restore();
 
     if (id === 'sailor') {
       const col = new Path2D();
@@ -593,9 +608,9 @@
     } else if (id === 'hoodie') {
       if (ch.parts.hoodUp) {
         const hd = new Path2D();
-        hd.moveTo(CX - 196, fig.chinY + 150);
-        hd.bezierCurveTo(CX - 214, fig.chinY - 70, CX + 214, fig.chinY - 70, CX + 196, fig.chinY + 150);
-        hd.bezierCurveTo(CX + 120, fig.chinY + 210, CX - 120, fig.chinY + 210, CX - 196, fig.chinY + 150);
+        hd.moveTo(CX - 232, fig.chinY + 190);
+        hd.bezierCurveTo(CX - 258, fig.chinY - 130, CX + 258, fig.chinY - 130, CX + 232, fig.chinY + 190);
+        hd.bezierCurveTo(CX + 140, fig.chinY + 250, CX - 140, fig.chinY + 250, CX - 232, fig.chinY + 190);
         hd.closePath();
         AE.fill(hd, AE.shade(P.outfit, -10, 0));
         AE.innerShadow(hd, P.outfitDeep, 0, 34, 0.5);

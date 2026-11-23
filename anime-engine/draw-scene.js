@@ -480,7 +480,7 @@
       const px = CX, py = 588;
       const shiftX = (pose.turn || 0) * 22;
       octx.translate(px + shiftX, py);
-      octx.scale(1.075, 1.075);
+      octx.scale(1.12, 1.12);
       octx.rotate(((pose.headTilt || 0) * Math.PI) / 180);
       octx.translate(-px, -py);
     };
