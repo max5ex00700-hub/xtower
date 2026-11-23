@@ -195,10 +195,9 @@
   /* ---------------- 내보내기 ---------------- */
   function downloadPNG() {
     const off = document.createElement('canvas');
-    off.width = 2048;
-    off.height = 2560;
+    off.width = 1024;
+    off.height = 1280;
     const octx = off.getContext('2d');
-    octx.scale(2, 2);
     AE.render(octx, state.ch, { zoom: state.zoom, bg: state.bg });
     const url = off.toDataURL('image/png');
     const a = document.createElement('a');
@@ -207,7 +206,7 @@
     document.body.appendChild(a);
     a.click();
     a.remove();
-    toast('PNG 저장 · 2048×2560 (4:5)');
+    toast('PNG 저장 · 1024×1280' + (state.bg ? '' : ' (투명 배경)'));
   }
 
   function showText(title, text) {
