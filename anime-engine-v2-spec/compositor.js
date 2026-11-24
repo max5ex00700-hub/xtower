@@ -42,6 +42,36 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 
+/**
+ * 눈 흰자(고명도) 픽셀을 multiply 틴트 이전 원본으로 되돌린다.
+ * 무채색 eyes 파츠에서 L > threshold 인 영역은 홍채만 물들이고 흰자는 순백에 가깝게 유지.
+ *
+ * @param {Uint8ClampedArray|number[]} dest 틴트된 RGBA (in-place)
+ * @param {Uint8ClampedArray|number[]} src  원본 파츠 RGBA
+ * @param {{ threshold?: number, fullAt?: number }} [opts]
+ * @returns {Uint8ClampedArray|number[]}
+ */
+export function protectScleraPixels(dest, src, opts = {}) {
+  const threshold = opts.threshold == null ? 225 : opts.threshold;
+  const fullAt = opts.fullAt == null ? 245 : opts.fullAt;
+  const span = Math.max(1, fullAt - threshold);
+  const n = Math.min(dest.length, src.length);
+  for (let i = 0; i < n; i += 4) {
+    if (src[i + 3] < 8) continue;
+    const sr = src[i];
+    const sg = src[i + 1];
+    const sb = src[i + 2];
+    // Rec.709 luma, 0–255
+    const L = 0.2126 * sr + 0.7152 * sg + 0.0722 * sb;
+    if (L <= threshold) continue;
+    const t = Math.min(1, (L - threshold) / span);
+    dest[i] = Math.round(dest[i] + (sr - dest[i]) * t);
+    dest[i + 1] = Math.round(dest[i + 1] + (sg - dest[i + 1]) * t);
+    dest[i + 2] = Math.round(dest[i + 2] + (sb - dest[i + 2]) * t);
+  }
+  return dest;
+}
+
 function makeCanvas(w, h) {
   const c = document.createElement('canvas');
   c.width = w;
@@ -338,7 +368,39 @@ export class Compositor {
     o.drawImage(img, 0, 0, MASTER_W, MASTER_H);
     o.globalCompositeOperation = 'source-over';
     o.globalAlpha = 1;
+
+    // eyes: 고명도 흰자는 multiply에 물들지 않도록 원본으로 복원
+    if (layer.layer === 'eyes') {
+      this._protectScleraOnCanvas(o, img);
+    }
     return out;
+  }
+
+  /**
+   * 오프스크린 컨텍스트의 eyes 레이어에 흰자 보호를 적용한다.
+   * @param {CanvasRenderingContext2D} o
+   * @param {CanvasImageSource} img
+   */
+  _protectScleraOnCanvas(o, img) {
+    let tinted;
+    let source;
+    try {
+      tinted = o.getImageData(0, 0, MASTER_W, MASTER_H);
+    } catch (_) {
+      return; // tainted canvas 등 — 보호 생략
+    }
+    const srcBuf = this._buf('_scleraSrc');
+    const s = srcBuf.getContext('2d');
+    s.setTransform(1, 0, 0, 1, 0, 0);
+    s.clearRect(0, 0, MASTER_W, MASTER_H);
+    s.drawImage(img, 0, 0, MASTER_W, MASTER_H);
+    try {
+      source = s.getImageData(0, 0, MASTER_W, MASTER_H);
+    } catch (_) {
+      return;
+    }
+    protectScleraPixels(tinted.data, source.data);
+    o.putImageData(tinted, 0, 0);
   }
 
   _paintPart(ctx, img, layer) {

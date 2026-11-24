@@ -32,8 +32,8 @@ export const LAYERS = [
   'mouth',        // 9  입
   'eyebrow',      // 10 눈썹
   'outfit',       // 11 의상
-  'hair_side',    // 12 옆머리
-  'ears_front',   // 13 수인귀 앞판
+  'ears_front',   // 12 수인귀 앞판 (옆머리 아래)
+  'hair_side',    // 13 옆머리 — 귀 앞판을 자연스럽게 덮음
   'hair_front',   // 14 앞머리
   'ahoge',        // 15 삐침
   'glasses',      // 16 안경 · 바이저
@@ -864,9 +864,9 @@ function resolveColors(parts, ctx) {
   const irisB = shade(iris, 6, 4, 152);
   const twoTone = !!parts.hair_two_tone;
   const hairInner = twoTone
-    ? shade(hairHex, lightOf(hairHex) > 60 ? -20 : 18, 8, 24)
+    ? deriveHairInner(hairHex, rng)
     : shade(hairHex, -12, 2);
-  const outfitAccent = hslToHex(hueOf(outfit) + 165 + (rng() * 24 - 12), 62, 58);
+  const outfitAccent = deriveOutfitAccent(outfit, rng);
 
   return {
     skin,
@@ -878,6 +878,86 @@ function resolveColors(parts, ctx) {
     outfit_accent: outfitAccent,
     mode: '60-30-10',
   };
+}
+
+/**
+ * 투톤 안쪽색 — 같은 계열에서 명도·채도만 조정.
+ * 밤색(+24°)이 노란 하이라이트로 튀지 않도록 웜브라운은 쿨 애시 쪽으로만 소량 이동.
+ */
+export function deriveHairInner(hairHex, rng = Math.random) {
+  const [h, s, l] = hslOf(hairHex);
+  const rnd = (a, b) => a + (b - a) * rng();
+  if (l > 60) {
+    // 밝은 머리 → 안쪽은 조금 더 짙고 차분하게
+    const cool = (h >= 15 && h <= 55) ? rnd(-14, -4) : rnd(-8, 4);
+    return hslToHex(h + cool, clamp(s + rnd(-2, 6), 10, 68), clamp(l - rnd(16, 26), 14, 58));
+  }
+  // 어두운·중간 머리 → 안쪽을 밝히되, 웜브라운(15–50°)은 +24° 금지(노란화)
+  let dH;
+  if (h >= 15 && h <= 50) dH = rnd(-14, -2);       // 쿨 애시 / 카카오
+  else if (h > 50 && h < 80) dH = rnd(-18, -6);     // 올리브·금발 근처도 노란 과포화 회피
+  else dH = rnd(4, 14);                             // 그 외: 소폭 시프트
+  const dS = (h >= 15 && h <= 55) ? rnd(-14, -2) : rnd(-6, 4);
+  const dL = rnd(12, 22);
+  return hslToHex(h + dH, clamp(s + dS, 8, 58), clamp(l + dL, 26, 70));
+}
+
+/**
+ * 의상 포인트색 — 보색(+165°) 대신 애니풍 조화 프리셋.
+ * 네이비 교복 → 크림·소프트골드·로즈 (탁한 탄/머드 골드 회피).
+ */
+export function deriveOutfitAccent(outfitHex, rng = Math.random) {
+  const [h, s, l] = hslOf(outfitHex);
+  const rnd = (a, b) => a + (b - a) * rng();
+  let candidates;
+  if (h >= 195 && h < 260) {
+    // 네이비·블루 계열 — 교복 넥타이/리본
+    candidates = [
+      hslToHex(38, rnd(22, 38), rnd(74, 88)),   // cream / ivory
+      hslToHex(44, rnd(42, 58), rnd(54, 66)),   // soft gold (낮춘 채도)
+      hslToHex(352, rnd(42, 62), rnd(48, 60)),  // rose
+      hslToHex(6, rnd(55, 72), rnd(42, 54)),    // ribbon red
+    ];
+  } else if (h < 25 || h >= 340) {
+    // 레드·로즈 — 크림·네이비·소프트골드
+    candidates = [
+      hslToHex(40, rnd(18, 32), rnd(78, 90)),
+      hslToHex(215, rnd(32, 52), rnd(28, 42)),
+      hslToHex(45, rnd(48, 62), rnd(50, 62)),
+    ];
+  } else if (h >= 25 && h < 70) {
+    // 브라운·앰버·골드 의상 — 틸·로즈·아이보리
+    candidates = [
+      hslToHex(188, rnd(32, 52), rnd(40, 55)),
+      hslToHex(345, rnd(38, 55), rnd(50, 62)),
+      hslToHex(40, rnd(12, 28), rnd(80, 92)),
+    ];
+  } else if (h >= 70 && h < 170) {
+    // 그린·민트 — 크림·코랄·라벤더
+    candidates = [
+      hslToHex(38, rnd(22, 38), rnd(74, 88)),
+      hslToHex(12, rnd(48, 68), rnd(48, 58)),
+      hslToHex(310, rnd(28, 48), rnd(55, 68)),
+    ];
+  } else {
+    // 퍼플·마젠타 — 소프트골드·민트·크림
+    candidates = [
+      hslToHex(42, rnd(42, 58), rnd(54, 66)),
+      hslToHex(168, rnd(28, 48), rnd(48, 62)),
+      hslToHex(36, rnd(18, 32), rnd(80, 90)),
+    ];
+  }
+  // 의상과 색상각 또는 명도가 벌어지는 후보 우선
+  const ok = (hex) => hueDistance(hueOf(hex), h) >= 22 || Math.abs(lightOf(hex) - l) >= 26;
+  // 탁한 중간 채도(머드) 회피: S 35–70 ∧ L 42–62 ∧ 의상 보색대(150–180°) 근처면 제외
+  const muddy = (hex) => {
+    const [ah, as, al] = hslOf(hex);
+    const comp = hueDistance(ah, (h + 165) % 360) < 28;
+    return comp && as >= 35 && as <= 72 && al >= 42 && al <= 62;
+  };
+  const pool = candidates.filter((c) => ok(c) && !muddy(c));
+  const list = pool.length ? pool : candidates;
+  return list[Math.floor(rng() * list.length) % list.length];
 }
 
 function deriveIris(rng, hairHex, outfitHex, world, fx) {
@@ -1137,11 +1217,11 @@ export function buildRenderLayers(recipe, manifest) {
     }
   }
 
-  /* ---- 13) hair_side ---- */
-  emitPart('hair_side', 'hair_side', 0, { tint: colors.hair });
-
-  /* ---- 14) ears_front ---- */
+  /* ---- 13) ears_front (옆머리보다 아래 — 귀가 옆머리 위로 얹히지 않게) ---- */
   emitPart('ears', 'ears_front', 0, { tint: colors.skin });
+
+  /* ---- 14) hair_side ---- */
+  emitPart('hair_side', 'hair_side', 0, { tint: colors.hair });
 
   /* ---- 15) hair_front ---- */
   emitPart('hair_front', 'hair_front', 0, { tint: colors.hair });
@@ -1486,4 +1566,6 @@ export default {
   shade,
   hueDistance,
   lightOf,
+  deriveHairInner,
+  deriveOutfitAccent,
 };
