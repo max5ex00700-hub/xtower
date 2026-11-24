@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A0B11" />
+  <title>애니 캐릭터 조합 엔진 · 제작: 포시즌jo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./app.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="site-header">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">奏</span>
+        <div class="brand-text">
+          <h1>애니 캐릭터 조합 엔진</h1>
+          <p class="brand-sub">ANIME CHARACTER COMBINATOR · 제작: 포시즌jo</p>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="stage-col">
+        <div class="stage" id="stage">
+          <span class="world-badge" id="worldBadge">ALL</span>
+          <canvas id="mainCanvas" width="1024" height="1280" aria-label="캐릭터 캔버스"></canvas>
+          <span class="credit-badge">제작: 포시즌jo</span>
+        </div>
+
+        <div class="toolbar" id="toolbar">
+          <div class="toolbar-row">
+            <button type="button" class="btn btn-primary" id="btnReroll" title="Space">전체 리롤</button>
+            <button type="button" class="btn" id="btnBatch" title="G">9종 한 번에</button>
+            <button type="button" class="btn" id="btnNewSeed" title="새 시드">새 시드</button>
+          </div>
+
+          <div class="toolbar-row seed-row">
+            <label class="field-label" for="seedInput">시드</label>
+            <input type="text" id="seedInput" class="seed-input" spellcheck="false" autocomplete="off" />
+            <button type="button" class="btn btn-icon" id="btnCopySeed" title="시드 복사">복사</button>
+            <button type="button" class="btn btn-icon" id="btnApplySeed" title="시드 적용">적용</button>
+          </div>
+
+          <div class="toolbar-row">
+            <span class="field-label">세계관</span>
+            <div class="world-chips" id="worldChips" role="group" aria-label="세계관"></div>
+          </div>
+
+          <div class="toolbar-row">
+            <span class="field-label">줌</span>
+            <div class="zoom-chips" id="zoomChips" role="group" aria-label="줌">
+              <button type="button" class="chip" data-zoom="bust">클로즈업</button>
+              <button type="button" class="chip is-active" data-zoom="knee">무릎 위</button>
+              <button type="button" class="chip" data-zoom="full">전신</button>
+            </div>
+            <button type="button" class="btn btn-ghost" id="btnBg" aria-pressed="true">배경 ON</button>
+          </div>
+
+          <div class="toolbar-row export-row">
+            <label class="check"><input type="checkbox" id="chkTransparent" /> 배경 투명</label>
+            <button type="button" class="btn" id="btnPng" title="S">PNG 저장</button>
+            <button type="button" class="btn" id="btnJson">JSON</button>
+            <button type="button" class="btn" id="btnPrompt">프롬프트</button>
+            <button type="button" class="btn" id="btnShare">링크 복사</button>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel-col" id="panelCol">
+        <div class="panel-section locks-bar">
+          <span id="lockCount">잠금 0 / 30</span>
+          <button type="button" class="btn btn-ghost" id="btnUnlockAll">잠금 모두 해제</button>
+        </div>
+
+        <div class="panel-section" id="slotsPanel" tabindex="-1">
+          <!-- 슬롯 아코디언이 여기에 렌더됨 -->
+        </div>
+
+        <div class="panel-section">
+          <h2 class="panel-title">규칙 로그</h2>
+          <div class="log-summary" id="logSummary"></div>
+          <div class="clutter-gauge" id="clutterGauge" aria-label="혼잡도"></div>
+          <ul class="log-list" id="logList"></ul>
+        </div>
+
+        <div class="panel-section">
+          <h2 class="panel-title">내 파츠 업로드</h2>
+          <div class="uploader" id="uploader">
+            <p>PNG/WebP를 끌어다 놓거나 선택하세요</p>
+            <input type="file" id="fileInput" accept="image/png,image/webp" hidden />
+            <button type="button" class="btn" id="btnPickFile">파일 선택</button>
+          </div>
+          <div class="custom-parts" id="customParts"></div>
+        </div>
+      </aside>
+    </main>
+
+    <footer class="site-footer">
+      제작: 포시즌jo · anime character combinator v2.0
+    </footer>
+  </div>
+
+  <!-- 9종 배치 모달 -->
+  <dialog class="modal" id="batchModal">
+    <form method="dialog" class="modal-head">
+      <h2>9종 배치</h2>
+      <div class="modal-actions">
+        <button type="button" class="btn" id="btnBatchAgain">다시 9종</button>
+        <button value="cancel" class="btn btn-ghost">닫기</button>
+      </div>
+    </form>
+    <div class="batch-grid" id="batchGrid"></div>
+  </dialog>
+
+  <!-- 프롬프트 모달 -->
+  <dialog class="modal" id="promptModal">
+    <form method="dialog" class="modal-head">
+      <h2>AI 프롬프트</h2>
+      <button value="cancel" class="btn btn-ghost">닫기</button>
+    </form>
+    <pre class="prompt-body" id="promptBody"></pre>
+  </dialog>
+
+  <!-- 업로드 슬롯 선택 모달 -->
+  <dialog class="modal" id="uploadModal">
+    <form method="dialog" class="modal-head">
+      <h2>슬롯 선택</h2>
+      <button value="cancel" class="btn btn-ghost">취소</button>
+    </form>
+    <p class="modal-hint">업로드한 이미지를 넣을 슬롯을 고르세요.</p>
+    <div class="upload-slots" id="uploadSlots"></div>
+  </dialog>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
