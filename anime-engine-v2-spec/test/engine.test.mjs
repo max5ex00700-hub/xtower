@@ -95,12 +95,18 @@ test('슬롯 그룹 구성: 골격 8 · 얼굴 9 · 귀머리 7 · 의상연출 
 test('레이어 스택은 브리프의 Z 순서 20단과 정확히 일치한다', () => {
   assert.deepEqual(E.LAYERS, [
     'background', 'aura_back', 'hair_back', 'body_base', 'ears_back', 'face_base',
-    'cheek_fx', 'eyes', 'nose', 'mouth', 'eyebrow', 'outfit', 'hair_side',
-    'ears_front', 'hair_front', 'ahoge', 'glasses', 'head_acc', 'aura_front', 'watermark',
+    'cheek_fx', 'eyes', 'nose', 'mouth', 'eyebrow', 'outfit', 'ears_front',
+    'hair_side', 'hair_front', 'ahoge', 'glasses', 'head_acc', 'aura_front', 'watermark',
   ]);
   for (let i = 1; i < E.LAYERS.length; i++) {
     assert.ok(E.LAYER_Z[E.LAYERS[i]] > E.LAYER_Z[E.LAYERS[i - 1]]);
   }
+});
+
+test('옆머리(hair_side)가 귀 앞판(ears_front)보다 위에 그려진다', () => {
+  assert.ok(E.LAYER_Z.hair_side > E.LAYER_Z.ears_front);
+  assert.equal(E.LAYER_Z.ears_front, 1300);
+  assert.equal(E.LAYER_Z.hair_side, 1400);
 });
 
 test('모든 슬롯이 선언한 레이어가 스택에 존재한다', () => {
@@ -320,6 +326,36 @@ test('어두운 의상은 배경에 묻히지 않게 보정된다 (L ≥ 26)', (
   }
 });
 
+test('네이비 의상 outfit_accent 는 탁한 보색(탄/머드골드)이 아니다', () => {
+  const navy = '#1e2a4a';
+  const oH = E.hueOf(navy);
+  for (let i = 0; i < 40; i++) {
+    const rng = E.mulberry32((i * 7919 + 3) >>> 0);
+    const accent = E.deriveOutfitAccent(navy, rng);
+    const [ah, as, al] = E.hslOf(accent);
+    const towardComp = E.hueDistance(ah, (oH + 165) % 360) < 28;
+    const muddy = towardComp && as >= 35 && as <= 72 && al >= 42 && al <= 62;
+    assert.equal(muddy, false, `accent ${accent} h${ah.toFixed(0)} s${as.toFixed(0)} l${al.toFixed(0)}`);
+    // 크림·로즈·소프트포인트: 명도 높거나 채도가 애니풍
+    assert.ok(al >= 40 || as >= 35, `too dull ${accent}`);
+  }
+});
+
+test('밤색 머리 투톤(hair_inner)은 노란색(+24° 근처)으로 튀지 않는다', () => {
+  const brown = '#3b2a22';
+  const baseH = E.hueOf(brown);
+  for (let i = 0; i < 40; i++) {
+    const rng = E.mulberry32((i * 104729 + 7) >>> 0);
+    const inner = E.deriveHairInner(brown, rng);
+    const [ih, is, il] = E.hslOf(inner);
+    // 구 로직 +24° → ~43° 노랑대. 새 로직은 쿨 애시(베이스보다 작거나 같음)
+    assert.ok(ih < baseH + 8, `yellow-ish hue ${ih.toFixed(1)} from brown ${baseH.toFixed(1)} → ${inner}`);
+    assert.ok(ih > baseH - 25, `too far cool ${ih.toFixed(1)}`);
+    assert.ok(il > E.lightOf(brown) + 6, `should lighten for dark hair: L ${il.toFixed(1)}`);
+    assert.ok(is < 45, `oversaturated ${is.toFixed(1)}`);
+  }
+});
+
 /* ------------------------------------------------------------------ */
 section('6. buildRenderLayers — Z 정렬 · 틴트 · 트랜스폼');
 
@@ -523,6 +559,63 @@ test('1,000회 생성+빌드가 3초 이내', () => {
   const ms = Date.now() - t0;
   assert.ok(ms < 3000, `${ms}ms`);
   console.log(`      (${ms}ms / 1,000회)`);
+});
+
+/* ------------------------------------------------------------------ */
+section('10. UI·합성 회귀 — 흰자 · z-order · 워터마크');
+
+test('렌더 레이어에서 hair_side.z > ears_front.z', () => {
+  const r = E.generate({ manifest, seed: 42, pins: { ears: 'cat', hair_side: 'long' } });
+  const L = E.buildRenderLayers(r, manifest);
+  const side = L.find((l) => l.layer === 'hair_side');
+  const ear = L.find((l) => l.layer === 'ears_front');
+  assert.ok(side && ear);
+  assert.ok(side.z > ear.z, `hair_side ${side.z} vs ears_front ${ear.z}`);
+  const iSide = L.indexOf(side);
+  const iEar = L.indexOf(ear);
+  assert.ok(iSide > iEar, '그리기 순서: ears_front 다음 hair_side');
+});
+
+test('캔버스 watermark 는 유지되고 DOM credit-badge 는 없다', () => {
+  const html = fs.readFileSync(path.join(HERE, '..', 'index.html'), 'utf8');
+  assert.equal(html.includes('credit-badge'), false);
+  assert.ok(html.includes('mainCanvas'));
+  const r = E.generate({ manifest, seed: 1 });
+  const L = E.buildRenderLayers(r, manifest);
+  const wm = L.find((l) => l.layer === 'watermark');
+  assert.ok(wm);
+  assert.equal(wm.kind, 'text');
+  assert.equal(wm.text, '제작: 포시즌jo');
+});
+
+test('protectScleraPixels: 고명도 흰자는 틴트 복원, 홍채는 유지', async () => {
+  const { protectScleraPixels } = await import('../compositor.js');
+  // 2픽셀: 흰자(248) + 홍채(90), 틴트는 파란 multiply 결과물로 가정
+  const src = new Uint8ClampedArray([
+    248, 248, 248, 255,
+    90, 90, 90, 255,
+  ]);
+  const dest = new Uint8ClampedArray([
+    80, 140, 200, 255,   // 흰자가 파랗게 물든 상태
+    40, 70, 120, 255,    // 홍채 틴트
+  ]);
+  protectScleraPixels(dest, src, { threshold: 225, fullAt: 245 });
+  // 흰자: L≈248 → full restore toward source
+  assert.ok(dest[0] >= 230 && dest[1] >= 230 && dest[2] >= 230, `sclera ${[dest[0], dest[1], dest[2]]}`);
+  // 홍채: L=90 < 225 → unchanged
+  assert.deepEqual([dest[4], dest[5], dest[6]], [40, 70, 120]);
+});
+
+test('protectScleraPixels: L=230 은 부분 복원', async () => {
+  const { protectScleraPixels } = await import('../compositor.js');
+  const src = new Uint8ClampedArray([230, 230, 230, 255]);
+  const dest = new Uint8ClampedArray([50, 100, 180, 255]);
+  protectScleraPixels(dest, src, { threshold: 225, fullAt: 245 });
+  // t = (230-225)/(245-225) = 0.25
+  assert.equal(dest[0], Math.round(50 + (230 - 50) * 0.25));
+  assert.equal(dest[1], Math.round(100 + (230 - 100) * 0.25));
+  assert.equal(dest[2], Math.round(180 + (230 - 180) * 0.25));
+  assert.ok(dest[0] > 50 && dest[0] < 230);
 });
 
 /* ------------------------------------------------------------------ */

@@ -8,6 +8,7 @@
   "main": "engine.js",
   "scripts": {
     "test": "node test/engine.test.mjs",
+    "test:headless": "node test/headless-checks.mjs",
     "serve": "python3 -m http.server 8080"
   },
   "keywords": ["anime", "character", "compositor", "canvas", "parts-pack"],
