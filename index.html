@@ -2101,7 +2101,9 @@ function fitSheet(){
 const pads = {};
 function setupPad(canvas, key){
   const ctx = canvas.getContext('2d');
-  let drawing = false, last = null, lastT = 0, lastW = 1.9;
+  const INK = '#12203a';
+  const MIN_W = 3.4, MAX_W = 5.1;            // CSS px — 기존(0.9~3.0)보다 확실히 굵게
+  let drawing = false, last = null, lastMid = null, lastT = 0, lastW = 4.4;
   const dpr = () => Math.min(window.devicePixelRatio || 1, 2);
 
   function resize(){
@@ -2112,44 +2114,68 @@ function setupPad(canvas, key){
     if(canvas.width === w && canvas.height === h) return;
     canvas.width = w; canvas.height = h;
     ctx.setTransform(d, 0, 0, d, 0, 0);
-    ctx.lineCap = 'round'; ctx.lineJoin = 'round'; ctx.strokeStyle = '#12203a';
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    ctx.strokeStyle = INK; ctx.fillStyle = INK;
   }
   resize();
   if(window.ResizeObserver){ new ResizeObserver(()=>resize()).observe(canvas); }
 
   const pos = (ev) => {
     const r = canvas.getBoundingClientRect();
-    return { x: ev.clientX - r.left, y: ev.clientY - r.top, t: performance.now() };
+    const t = (ev && typeof ev.timeStamp === 'number' && ev.timeStamp > 0) ? ev.timeStamp : performance.now();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top, t };
   };
+
+  /* 굵기: 천천히 그으면 두껍게, 빠르게 그으면 살짝 얇게 (3.4~5.1 CSS px) */
+  function widthFor(p){
+    const dt = Math.max(1, p.t - lastT);
+    const dist = Math.hypot(p.x - last.x, p.y - last.y);
+    const speed = Math.min(6, dist / dt);            // CSS px / ms
+    const target = Math.max(MIN_W, Math.min(MAX_W, 4.85 - speed * 0.42));
+    lastW = lastW * 0.55 + target * 0.45;
+    return lastW;
+  }
 
   function start(ev){
     ev.preventDefault();
     canvas.setPointerCapture && canvas.setPointerCapture(ev.pointerId);
-    drawing = true; last = pos(ev); lastT = performance.now();
-    ctx.beginPath();
-    ctx.arc(last.x, last.y, 1.1, 0, Math.PI*2);
-    ctx.fillStyle = '#12203a'; ctx.fill();
+    drawing = true;
+    last = pos(ev); lastT = last.t; lastW = 4.4;
+    lastMid = { x: last.x, y: last.y };
+    /* 처음 닿은 점도 굵게 찍어 획 시작이 가늘게 끊기지 않게 */
+    ctx.lineWidth = lastW; ctx.strokeStyle = INK;
+    ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.lineTo(last.x + 0.01, last.y); ctx.stroke();
   }
+
   function move(ev){
     if(!drawing) return;
     ev.preventDefault();
-    const pts = ev.getCoalescedEvents ? ev.getCoalescedEvents() : [ev];
+    const co = ev.getCoalescedEvents ? ev.getCoalescedEvents() : null;
+    const pts = (co && co.length) ? co : [ev];
     for(const e of pts){
       const p = pos(e);
-      const dt = Math.max(1, p.t - lastT);
-      const dist = Math.hypot(p.x-last.x, p.y-last.y);
-      const speed = dist/dt;
-      const target = Math.max(0.9, Math.min(3.0, 2.7 - speed*1.15));
-      lastW = lastW*0.62 + target*0.38;
-      ctx.lineWidth = lastW; ctx.strokeStyle = '#12203a';
-      const mx = (last.x + p.x)/2, my = (last.y + p.y)/2;
-      ctx.beginPath(); ctx.moveTo(last.x, last.y); ctx.quadraticCurveTo(last.x, last.y, mx, my); ctx.stroke();
-      last = p; lastT = p.t;
+      const w = widthFor(p);
+      const mid = { x: (last.x + p.x) / 2, y: (last.y + p.y) / 2 };
+      /* 이전 중간점 → 현재 점 → 현재 중간점 : 구간이 모두 이어져 점으로 끊기지 않는다 */
+      ctx.lineWidth = w; ctx.strokeStyle = INK;
+      ctx.beginPath();
+      ctx.moveTo(lastMid.x, lastMid.y);
+      ctx.quadraticCurveTo(last.x, last.y, mid.x, mid.y);
+      ctx.stroke();
+      lastMid = mid; last = p; lastT = p.t;
     }
   }
+
   function end(ev){
     if(!drawing) return;
     drawing = false;
+    /* 마지막 중간점 → 실제 끝점까지 마저 그어 획 끝이 잘리지 않게 */
+    try{
+      ctx.lineWidth = lastW; ctx.strokeStyle = INK;
+      ctx.beginPath(); ctx.moveTo(lastMid.x, lastMid.y); ctx.lineTo(last.x, last.y); ctx.stroke();
+      ctx.beginPath(); ctx.arc(last.x, last.y, lastW / 2, 0, Math.PI * 2);
+      ctx.fillStyle = INK; ctx.fill();
+    }catch(_){}
     try{ canvas.releasePointerCapture(ev.pointerId); }catch(_){}
     sigs[key] = canvas.toDataURL('image/png');
     paintSignatures();
@@ -2161,8 +2187,8 @@ function setupPad(canvas, key){
   canvas.addEventListener('pointermove', move);
   canvas.addEventListener('pointerup', end);
   canvas.addEventListener('pointercancel', end);
-  canvas.addEventListener('pointerleave', (e)=>{ if(drawing) end(e); });
   canvas.addEventListener('touchstart', e=>e.preventDefault(), {passive:false});
+  canvas.addEventListener('touchmove', e=>{ if(drawing) e.preventDefault(); }, {passive:false});
 
   pads[key] = {
     clear(){
